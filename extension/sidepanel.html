@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AegisPay ScamShield Guard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #020617;
+        color: #f8fafc;
+      }
+      body {
+        margin: 0;
+        padding: 16px;
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #1e293b;
+        padding-bottom: 12px;
+        margin-bottom: 14px;
+      }
+      .brand {
+        font-weight: 800;
+        font-size: 15px;
+        color: #38bdf8;
+      }
+      .badge {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: #0f172a;
+        border: 1px solid #334155;
+      }
+      label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #94a3b8;
+        margin-top: 10px;
+        margin-bottom: 4px;
+      }
+      textarea, input {
+        width: 100%;
+        box-sizing: border-box;
+        background: #0f172a;
+        border: 1px solid #334155;
+        color: #f8fafc;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+      button {
+        width: 100%;
+        margin-top: 12px;
+        padding: 10px 14px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #0070E0, #009CDE);
+        color: white;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: #1e293b;
+        border: 1px solid #334155;
+      }
+      .result-card {
+        margin-top: 14px;
+        padding: 12px;
+        border-radius: 10px;
+        background: #0f172a;
+        border: 1px solid #334155;
+        font-size: 12px;
+      }
+      .mono {
+        font-family: monospace;
+        font-size: 11px;
+        word-break: break-all;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="brand">🛡️ AegisPay ScamShield</div>
+      <span class="badge">MV3 Side Panel</span>
+    </div>
+
+    <label for="payeeInput">Payee / Merchant Identifier</label>
+    <input id="payeeInput" type="text" value="billing@FreelanceStudio.io" />
+
+    <label for="amountInput">Claimed Amount (USD $)</label>
+    <input id="amountInput" type="number" step="0.01" value="45.00" />
+
+    <label for="textInput">Selected Invoice / Payment Request Text</label>
+    <textarea id="textInput" rows="5">Invoice #1049 for UI Icons Milestone: $45.00 USD via PayPal Checkout.</textarea>
+
+    <button id="scanBtn" type="button">Scan & Issue Single-Use PayPal Token</button>
+    <button id="injectScamBtn" type="button" class="secondary">Load Sample Urgent Friends & Family Scam</button>
+
+    <div id="resultBox" class="result-card" hidden>
+      <div id="verdictTitle" style="font-weight: 800; font-size: 14px; margin-bottom: 6px;"></div>
+      <div id="verdictSummary" style="margin-bottom: 8px;"></div>
+      <div id="tokenBox" class="mono"></div>
+    </div>
+
+    <script type="module" src="sidepanel.js"></script>
+  </body>
+</html>

@@ -1,0 +1,111 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import zlib from 'node:zlib';
+import { execSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, '..');
+
+function crc32(buf: Buffer): number {
+  let c = 0xffffffff;
+  for (let i = 0; i < buf.length; i++) {
+    c ^= buf[i];
+    for (let k = 0; k < 8; k++) {
+      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    }
+  }
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+function makeChunk(type: string, data: Buffer): Buffer {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length, 0);
+  const typeBuf = Buffer.from(type, 'ascii');
+  const crcBuf = Buffer.alloc(4);
+  crcBuf.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])), 0);
+  return Buffer.concat([len, typeBuf, data, crcBuf]);
+}
+
+/**
+ * Generates a valid RGBA PNG buffer of exact width x height with PayPal Navy/Blue shield gradient.
+ */
+function generateValidPng(width: number, height: number): Buffer {
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 6; // color type RGBA
+  ihdr[10] = 0;
+  ihdr[11] = 0;
+  ihdr[12] = 0;
+
+  const rawRows: Buffer[] = [];
+  for (let y = 0; y < height; y++) {
+    const row = Buffer.alloc(1 + width * 4);
+    row[0] = 0; // filter type 0
+    for (let x = 0; x < width; x++) {
+      const offset = 1 + x * 4;
+      const cx = (x - width / 2) / (width / 2);
+      const cy = (y - height / 2) / (height / 2);
+      const dist = Math.sqrt(cx * cx + cy * cy);
+      if (dist < 0.78) {
+        // PayPal Blue shield interior
+        row[offset] = 0;
+        row[offset + 1] = Math.min(255, Math.round(112 + (1 - dist) * 80));
+        row[offset + 2] = 224;
+        row[offset + 3] = 255;
+      } else {
+        // Deep PayPal Navy background
+        row[offset] = 0;
+        row[offset + 1] = 28;
+        row[offset + 2] = 100;
+        row[offset + 3] = 255;
+      }
+    }
+    rawRows.push(row);
+  }
+
+  const compressed = zlib.deflateSync(Buffer.concat(rawRows));
+  const iend = Buffer.alloc(0);
+
+  return Buffer.concat([
+    signature,
+    makeChunk('IHDR', ihdr),
+    makeChunk('IDAT', compressed),
+    makeChunk('IEND', iend),
+  ]);
+}
+
+function main() {
+  const iconsDir = path.join(ROOT_DIR, 'extension', 'icons');
+  fs.mkdirSync(iconsDir, { recursive: true });
+
+  for (const size of [16, 48, 128]) {
+    const pngBuf = generateValidPng(size, size);
+    fs.writeFileSync(path.join(iconsDir, `icon-${size}.png`), pngBuf);
+  }
+
+  const publicDir = path.join(ROOT_DIR, 'public');
+  fs.mkdirSync(publicDir, { recursive: true });
+  const zipTarget = path.join(publicDir, 'extension.zip');
+  if (fs.existsSync(zipTarget)) {
+    fs.unlinkSync(zipTarget);
+  }
+
+  execSync(`zip -r "${zipTarget}" manifest.json service-worker.js sidepanel.html sidepanel.js icons/`, {
+    cwd: path.join(ROOT_DIR, 'extension'),
+    stdio: 'inherit',
+  });
+
+  const distDir = path.join(ROOT_DIR, 'dist');
+  if (fs.existsSync(distDir)) {
+    fs.copyFileSync(zipTarget, path.join(distDir, 'extension.zip'));
+  }
+
+  console.log(`✅ Packaged Manifest V3 Chrome Extension with verified 16/48/128 PNG icons -> ${zipTarget}`);
+}
+
+main();

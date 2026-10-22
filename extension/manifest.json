@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "AegisPay ScamShield & Agent Permit Guard for PayPal",
+  "version": "1.0.0",
+  "description": "Scan invoices, payment links, and checkout requests on any webpage before opening PayPal. Blocks scams and prompt injections.",
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "sidePanel",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://localhost:8787/*",
+    "http://localhost:5173/*",
+    "https://*.onrender.com/*",
+    "https://*.paypal.com/*"
+  ],
+  "action": {
+    "default_title": "Open AegisPay ScamShield Side Panel"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}

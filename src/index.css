@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MANDATORY per modern-web-guidance: Apply color-scheme to :root for viewport-wide theming */
+:root {
+  color-scheme: light dark;
+  --color-accent-light: #0070e0;
+  --color-accent-dark: #38bdf8;
+  --accent-color: var(--color-accent-dark);
+  --color-scrollbar-track: #0f172a;
+  --color-scrollbar-thumb: #334155;
+  --in-oklab: ;
+  --in-oklch: ;
+
+  accent-color: var(--accent-color);
+  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+  scrollbar-width: thin;
+}
+
+@supports (color: light-dark(white, black)) {
+  :root {
+    --accent-color: light-dark(var(--color-accent-light), var(--color-accent-dark));
+  }
+}
+
+@supports (background: linear-gradient(in oklab, white, black)) {
+  :root {
+    --in-oklab: in oklab;
+    --in-oklch: in oklch;
+  }
+}
+
+body {
+  background-color: #020617;
+  color: #f8fafc;
+  overflow-x: hidden;
+}
+
+.aegis-gradient-card {
+  background: linear-gradient(135deg var(--in-oklab), rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.96));
+}
+
+.paypal-glow {
+  box-shadow: 0 0 35px -8px rgba(0, 112, 224, 0.45);
+}

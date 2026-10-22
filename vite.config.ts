@@ -23,5 +23,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1100,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-ag-grid': ['ag-grid-community', 'ag-grid-react'],
+          'vendor-icons': ['lucide-react'],
+        },
+      },
+    },
   },
 });
