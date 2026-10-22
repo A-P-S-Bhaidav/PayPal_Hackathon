@@ -10,11 +10,11 @@ However, every existing submission solved only **one isolated fragment** of the 
 
 **AegisPay** (*The Deterministic Trust & Execution OS for Agentic Commerce on PayPal*) unifies, hardens, and elevates all six concepts into a single, cohesive, category-defining financial operating system covering the **entire 5-Stage Autonomous Commerce Lifecycle**:
 
-1. **Stage 1 — Pre-Spend Governance & Cashflow Intelligence (`LupaPermit™` + `CashflowCopilot™`)**: Discovers silent "zombie" PayPal autopay agreements, calculates true post-bill disposable cashflow, and issues cryptographic spending permits (`ALLOW` / `HOLD` via PayPal `AUTHORIZE` / `BLOCK`) to AI agents via MCP & WebMCP.
-2. **Stage 2 — Pre-Checkout Threat & Prompt-Injection Firewall (`ScamShield™`)**: Scans invoices, payment links, and seller messages using Gemini + 18 deterministic fraud rules, issuing single-use HMAC-SHA256 review tokens cryptographically locked to the exact PayPal Order amount and payee (accessible via Web & Manifest V3 Chrome Extension).
-3. **Stage 3 — Autonomous Multi-Agent Negotiation & Smart Escrow (`DealForge™`)**: Buyer and Seller AI agents negotiate price, delivery SLA, revisions, and deposit terms within hidden mandates enforced by a Deterministic Security Kernel, locking a SHA-256 contract hash into PayPal Orders v2.
-4. **Stage 4 — Multimodal Vision Defect Grading & Keep-The-Item Refunds (`ClipRefund™`)**: Buyers snap a photo of damaged goods; Gemini Vision outputs strictly non-monetary defect telemetry while deterministic merchant matrices compute and execute an instant PayPal Sandbox Partial Refund (`POST /v2/payments/captures/{id}/refund`).
-5. **Stage 5 — In-App Dunning & Retention Interceptor (`ChurnRescue™`)**: Intercepts subscription declines and cancellations with empathetic AI dialogue constrained by a fixed concession ladder (`20% → 35% → 50% floor`), utilization guardrails (`≥60%` usage blocked from discounts), atomic SQLite/row locking, and legal/dispute circuit breakers (`"chargeback"`, `"dispute"`, `"lawyer"`).
+1. **Stage 1 — Pre-Spend Governance & Cashflow Intelligence (`LupaPermit` + `CashflowCopilot`)**: Discovers silent "zombie" PayPal autopay agreements, calculates true post-bill disposable cashflow, and issues cryptographic spending permits (`ALLOW` / `HOLD` via PayPal `AUTHORIZE` / `BLOCK`) to AI agents via MCP & WebMCP.
+2. **Stage 2 — Pre-Checkout Threat & Prompt-Injection Firewall (`ScamShield`)**: Scans invoices, payment links, and seller messages using Gemini + 18 deterministic fraud rules, issuing single-use HMAC-SHA256 review tokens cryptographically locked to the exact PayPal Order amount and payee (accessible via Web & Manifest V3 Chrome Extension).
+3. **Stage 3 — Autonomous Multi-Agent Negotiation & Smart Escrow (`DealForge`)**: Buyer and Seller AI agents negotiate price, delivery SLA, revisions, and deposit terms within hidden mandates enforced by a Deterministic Security Kernel, locking a SHA-256 contract hash into PayPal Orders v2.
+4. **Stage 4 — Multimodal Vision Defect Grading & Keep-The-Item Refunds (`ClipRefund`)**: Buyers snap a photo of damaged goods; Gemini Vision outputs strictly non-monetary defect telemetry while deterministic merchant matrices compute and execute an instant PayPal Sandbox Partial Refund (`POST /v2/payments/captures/{id}/refund`).
+5. **Stage 5 — In-App Dunning & Retention Interceptor (`ChurnRescue`)**: Intercepts subscription declines and cancellations with empathetic AI dialogue constrained by a fixed concession ladder (`20% → 35% → 50% floor`), utilization guardrails (`≥60%` usage blocked from discounts), atomic SQLite/row locking, and legal/dispute circuit breakers (`"chargeback"`, `"dispute"`, `"lawyer"`).
 
 ---
 
@@ -36,7 +36,7 @@ Each solution is evaluated out of **100 points** across six weighted criteria ma
 | **4A. Lupa (Permit API)** | 19 | 17 | 19 | 12 | 8 | 13 | **88 / 100** |
 | **4B. AgentPal** | 16 | 18 | 18 | 11 | 6 | 14 | **83 / 100** |
 | **5. Bank Insights** | 9 | 13 | 10 | 9 | 3 | 11 | **55 / 100** |
-| **🏆 AegisPay (Ours)** | **20** | **20** | **20** | **15** | **10** | **15** | **100 / 100** |
+| **AegisPay OS (Ours)** | **20** | **20** | **20** | **15** | **10** | **15** | **100 / 100** |
 
 ---
 
@@ -59,7 +59,7 @@ Each solution is evaluated out of **100 points** across six weighted criteria ma
   - Multimodal AI Vision grades only physical damage attributes (`chip_size_mm`, `severity`, `usability`), while deterministic merchant rules compute the dollar refund via PayPal Captures Refund API.
 - **Blind Spots & What We Improved**:
   - **Photo Spoofing & Replay Vulnerability**: Without cryptographic image hashing (SHA-256 perceptual/file digest), order-item category matching, and buyer trust-tier limits, a malicious buyer could upload the same stock photo of a cracked mug across multiple orders.
-  - **Disconnected from Original Order Terms**: In AegisPay's **ClipRefund™**, every partial refund is cross-checked against the original **SHA-256 Smart Contract / Order Capture ID**, verifies the refund ceiling against the merchant's deterministic matrix, and blocks duplicate partial refund claims on the same capture.
+  - **Disconnected from Original Order Terms**: In AegisPay's **ClipRefund**, every partial refund is cross-checked against the original **SHA-256 Smart Contract / Order Capture ID**, verifies the refund ceiling against the merchant's deterministic matrix, and blocks duplicate partial refund claims on the same capture.
 
 #### Solution 3: ScamShield — **85 / 100**
 - **What it nailed**:
@@ -86,14 +86,14 @@ Each solution is evaluated out of **100 points** across six weighted criteria ma
   - Deterministic Security Kernel that blocks offers violating private mandates even under simulated adversarial prompt injection.
   - SHA-256 cryptographic contract integrity + human takeover + PayPal settlement.
 - **Blind Spots & What We Improved**:
-  - **Lifecycle Ends at Deposit**: Once the deposit is paid, AgentPal's job ends. By uniting AgentPal (**DealForge™**) with **LupaPermit™** (pre-negotiation budget permit) and **ClipRefund™** (post-delivery multimodal defect verification & partial refund), AegisPay governs the entire deal from mandate to final settlement.
+  - **Lifecycle Ends at Deposit**: Once the deposit is paid, AgentPal's job ends. By uniting AgentPal (**DealForge**) with **LupaPermit** (pre-negotiation budget permit) and **ClipRefund** (post-delivery multimodal defect verification & partial refund), AegisPay governs the entire deal from mandate to final settlement.
 
 #### Solution 5: Bank Insights — **55 / 100**
 - **What it nailed**:
   - Relatable personal finance question (*"Can I afford this laptop when rent and subscriptions hit next week?"*) and clean Revolut-style visual inspiration.
 - **Blind Spots & What We Improved**:
   - **Shallow PayPal Integration & Unfinished Build**: Primarily a budgeting concept with minimal PayPal execution primitives.
-  - **Enhanced in AegisPay**: We turned Bank Insights into **CashflowCopilot™** inside **LupaPermit™**—automatically ingesting PayPal recurring commitments, rent, and savings goals to compute **True Free Cashflow**, which then dynamically calibrates the spending limits delegated to your AI agents!
+  - **Enhanced in AegisPay**: We turned Bank Insights into **CashflowCopilot** inside **LupaPermit**—automatically ingesting PayPal recurring commitments, rent, and savings goals to compute **True Free Cashflow**, which then dynamically calibrates the spending limits delegated to your AI agents!
 
 ---
 

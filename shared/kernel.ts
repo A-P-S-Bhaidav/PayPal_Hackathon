@@ -46,7 +46,7 @@ export function hmacSha256Hex(secret: string, payload: unknown): string {
 }
 
 // ============================================================================
-// PILLAR 1A: LUPAPERMIT™ — ZOMBIE AUTOPAY DETECTOR & CASHFLOW COPILOT
+// PILLAR 1A: LUPAPERMIT — ZOMBIE AUTOPAY DETECTOR & CASHFLOW COPILOT
 // ============================================================================
 
 export interface PayPalBillingPermission {
@@ -261,7 +261,7 @@ export function evaluateCashflowAffordability(params: {
 }
 
 // ============================================================================
-// PILLAR 1B: LUPAPERMIT™ — MONOTONIC AGENT PAYMENT POLICY ENGINE
+// PILLAR 1B: LUPAPERMIT — MONOTONIC AGENT PAYMENT POLICY ENGINE
 // "The model proposes, code decides. An AI verdict can make a decision stricter,
 //  but NEVER looser."
 // ============================================================================
@@ -420,7 +420,7 @@ export function evaluateAgentPermit(
 }
 
 // ============================================================================
-// PILLAR 2: SCAMSHIELD™ — PRE-PAYMENT FIREWALL & SINGLE-USE REVIEW TOKENS
+// PILLAR 2: SCAMSHIELD — PRE-PAYMENT FIREWALL & SINGLE-USE REVIEW TOKENS
 // ============================================================================
 
 export interface ScamRuleMatch {
@@ -722,7 +722,7 @@ export class ScamShieldTokenVault {
 }
 
 // ============================================================================
-// PILLAR 3: DEALFORGE™ — AUTONOMOUS MULTI-AGENT NEGOTIATION & SMART ESCROW
+// PILLAR 3: DEALFORGE — AUTONOMOUS MULTI-AGENT NEGOTIATION & SMART ESCROW
 // ============================================================================
 
 export interface BuyerMandate {
@@ -933,7 +933,7 @@ export function verifyContractIntegrity(contract: SignedDealContract): boolean {
 }
 
 // ============================================================================
-// PILLAR 4: CLIPREFUND™ — MULTIMODAL VISION DAMAGE GRADER & KEEP-THE-ITEM REFUND
+// PILLAR 4: CLIPREFUND — MULTIMODAL VISION DAMAGE GRADER & KEEP-THE-ITEM REFUND
 // "The AI never decides the money. It only describes the damage.
 //  Plain, tested code sets the price, using the merchant's own rules."
 // ============================================================================
@@ -1148,7 +1148,7 @@ export function calculateDeterministicVisionRefund(params: {
 }
 
 // ============================================================================
-// PILLAR 5: CHURNRESCUE™ — IN-APP RETENTION & DETERMINISTIC CONCESSION LADDER
+// PILLAR 5: CHURNRESCUE — IN-APP RETENTION & DETERMINISTIC CONCESSION LADDER
 // "The LLM handles empathy. Deterministic code handles every cent.
 //  • Fixed concession ladder: 20% -> 35% -> 50% floor
 //  • Usage guardrails: accounts with >=60% feature utilization blocked from discounts

@@ -7,7 +7,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'aegispay-scan-selection',
-      title: '🛡️ Scan Payment Text with AegisPay ScamShield',
+      title: 'Scan Payment Text with AegisPay ScamShield',
       contexts: ['selection'],
     });
   });
@@ -48,7 +48,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         target: { tabId: tab.id },
         func: (snippet) => {
           const toast = document.createElement('div');
-          toast.textContent = `🛡️ AegisPay ScamShield: Analyzing "${snippet.slice(0, 42)}..." in Side Panel`;
+          toast.textContent = `[AEGISPAY SCAMSHIELD] Analyzing "${snippet.slice(0, 42)}..." in Side Panel`;
           Object.assign(toast.style, {
             position: 'fixed',
             bottom: '20px',

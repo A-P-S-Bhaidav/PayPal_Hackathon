@@ -42,10 +42,10 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 export interface AuditLedgerRow {
   id: string;
   timestampIso: string;
-  pillar: 'LUPAPERMIT' | 'SCAMSHIELD' | 'DEALFORGE' | 'CLIPREFUND' | 'CHURNRESCUE' | 'FUZZER';
+  pillar: 'LUPAPERMIT' | 'SCAMSHIELD' | 'DEALFORGE' | 'CLIPREFUND' | 'CHURNRESCUE' | 'FUZZER' | 'FAILOVER';
   actor: string;
   eventTitle: string;
-  verdict: 'ALLOW' | 'HOLD' | 'BLOCK' | 'SETTLED' | 'REFUNDED' | 'CIRCUIT_BREAKER';
+  verdict: 'ALLOW' | 'HOLD' | 'BLOCK' | 'SETTLED' | 'REFUNDED' | 'CIRCUIT_BREAKER' | 'REROUTED';
   amountCents: number;
   savedOrProtectedCents: number;
   paypalRef: string;
@@ -71,7 +71,10 @@ export function createAegisServer() {
 
   const geminiEngine = new GeminiCognitiveEngine(
     process.env.GEMINI_API_KEY || '',
-    process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+    process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    process.env.GROQ_API_KEY || '',
+    process.env.GROQ_TEXT_MODEL || 'llama-3.3-70b-versatile',
+    process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct'
   );
 
   let zapierWebhookUrl = process.env.ZAPIER_WEBHOOK_URL || '';
@@ -81,7 +84,6 @@ export function createAegisServer() {
   const claimedVisionImageHashes = new Set<string>();
   const refundedCentsByCapture = new Map<string, number>();
 
-  // Seed realistic initial state across all 5 pillars
   const billingPermissions: PayPalBillingPermission[] = [
     {
       agreementId: 'BA-94827104-ZOMBIE1',
@@ -90,7 +92,7 @@ export function createAegisServer() {
       category: 'CLOUD',
       monthlyCapCents: 15000,
       averageChargeCents: 4900,
-      lastChargedDaysAgo: 412, // Silent for > 1 year!
+      lastChargedDaysAgo: 412,
       lastUserInteractionDaysAgo: 412,
       createdDaysAgo: 780,
       status: 'ACTIVE',
@@ -102,9 +104,9 @@ export function createAegisServer() {
       category: 'ENTERTAINMENT',
       monthlyCapCents: 6000,
       averageChargeCents: 2999,
-       previousChargeCents: 1999, // +50% silent price creep!
+      previousChargeCents: 1999,
       lastChargedDaysAgo: 12,
-      lastUserInteractionDaysAgo: 215, // Unused for 7 months!
+      lastUserInteractionDaysAgo: 215,
       createdDaysAgo: 540,
       status: 'ACTIVE',
     },
@@ -113,7 +115,7 @@ export function createAegisServer() {
       merchantName: 'RenderScale GPU Compute Grid',
       merchantId: 'merch_renderscale',
       category: 'SAAS',
-      monthlyCapCents: 50000, // $500 cap vs $45 average
+      monthlyCapCents: 50000,
       averageChargeCents: 4500,
       lastChargedDaysAgo: 8,
       lastUserInteractionDaysAgo: 3,
@@ -169,8 +171,8 @@ export function createAegisServer() {
     },
   ];
 
-  const currentCheckingBalanceCents = 385000; // $3,850.00
-  const minimumSafetyBufferCents = 30000; // $300.00
+  const currentCheckingBalanceCents = 385000;
+  const minimumSafetyBufferCents = 30000;
 
   const agentPermits: AgentSpendingPermit[] = [
     {
@@ -178,10 +180,10 @@ export function createAegisServer() {
       agentId: 'agent_claude_code',
       agentName: 'Claude Code MCP Workspace Agent',
       parentAgreementId: 'BA-77219402-OVERCAP',
-      maxSingleTransactionCents: 8000, // $80.00 max
-      dailyLimitCents: 15000, // $150.00 daily
+      maxSingleTransactionCents: 8000,
+      dailyLimitCents: 15000,
       spentTodayCents: 1800,
-      autoAllowMaxCents: 5000, // Up to $50 auto-captured; $50.01-$80.00 held if confidence high, or held anytime confidence < 0.80
+      autoAllowMaxCents: 5000,
       minConfidenceScore: 0.82,
       allowedCategories: ['HARDWARE', 'OFFICE', 'SAAS', 'CLOUD'],
       blockedMerchants: ['merch_unverified_keys', 'shady-dropship-llc'],
@@ -192,7 +194,7 @@ export function createAegisServer() {
       agentId: 'agent_dealforge_buyer',
       agentName: 'DealForge B2B Procurement Agent',
       parentAgreementId: 'BA-66109821-CLEAN',
-      maxSingleTransactionCents: 120000, // $1,200.00 max
+      maxSingleTransactionCents: 120000,
       dailyLimitCents: 200000,
       spentTodayCents: 0,
       autoAllowMaxCents: 60000,
@@ -203,12 +205,11 @@ export function createAegisServer() {
     },
   ];
 
-  // Seed an initial completed order for ClipRefund & an initial held order for LupaPermit so judges see rich live records immediately
   paypalGateway.seedInitialOrder({
     orderId: 'PAYPAL-SBX-8F92A1C4E7B01',
     intent: 'CAPTURE',
     status: 'COMPLETED',
-    amountCents: 2800, // $28.00 Artisan Ceramic Mug
+    amountCents: 2800,
     refundedCents: 0,
     currency: 'USD',
     merchantName: 'Artisan Studio & Goods Co.',
@@ -225,7 +226,7 @@ export function createAegisServer() {
     orderId: 'PAYPAL-SBX-HOLD4500LAMP9',
     intent: 'AUTHORIZE',
     status: 'AUTHORIZED',
-    amountCents: 4500, // $45.00 Architect LED Desk Lamp (Claude Code MCP demo)
+    amountCents: 4500,
     refundedCents: 0,
     currency: 'USD',
     merchantName: 'NordicLight Studio Hardware',
@@ -250,7 +251,8 @@ export function createAegisServer() {
       savedOrProtectedCents: 4500,
       paypalRef: 'AUTH-HOLD4500LAMP9',
       sha256Hash: sha256Hex({ id: 'AUD-1001', order: 'PAYPAL-SBX-HOLD4500LAMP9' }),
-      deterministicRule: 'Monotonic Permit Policy: Confidence 68% < 82% min threshold -> PayPal AUTHORIZE Hold (Agent cannot self-approve)',
+      deterministicRule:
+        'Monotonic Permit Policy: Confidence 68% < 82% min threshold -> PayPal AUTHORIZE Hold (Agent cannot self-approve)',
     },
     {
       id: 'AUD-1002',
@@ -276,7 +278,8 @@ export function createAegisServer() {
       savedOrProtectedCents: 27000,
       paypalRef: 'PAYPAL-SBX-DEAL680',
       sha256Hash: sha256Hex({ id: 'AUD-1003', contract: 'ctr_68000' }),
-      deterministicRule: 'Mandate Kernel verified price <= $800 Buyer Ceiling & >= $580 Seller Floor; SHA-256 contract locked',
+      deterministicRule:
+        'Mandate Kernel verified price <= $800 Buyer Ceiling & >= $580 Seller Floor; SHA-256 contract locked',
     },
     {
       id: 'AUD-1004',
@@ -289,7 +292,8 @@ export function createAegisServer() {
       savedOrProtectedCents: 95040,
       paypalRef: 'PAYPAL-SBX-CHURN7920',
       sha256Hash: sha256Hex({ id: 'AUD-1004', step: 1, discount: 20 }),
-      deterministicRule: 'Fixed Concession Ladder Step 1 (20% off $99.00 -> $79.20/mo); Utilization 34% < 60% guardrail',
+      deterministicRule:
+        'Fixed Concession Ladder Step 1 (20% off $99.00 -> $79.20/mo); Utilization 34% < 60% guardrail',
     },
   ];
 
@@ -308,14 +312,14 @@ export function createAegisServer() {
   }
 
   // ==========================================================================
-  // 1. STATE & LIVE CREDENTIALS VAULT ENDPOINTS
+  // 1. STATE, CREDENTIALS VAULT & AI FAILOVER TELEMETRY ENDPOINTS
   // ==========================================================================
 
   app.get('/api/state', (_req, res) => {
     const zombieReport = auditPayPalPermissions(billingPermissions);
     const defaultAffordability = evaluateCashflowAffordability({
       itemTitle: 'Pro Studio 4K OLED Reference Monitor',
-      proposedSpendCents: 58000, // $580.00
+      proposedSpendCents: 58000,
       currentBalanceCents: currentCheckingBalanceCents,
       commitments: cashflowCommitments,
       minimumSafetyBufferCents,
@@ -337,9 +341,7 @@ export function createAegisServer() {
         zombieAnnualExposureCents: zombieReport.totalAnnualExposureCents,
         recoverableMonthlyCents: zombieReport.recoverableMonthlyCents,
         activeAgentPermits: agentPermits.filter((p) => p.active).length,
-        heldOrdersPendingApproval: paypalGateway
-          .getOrders()
-          .filter((o) => o.status === 'AUTHORIZED').length,
+        heldOrdersPendingApproval: paypalGateway.getOrders().filter((o) => o.status === 'AUTHORIZED').length,
         totalAuditRecords: auditLogs.length,
       },
       lupa: {
@@ -360,7 +362,16 @@ export function createAegisServer() {
   });
 
   app.post('/api/credentials', async (req, res) => {
-    const { paypalClientId, paypalClientSecret, paypalEnvironment, geminiApiKey, zapierUrl } = req.body || {};
+    const {
+      paypalClientId,
+      paypalClientSecret,
+      paypalEnvironment,
+      geminiApiKey,
+      groqApiKey,
+      simulateGeminiRateLimit,
+      zapierUrl,
+    } = req.body || {};
+
     if (typeof paypalClientId === 'string' || typeof paypalClientSecret === 'string') {
       paypalGateway.updateCredentials({
         clientId: typeof paypalClientId === 'string' ? paypalClientId : undefined,
@@ -368,9 +379,14 @@ export function createAegisServer() {
         environment: paypalEnvironment === 'live' ? 'live' : 'sandbox',
       });
     }
-    if (typeof geminiApiKey === 'string') {
-      geminiEngine.updateApiKey(geminiApiKey);
-    }
+
+    geminiEngine.updateCredentials({
+      geminiApiKey: typeof geminiApiKey === 'string' ? geminiApiKey : undefined,
+      groqApiKey: typeof groqApiKey === 'string' ? groqApiKey : undefined,
+      simulateGeminiRateLimit:
+        typeof simulateGeminiRateLimit === 'boolean' ? simulateGeminiRateLimit : undefined,
+    });
+
     if (typeof zapierUrl === 'string') {
       zapierWebhookUrl = zapierUrl.trim();
     }
@@ -385,8 +401,40 @@ export function createAegisServer() {
     });
   });
 
+  app.post('/api/ai/failover-test', async (req, res) => {
+    const { simulateRateLimit } = req.body || {};
+    const shouldSimulate = simulateRateLimit !== undefined ? Boolean(simulateRateLimit) : true;
+    geminiEngine.setSimulateRateLimit(shouldSimulate);
+
+    const testScan = await geminiEngine.analyzePaymentScamSemantics({
+      sanitizedText: 'Invoice #8012 for Cloud Security Infrastructure: $120.00 USD',
+      claimedAmountCents: 12000,
+      payeeIdentifier: 'billing@cloudinfra.io',
+    });
+
+    const auditRow = appendAuditLog({
+      pillar: 'FAILOVER',
+      actor: 'AI Failover Router (Gemini -> Groq)',
+      eventTitle: shouldSimulate
+        ? `Gemini HTTP 429 Rate Limit Intercepted -> Automatic Failover to Groq LPU (${testScan.telemetry.latencyMs}ms)`
+        : `Primary Gemini 2.5 Flash Route Restored (${testScan.telemetry.latencyMs}ms)`,
+      verdict: shouldSimulate ? 'REROUTED' : 'ALLOW',
+      amountCents: 12000,
+      savedOrProtectedCents: 0,
+      paypalRef: testScan.telemetry.activeProviderUsed,
+      sha256Hash: sha256Hex(testScan.telemetry),
+      deterministicRule: testScan.telemetry.failoverReason,
+    });
+
+    res.json({
+      aiStatus: geminiEngine.getStatus(),
+      telemetry: testScan.telemetry,
+      auditRow,
+    });
+  });
+
   // ==========================================================================
-  // 2. PILLAR 1: LUPAPERMIT™ & CASHFLOW COPILOT ENDPOINTS
+  // 2. PILLAR 1: LUPAPERMIT & CASHFLOW COPILOT ENDPOINTS
   // ==========================================================================
 
   app.post('/api/lupa/cashflow-check', (req, res) => {
@@ -451,7 +499,6 @@ export function createAegisServer() {
     } else {
       perm.status = 'REVOKED';
       const recoverable = perm.averageChargeCents * 12;
-      // Also increase free cashflow by lowering recurring PayPal autopay commitment!
       const autopayCommitment = cashflowCommitments.find((c) => c.id === 'cf_paypal_subs');
       if (autopayCommitment) {
         autopayCommitment.amountCents = Math.max(0, autopayCommitment.amountCents - perm.averageChargeCents);
@@ -581,7 +628,7 @@ export function createAegisServer() {
   });
 
   // ==========================================================================
-  // 3. PILLAR 2: SCAMSHIELD™ PRE-PAYMENT FIREWALL & TAMPER LAB ENDPOINTS
+  // 3. PILLAR 2: SCAMSHIELD PRE-PAYMENT FIREWALL & TAMPER LAB ENDPOINTS
   // ==========================================================================
 
   app.post('/api/scamshield/review', async (req, res) => {
@@ -605,7 +652,6 @@ export function createAegisServer() {
         payeeIdentifier: payee,
       });
 
-      // Stricter-only fusion
       const finalVerdict = stricterVerdict(detResult.deterministicVerdict, aiResult.aiSuggestedVerdict);
       const combinedRiskScore = Math.max(detResult.riskScore, aiResult.semanticRiskScore);
 
@@ -660,13 +706,12 @@ export function createAegisServer() {
         ? JSON.parse(JSON.stringify(baseToken))
         : null;
       let captureAmountCents = tokenToVerify?.payload.amountCents ?? 4500;
-      let currency = tokenToVerify?.payload.currency ?? 'USD';
+      const currency = tokenToVerify?.payload.currency ?? 'USD';
       let payeeIdentifier = tokenToVerify?.payload.payeeIdentifier ?? 'billing@verified-studio.io';
       let simulatedNowMs = Date.now();
 
-      // Interactive Tamper Lab scenarios for judges!
       if (tamperScenario === 'MUTATE_AMOUNT' && tokenToVerify) {
-        captureAmountCents = tokenToVerify.payload.amountCents * 10; // Attacker mutates $45 -> $450 at checkout
+        captureAmountCents = tokenToVerify.payload.amountCents * 10;
       } else if (tamperScenario === 'FORGE_SIGNATURE' && tokenToVerify) {
         tokenToVerify.payload.verdict = 'ALLOW';
         tokenToVerify.signature = 'deadbeef0000111122223333444455556666777788889999aaaabbbbccccdddd';
@@ -745,16 +790,12 @@ export function createAegisServer() {
   });
 
   // ==========================================================================
-  // 4. PILLAR 3: DEALFORGE™ MULTI-AGENT NEGOTIATION & ESCROW ENDPOINTS
+  // 4. PILLAR 3: DEALFORGE MULTI-AGENT NEGOTIATION & ESCROW ENDPOINTS
   // ==========================================================================
 
   app.post('/api/dealforge/negotiate', async (req, res) => {
     try {
-      const {
-        buyerMandate: rawBuyer,
-        sellerMandate: rawSeller,
-        simulatePromptInjection,
-      } = req.body || {};
+      const { buyerMandate: rawBuyer, sellerMandate: rawSeller, simulatePromptInjection } = req.body || {};
 
       const buyerMandate: BuyerMandate = {
         mandateId: 'BM-LIVE-01',
@@ -779,7 +820,6 @@ export function createAegisServer() {
 
       const rounds: NegotiationRoundEntry[] = [];
 
-      // Check if mandates have a valid overlap zone
       if (buyerMandate.maxPriceCents < sellerMandate.minPriceCents) {
         const auditRow = appendAuditLog({
           pillar: 'DEALFORGE',
@@ -801,7 +841,6 @@ export function createAegisServer() {
         return;
       }
 
-      // Round 1: Buyer opens at targetPriceCents
       const r1RawTerms = {
         priceCents: buyerMandate.targetPriceCents,
         deliveryDays: Math.max(sellerMandate.fastestDeliveryDays, buyerMandate.maxDeliveryDays - 2),
@@ -832,7 +871,6 @@ export function createAegisServer() {
         promptInjectionBlocked: r1Validated.promptInjectionBlocked,
       });
 
-      // Round 2: Seller counters (and if simulatePromptInjection is true, Seller tries to inject a mandate-override payload!)
       const midHighCents = Math.round((sellerMandate.listPriceCents + sellerMandate.minPriceCents) / 2);
       const r2RawTerms = {
         priceCents: Math.max(sellerMandate.minPriceCents, midHighCents),
@@ -865,7 +903,6 @@ export function createAegisServer() {
         promptInjectionBlocked: r2Validated.promptInjectionBlocked,
       });
 
-      // Round 3: If Seller injected a prompt attack in Round 2, Buyer Agent resists it deterministically!
       const effectiveBuyerTarget = Math.max(buyerMandate.targetPriceCents, sellerMandate.minPriceCents);
       const fairSettlementPriceCents = Math.round((effectiveBuyerTarget + buyerMandate.maxPriceCents) / 2);
       const agreedPriceCents = Math.min(
@@ -915,7 +952,6 @@ export function createAegisServer() {
         promptInjectionBlocked: r3Validated.promptInjectionBlocked,
       });
 
-      // Round 4: Seller accepts Nash equilibrium inside both mandates
       const r4Msg = geminiEngine.generateNegotiationRoundMessage({
         round: 4,
         proposer: 'SELLER_AGENT',
@@ -978,7 +1014,7 @@ export function createAegisServer() {
   });
 
   // ==========================================================================
-  // 5. PILLAR 4: CLIPREFUND™ MULTIMODAL VISION DAMAGE GRADER ENDPOINTS
+  // 5. PILLAR 4: CLIPREFUND MULTIMODAL VISION DAMAGE GRADER ENDPOINTS
   // ==========================================================================
 
   app.post('/api/cliprefund/evaluate-and-refund', async (req, res) => {
@@ -1052,6 +1088,7 @@ export function createAegisServer() {
       res.json({
         visionTelemetry: visionResult.telemetry,
         visionEngineMode: visionResult.engineMode,
+        failoverTelemetry: visionResult.failoverTelemetry,
         calculation,
         paypalRefund,
         imageSha256,
@@ -1063,7 +1100,7 @@ export function createAegisServer() {
   });
 
   // ==========================================================================
-  // 6. PILLAR 5: CHURNRESCUE™ IN-APP RETENTION & CIRCUIT BREAKER ENDPOINTS
+  // 6. PILLAR 5: CHURNRESCUE IN-APP RETENTION & CIRCUIT BREAKER ENDPOINTS
   // ==========================================================================
 
   app.post('/api/churnrescue/intercept', async (req, res) => {
@@ -1096,7 +1133,6 @@ export function createAegisServer() {
       const decision = evaluateChurnIntervention(ctx);
       const empathy = await geminiEngine.generateEmpatheticRetentionResponse(ctx, decision);
 
-      // If circuit breaker tripped, dispatch Zapier escalation webhook!
       let zapierDispatched = false;
       if (decision.circuitBreakerTripped) {
         const zapPayload = {
@@ -1116,13 +1152,11 @@ export function createAegisServer() {
         zapierDispatched = true;
       }
 
-      // Atomic SQLite-style row lock execution for PayPal billing update
       const lockKey = simulateDuplicateClick
         ? `STATIC_DUPLICATE_KEY_${ctx.accountId}_${decision.concessionStepIndex}`
         : `${decision.idempotencyLockKey}_${Date.now()}`;
 
       if (simulateDuplicateClick) {
-        // Pre-seed the lock once so the second call demonstrates duplicate capture prevention!
         atomicLedger.executeAtomically(lockKey, () => ({
           orderId: `PAYPAL-SBX-LOCKED-${decision.idempotencyLockKey.slice(0, 8).toUpperCase()}`,
           status: 'COMPLETED',
@@ -1180,6 +1214,7 @@ export function createAegisServer() {
         decision,
         agentReply: empathy.agentReply,
         engineMode: empathy.engineMode,
+        failoverTelemetry: empathy.failoverTelemetry,
         atomicOutcome,
         paypalOrder,
         zapierDispatched,
@@ -1207,7 +1242,8 @@ export function createAegisServer() {
       savedOrProtectedCents: 100000,
       paypalRef: `FUZZ-${report.totalCasesRun}-PASS`,
       sha256Hash: sha256Hex(report.invariantsVerified),
-      deterministicRule: '100% Monotonicity, Concession Floor <=50%, Circuit Breaker Zero Leakage, Mandate Ceiling Verified',
+      deterministicRule:
+        '100% Monotonicity, Concession Floor <=50%, Circuit Breaker Zero Leakage, Mandate Ceiling Verified',
     });
 
     res.json({ report, auditRow });
@@ -1244,7 +1280,6 @@ export function createAegisServer() {
     }
   });
 
-  // Serve built frontend in production
   const distDir = path.join(ROOT_DIR, 'dist');
   if (fs.existsSync(distDir)) {
     app.use(express.static(distDir));
@@ -1260,11 +1295,10 @@ export function createAegisServer() {
   return app;
 }
 
-// Start server if invoked directly
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   const port = Number(process.env.PORT) || 8787;
   const app = createAegisServer();
   app.listen(port, () => {
-    console.log(`🛡️  AegisPay Deterministic Trust & PayPal Execution OS listening on http://localhost:${port}`);
+    console.log(`[AEGISPAY OS] Deterministic Trust & PayPal Execution Server listening on http://localhost:${port}`);
   });
 }

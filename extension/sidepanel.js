@@ -31,7 +31,7 @@ injectScamBtn?.addEventListener('click', () => {
 });
 
 scanBtn?.addEventListener('click', async () => {
-  scanBtn.textContent = 'Scanning with Gemini + Deterministic Rules...';
+  scanBtn.textContent = 'Scanning with Gemini / Groq + Deterministic Rules...';
   const claimedAmountCents = Math.round((parseFloat(amountInput.value) || 45) * 100);
   const payload = {
     rawText: textInput.value,
@@ -49,7 +49,7 @@ scanBtn?.addEventListener('click', async () => {
   resultBox.hidden = false;
 
   if (!response?.ok) {
-    verdictTitle.textContent = '⚠️ Local Server Unreachable';
+    verdictTitle.textContent = '[OFFLINE] Local Server Unreachable';
     verdictSummary.textContent = response?.error || 'Ensure AegisPay server is running on port 8787.';
     return;
   }

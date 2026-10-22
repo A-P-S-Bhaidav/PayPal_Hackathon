@@ -301,6 +301,29 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (60+ Tests)'
     expect(text).toContain('aegispay-security-audit-2026');
   });
 
+  it('POST /api/ai/failover-test verifies Gemini-to-Groq automatic failover router on simulated HTTP 429 rate limit', async () => {
+    const failoverRes = await fetch(`${baseUrl}/api/ai/failover-test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        simulateRateLimit: true,
+      }),
+    });
+    expect(failoverRes.status).toBe(200);
+    const failoverData = await failoverRes.json();
+    expect(failoverData.telemetry.failoverTriggered).toBe(true);
+    expect(failoverData.telemetry.failoverReason).toContain('429');
+    expect(failoverData.aiStatus).toBeDefined();
+    expect(failoverData.auditRow.pillar).toBe('FAILOVER');
+
+    // Restore normal routing mode
+    await fetch(`${baseUrl}/api/ai/failover-test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ simulateRateLimit: false }),
+    });
+  });
+
   // 50 parameterized API stress checks across varying amounts & steps
   const stressSteps = Array.from({ length: 50 }, (_, idx) => idx + 1);
   it.each(stressSteps)(

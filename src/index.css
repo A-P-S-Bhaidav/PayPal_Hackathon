@@ -8,8 +8,8 @@
   --color-accent-light: #0070e0;
   --color-accent-dark: #38bdf8;
   --accent-color: var(--color-accent-dark);
-  --color-scrollbar-track: #0f172a;
-  --color-scrollbar-thumb: #334155;
+  --color-scrollbar-track: #060913;
+  --color-scrollbar-thumb: #1e293b;
   --in-oklab: ;
   --in-oklch: ;
 
@@ -32,15 +32,108 @@
 }
 
 body {
-  background-color: #020617;
+  background-color: #030712;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -15%, rgba(0, 112, 224, 0.18), transparent),
+    radial-gradient(ellipse 50% 40% at 90% 10%, rgba(0, 156, 222, 0.09), transparent);
   color: #f8fafc;
   overflow-x: hidden;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-.aegis-gradient-card {
-  background: linear-gradient(135deg var(--in-oklab), rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.96));
+/* Precision architectural grid backdrop */
+.aegis-grid-bg {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
 }
 
-.paypal-glow {
-  box-shadow: 0 0 35px -8px rgba(0, 112, 224, 0.45);
+.aegis-surface {
+  background: linear-gradient(165deg var(--in-oklab), rgba(15, 23, 42, 0.78), rgba(6, 10, 21, 0.92));
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
+    0 20px 45px -15px rgba(0, 0, 0, 0.65);
+}
+
+.aegis-hero-surface {
+  background: linear-gradient(135deg var(--in-oklab), rgba(10, 22, 54, 0.85), rgba(4, 9, 20, 0.96));
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 1px 0 0 rgba(56, 189, 248, 0.22) inset,
+    0 25px 60px -15px rgba(0, 112, 224, 0.22);
+}
+
+/* Compositor-only animations with nested prefers-reduced-motion compliance per modern-web-guidance */
+@keyframes aegisEnter {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes scanlineSweep {
+  0% {
+    translate: 0 0;
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.85;
+  }
+  100% {
+    translate: 0 185px;
+    opacity: 0.25;
+  }
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    scale: 1;
+    opacity: 1;
+  }
+  50% {
+    scale: 1.35;
+    opacity: 0.55;
+  }
+}
+
+.animate-panel-enter {
+  animation: aegisEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.animate-scanline {
+  animation: scanlineSweep 2.8s ease-in-out infinite alternate;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 0.4;
+  }
+}
+
+.animate-status-dot {
+  animation: statusPulse 2.2s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+. interactive-card {
+  transition:
+    translate 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.interactive-card:hover {
+  translate: 0 -2px;
+  @media (prefers-reduced-motion: reduce) {
+    translate: none;
+  }
 }
