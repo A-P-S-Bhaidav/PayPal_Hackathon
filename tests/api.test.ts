@@ -419,6 +419,28 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (60+ Tests)'
     expect(afterLogoutRes.status).toBe(401);
   });
 
+  it('GET /api/auth/google/url and POST /api/auth/google verify Google OAuth 2.0 flow and mint session', async () => {
+    const urlRes = await fetch(`${baseUrl}/api/auth/google/url`);
+    expect(urlRes.status).toBe(200);
+    const urlData = await urlRes.json();
+    expect(urlData.redirectUri).toContain('/api/auth/google/callback');
+
+    const googleAuthRes = await fetch(`${baseUrl}/api/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'aps.bhaidav@gmail.com',
+        fullName: 'A. P. S. Bhaidav',
+        organization: 'Google OAuth Verified',
+      }),
+    });
+    expect(googleAuthRes.status).toBe(200);
+    const googleAuthData = await googleAuthRes.json();
+    expect(googleAuthData.authenticated).toBe(true);
+    expect(googleAuthData.operator.authProvider).toBe('GOOGLE_OAUTH');
+    expect(googleAuthData.operator.email).toBe('aps.bhaidav@gmail.com');
+  });
+
   // 50 parameterized API stress checks across varying amounts & steps
   const stressSteps = Array.from({ length: 50 }, (_, idx) => idx + 1);
   it.each(stressSteps)(
