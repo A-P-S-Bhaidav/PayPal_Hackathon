@@ -2,74 +2,138 @@
 @tailwind components;
 @tailwind utilities;
 
-/* MANDATORY per modern-web-guidance: Apply color-scheme to :root for viewport-wide theming */
 :root {
-  color-scheme: light dark;
-  --color-accent-light: #0070e0;
-  --color-accent-dark: #38bdf8;
-  --accent-color: var(--color-accent-dark);
-  --color-scrollbar-track: #060913;
-  --color-scrollbar-thumb: #1e293b;
-  --in-oklab: ;
-  --in-oklch: ;
-
-  accent-color: var(--accent-color);
-  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+  color-scheme: dark;
   scrollbar-width: thin;
-}
-
-@supports (color: light-dark(white, black)) {
-  :root {
-    --accent-color: light-dark(var(--color-accent-light), var(--color-accent-dark));
-  }
-}
-
-@supports (background: linear-gradient(in oklab, white, black)) {
-  :root {
-    --in-oklab: in oklab;
-    --in-oklch: in oklch;
-  }
+  scrollbar-color: #262d3d #08090c;
+  --bg-canvas: #08090c;
+  --bg-sidebar: #0b0d13;
+  --bg-surface: #10131b;
+  --bg-elevated: #151923;
+  --border-subtle: #1e2433;
+  --border-hover: #2e384f;
+  --accent-paypal: #0070e0;
+  --accent-paypal-light: #38bdf8;
 }
 
 body {
-  background-color: #030712;
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -15%, rgba(0, 112, 224, 0.18), transparent),
-    radial-gradient(ellipse 50% 40% at 90% 10%, rgba(0, 156, 222, 0.09), transparent);
+  margin: 0;
+  background-color: var(--bg-canvas);
   color: #f8fafc;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Precision architectural grid backdrop */
-.aegis-grid-bg {
-  background-size: 32px 32px;
+code,
+pre,
+.font-mono {
+  font-family:
+    'JetBrains Mono',
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle institutional grid background for hero & schematics */
+.bg-institutional-grid {
+  background-color: #08090c;
   background-image:
-    linear-gradient(to right, rgba(148, 163, 184, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgba(30, 36, 51, 0.38) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30, 36, 51, 0.38) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
-.aegis-surface {
-  background: linear-gradient(165deg var(--in-oklab), rgba(15, 23, 42, 0.78), rgba(6, 10, 21, 0.92));
-  backdrop-filter: blur(16px);
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
-    0 20px 45px -15px rgba(0, 0, 0, 0.65);
+/* Restrained institutional card surfaces */
+.surface-card {
+  background-color: #10131b;
+  border: 1px solid #1e2433;
+  border-radius: 10px;
 }
 
-.aegis-hero-surface {
-  background: linear-gradient(135deg var(--in-oklab), rgba(10, 22, 54, 0.85), rgba(4, 9, 20, 0.96));
-  backdrop-filter: blur(20px);
-  box-shadow:
-    0 1px 0 0 rgba(56, 189, 248, 0.22) inset,
-    0 25px 60px -15px rgba(0, 112, 224, 0.22);
+.surface-card-elevated {
+  background-color: #141822;
+  border: 1px solid #242b3d;
+  border-radius: 10px;
 }
 
-/* Compositor-only animations with nested prefers-reduced-motion compliance per modern-web-guidance */
+.surface-card-interactive {
+  background-color: #10131b;
+  border: 1px solid #1e2433;
+  border-radius: 10px;
+  transition:
+    translate 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.surface-card-interactive:hover {
+  border-color: #334155;
+  background-color: #131722;
+  translate: 0 -2px;
+  @media (prefers-reduced-motion: reduce) {
+    translate: none;
+  }
+}
+
+/* Primary PayPal Institutional Button */
+.btn-paypal-primary {
+  background-color: #0070e0;
+  color: #ffffff;
+  border: 1px solid #0070e0;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.btn-paypal-primary:hover:not(:disabled) {
+  background-color: #005ea6;
+  border-color: #38bdf8;
+}
+
+.btn-paypal-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Secondary Slate Button */
+.btn-institutional-secondary {
+  background-color: #141822;
+  color: #e2e8f0;
+  border: 1px solid #242b3d;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.btn-institutional-secondary:hover:not(:disabled) {
+  background-color: #1c2230;
+  border-color: #3b4661;
+  color: #ffffff;
+}
+
+/* Compositor-only animations with nested prefers-reduced-motion compliance */
 @keyframes aegisEnter {
   from {
     opacity: 0;
-    translate: 0 10px;
+    translate: 0 8px;
   }
   to {
     opacity: 1;
@@ -83,7 +147,7 @@ body {
     opacity: 0.25;
   }
   50% {
-    opacity: 0.85;
+    opacity: 0.75;
   }
   100% {
     translate: 0 185px;
@@ -92,18 +156,19 @@ body {
 }
 
 @keyframes statusPulse {
-  0%, 100% {
+  0%,
+  100% {
     scale: 1;
     opacity: 1;
   }
   50% {
-    scale: 1.35;
-    opacity: 0.55;
+    scale: 1.25;
+    opacity: 0.6;
   }
 }
 
 .animate-panel-enter {
-  animation: aegisEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: aegisEnter 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
@@ -118,22 +183,21 @@ body {
 }
 
 .animate-status-dot {
-  animation: statusPulse 2.2s ease-in-out infinite;
+  animation: statusPulse 2.4s ease-in-out infinite;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
 }
 
-.interactive-card {
-  transition:
-    translate 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.2s ease,
-    background-color 0.2s ease;
-}
-
-.interactive-card:hover {
-  translate: 0 -2px;
-  @media (prefers-reduced-motion: reduce) {
-    translate: none;
-  }
+/* AG Grid Institutional Slate Customization */
+.ag-theme-quartz-dark {
+  --ag-background-color: #0d1017;
+  --ag-header-background-color: #121620;
+  --ag-odd-row-background-color: #0f121a;
+  --ag-row-hover-color: rgba(0, 112, 224, 0.08);
+  --ag-border-color: #1e2433;
+  --ag-foreground-color: #e2e8f0;
+  --ag-header-foreground-color: #94a3b8;
+  --ag-font-family: 'Inter', -apple-system, sans-serif;
+  --ag-font-size: 12px;
 }

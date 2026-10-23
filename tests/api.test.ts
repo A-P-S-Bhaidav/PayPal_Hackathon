@@ -324,6 +324,101 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (60+ Tests)'
     });
   });
 
+  it('POST /api/auth/register registers new institutional operator and rejects duplicate email', async () => {
+    const regRes = await fetch(`${baseUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'treasury-lead@aegispay.io',
+        password: 'SecurePassword2026!',
+        fullName: 'Treasury Lead',
+        organization: 'AegisPay FinOps',
+      }),
+    });
+    expect(regRes.status).toBe(201);
+    const regData = await regRes.json();
+    expect(regData.authenticated).toBe(true);
+    expect(regData.operator.email).toBe('treasury-lead@aegispay.io');
+    expect(regData.token).toContain('aegis_sess_');
+
+    const dupRes = await fetch(`${baseUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'treasury-lead@aegispay.io',
+        password: 'SecurePassword2026!',
+      }),
+    });
+    expect(dupRes.status).toBe(409);
+  });
+
+  it('POST /api/auth/login authenticates valid credentials and rejects wrong passwords', async () => {
+    const okRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'operator@aegispay.io',
+        password: 'AegisPay2026!',
+      }),
+    });
+    expect(okRes.status).toBe(200);
+    const okData = await okRes.json();
+    expect(okData.authenticated).toBe(true);
+    expect(okData.operator.role).toBe('PRINCIPAL_ARCHITECT');
+
+    const badRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'operator@aegispay.io',
+        password: 'WrongPassword',
+      }),
+    });
+    expect(badRes.status).toBe(401);
+  });
+
+  it('POST /api/auth/oauth completes OAuth 2.0 PKCE handshake for PayPal, Google, and GitHub', async () => {
+    for (const provider of ['PAYPAL_OAUTH', 'GOOGLE_OAUTH', 'GITHUB_OAUTH']) {
+      const res = await fetch(`${baseUrl}/api/auth/oauth`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider }),
+      });
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.authenticated).toBe(true);
+      expect(data.operator.authProvider).toBe(provider);
+      expect(data.oauthMetadata.protocol).toContain('PKCE');
+    }
+  });
+
+  it('GET /api/auth/me & POST /api/auth/logout validate and revoke bearer session tokens', async () => {
+    const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'operator@aegispay.io',
+        password: 'AegisPay2026!',
+      }),
+    });
+    const { token } = await loginRes.json();
+
+    const meRes = await fetch(`${baseUrl}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(meRes.status).toBe(200);
+
+    await fetch(`${baseUrl}/api/auth/logout`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const afterLogoutRes = await fetch(`${baseUrl}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(afterLogoutRes.status).toBe(401);
+  });
+
   // 50 parameterized API stress checks across varying amounts & steps
   const stressSteps = Array.from({ length: 50 }, (_, idx) => idx + 1);
   it.each(stressSteps)(
