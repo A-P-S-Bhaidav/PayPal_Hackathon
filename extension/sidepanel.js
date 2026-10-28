@@ -1,4 +1,4 @@
-// AegisPay ScamShield Side Panel Script (MV3 compliant: async/await, no inline handlers)
+// AegisPay Checkout Firewall Side Panel Script (MV3 compliant: async/await, no inline handlers)
 
 const payeeInput = document.getElementById('payeeInput');
 const amountInput = document.getElementById('amountInput');
@@ -31,13 +31,14 @@ injectScamBtn?.addEventListener('click', () => {
 });
 
 scanBtn?.addEventListener('click', async () => {
-  scanBtn.textContent = 'Scanning with Gemini / Groq + Deterministic Rules...';
+  scanBtn.textContent = 'Scanning with Gemini / Groq + Prompt Guard...';
   const claimedAmountCents = Math.round((parseFloat(amountInput.value) || 45) * 100);
   const payload = {
     rawText: textInput.value,
     claimedAmountCents,
     currency: 'USD',
     payeeIdentifier: payeeInput.value,
+    autoExtractCurrency: true,
   };
 
   const response = await chrome.runtime.sendMessage({
@@ -49,20 +50,24 @@ scanBtn?.addEventListener('click', async () => {
   resultBox.hidden = false;
 
   if (!response?.ok) {
-    verdictTitle.textContent = '[OFFLINE] Local Server Unreachable';
-    verdictSummary.textContent = response?.error || 'Ensure AegisPay server is running on port 8787.';
+    verdictTitle.textContent = '[OFFLINE] API Unreachable';
+    verdictSummary.textContent =
+      response?.error || 'Check network connectivity to aegispay-orpin.vercel.app.';
     return;
   }
 
-  const { data } = response;
+  const { data, endpointUsed } = response;
   verdictTitle.textContent = `Verdict: ${data.finalVerdict} (Risk Score: ${data.combinedRiskScore}/100)`;
   verdictTitle.style.color =
     data.finalVerdict === 'BLOCK' ? '#f87171' : data.finalVerdict === 'HOLD' ? '#fbbf24' : '#34d399';
   verdictSummary.textContent = data.ai?.aiSummary || 'Deterministic review complete.';
+  const pgScore = data.ai?.promptGuard
+    ? ` | PromptGuard: ${(data.ai.promptGuard.probability * 100).toFixed(1)}%`
+    : '';
   tokenBox.textContent =
     data.finalVerdict === 'BLOCK'
-      ? 'PayPal Checkout LOCKED — Single-use token denied.'
-      : `Token: ${data.signedToken?.payload?.tokenId} | HMAC: ${data.signedToken?.signature?.slice(0, 28)}...`;
+      ? `PayPal Checkout LOCKED - Single-use token denied.${pgScore} (${endpointUsed})`
+      : `Token: ${data.signedToken?.payload?.tokenId}${pgScore} | HMAC: ${data.signedToken?.signature?.slice(0, 24)}...`;
 });
 
 syncFromStorage();

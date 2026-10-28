@@ -1,5 +1,10 @@
-// AegisPay ScamShield Manifest V3 Service Worker
-// Strictly adheres to MV3 rules: ephemeral state persisted in chrome.storage.local, async/await only.
+// AegisPay Checkout Firewall Manifest V3 Service Worker
+// Automatically connects to localhost:8787 if running, or fails over to https://aegispay-orpin.vercel.app
+
+const DEFAULT_ENDPOINTS = [
+  'http://localhost:8787',
+  'https://aegispay-orpin.vercel.app',
+];
 
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
@@ -7,7 +12,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'aegispay-scan-selection',
-      title: 'Scan Payment Text with AegisPay ScamShield',
+      title: 'Scan Payment Text with AegisPay Firewall',
       contexts: ['selection'],
     });
   });
@@ -41,20 +46,19 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     }
   }
 
-  // Provide visual toast confirmation on the active page (Mandatory Rule #9)
   if (tab?.id) {
     try {
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: (snippet) => {
           const toast = document.createElement('div');
-          toast.textContent = `[AEGISPAY SCAMSHIELD] Analyzing "${snippet.slice(0, 42)}..." in Side Panel`;
+          toast.textContent = `[AEGISPAY FIREWALL] Analyzing "${snippet.slice(0, 42)}..." in Side Panel`;
           Object.assign(toast.style, {
             position: 'fixed',
             bottom: '20px',
             right: '20px',
             zIndex: '2147483647',
-            background: '#001C64',
+            background: '#090D16',
             color: '#ffffff',
             padding: '12px 18px',
             borderRadius: '10px',
@@ -75,17 +79,34 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 });
 
+async function fetchWithEndpointFailover(path, payload) {
+  let lastError = null;
+  for (const base of DEFAULT_ENDPOINTS) {
+    try {
+      const response = await fetch(`${base}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return { data, endpointUsed: base };
+      }
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error('Could not reach localhost:8787 or aegispay-orpin.vercel.app');
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   (async () => {
     try {
       if (message?.type === 'AEGISPAY_RUN_REVIEW') {
-        const { apiBaseUrl = 'http://localhost:8787' } = await chrome.storage.local.get('apiBaseUrl');
-        const response = await fetch(`${apiBaseUrl}/api/scamshield/review`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(message.payload),
-        });
-        const data = await response.json();
+        const { data, endpointUsed } = await fetchWithEndpointFailover(
+          '/api/scamshield/review',
+          message.payload
+        );
         const { scanHistory = [] } = await chrome.storage.local.get('scanHistory');
         const updatedHistory = [
           {
@@ -95,6 +116,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             payee: message.payload.payeeIdentifier,
             amountCents: message.payload.claimedAmountCents,
             tokenId: data.signedToken?.payload?.tokenId,
+            endpointUsed,
           },
           ...scanHistory.slice(0, 19),
         ];
@@ -103,7 +125,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         await chrome.action.setBadgeBackgroundColor({
           color: data.finalVerdict === 'BLOCK' ? '#DC2626' : '#059669',
         });
-        sendResponse({ ok: true, data });
+        sendResponse({ ok: true, data, endpointUsed });
         return;
       }
       sendResponse({ ok: false, error: 'Unknown message type' });

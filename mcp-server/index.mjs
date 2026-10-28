@@ -6,8 +6,8 @@
  * 2. Check post-bill disposable cashflow affordability (`aegispay_check_cashflow`)
  * 3. Propose a payment under deterministic monotonic policy (`aegispay_agent_pay`)
  * 4. Scan an external invoice for scams/prompt-injections (`aegispay_scamshield_review`)
- *
- * Rule: "The model proposes, deterministic code decides. An AI agent can never approve its own payment."
+ * 5. Architect penny-exact PayPal milestone plans (`aegispay_paystream_create_plan`)
+ * 6. Issue live PayPal Invoicing v2 milestone invoices (`aegispay_paystream_issue_invoice`)
  */
 
 import readline from 'node:readline';
@@ -32,7 +32,10 @@ const TOOLS = [
       type: 'object',
       properties: {
         itemTitle: { type: 'string', description: 'Name of the item or service being evaluated' },
-        proposedSpendCents: { type: 'integer', description: 'Proposed purchase price in integer cents (e.g. 4500 for $45.00)' },
+        proposedSpendCents: {
+          type: 'integer',
+          description: 'Proposed purchase price in integer cents (e.g. 4500 for $45.00)',
+        },
       },
       required: ['itemTitle', 'proposedSpendCents'],
     },
@@ -48,11 +51,24 @@ const TOOLS = [
         amountCents: { type: 'integer', description: 'Payment amount in integer cents' },
         merchantId: { type: 'string', description: 'Merchant identifier' },
         merchantName: { type: 'string', description: 'Merchant display name' },
-        category: { type: 'string', description: 'Purchase category (HARDWARE, SAAS, OFFICE, CLOUD)' },
+        category: {
+          type: 'string',
+          description: 'Purchase category (HARDWARE, SAAS, OFFICE, CLOUD)',
+        },
         itemDescription: { type: 'string', description: 'Line-item description' },
-        aiConfidenceScore: { type: 'number', description: 'Agent confidence score from 0.0 to 1.0' },
+        aiConfidenceScore: {
+          type: 'number',
+          description: 'Agent confidence score from 0.0 to 1.0',
+        },
       },
-      required: ['permitId', 'amountCents', 'merchantName', 'category', 'itemDescription', 'aiConfidenceScore'],
+      required: [
+        'permitId',
+        'amountCents',
+        'merchantName',
+        'category',
+        'itemDescription',
+        'aiConfidenceScore',
+      ],
     },
   },
   {
@@ -69,6 +85,34 @@ const TOOLS = [
       required: ['rawText', 'claimedAmountCents', 'payeeIdentifier'],
     },
   },
+  {
+    name: 'aegispay_paystream_create_plan',
+    description:
+      'Decompose a freelance or B2B project brief into penny-exact PayPal milestones and collaborator payout splits with zero rounding drift.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectTitle: { type: 'string', description: 'Project title' },
+        projectBrief: { type: 'string', description: 'Scope brief to decompose into milestones' },
+        clientEmail: { type: 'string', description: 'Client PayPal billing email' },
+        totalBudgetCents: { type: 'integer', description: 'Total project budget in integer cents' },
+      },
+      required: ['projectTitle', 'projectBrief', 'totalBudgetCents'],
+    },
+  },
+  {
+    name: 'aegispay_paystream_issue_invoice',
+    description:
+      'Issue and send a live PayPal Sandbox Invoice (INV2-...) for a specific milestone in a PayStream plan.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        planId: { type: 'string', description: 'PayStream Plan ID (e.g. PSTRM-...)' },
+        milestoneId: { type: 'string', description: 'Milestone ID (e.g. MS-1)' },
+      },
+      required: ['milestoneId'],
+    },
+  },
 ];
 
 const rl = readline.createInterface({
@@ -78,9 +122,7 @@ const rl = readline.createInterface({
 });
 
 function sendJsonRpc(id, result, error) {
-  const payload = error
-    ? { jsonrpc: '2.0', id, error }
-    : { jsonrpc: '2.0', id, result };
+  const payload = error ? { jsonrpc: '2.0', id, error } : { jsonrpc: '2.0', id, result };
   process.stdout.write(JSON.stringify(payload) + '\n');
 }
 
@@ -99,7 +141,7 @@ rl.on('line', async (line) => {
     sendJsonRpc(id, {
       protocolVersion: '2024-11-05',
       capabilities: { tools: {} },
-      serverInfo: { name: 'aegispay-paypal-mcp-server', version: '1.0.0' },
+      serverInfo: { name: 'aegispay-paypal-mcp-server', version: '2.0.0' },
     });
     return;
   }
@@ -123,34 +165,16 @@ rl.on('line', async (line) => {
         return;
       }
 
-      if (toolName === 'aegispay_check_cashflow') {
-        const r = await fetch(`${API_BASE}/api/lupa/cashflow-check`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(args),
-        });
-        const data = await r.json();
-        sendJsonRpc(id, {
-          content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-        });
-        return;
-      }
+      const routeMap = {
+        aegispay_check_cashflow: '/api/lupa/cashflow-check',
+        aegispay_agent_pay: '/api/lupa/agent-pay',
+        aegispay_scamshield_review: '/api/scamshield/review',
+        aegispay_paystream_create_plan: '/api/paystream/create-plan',
+        aegispay_paystream_issue_invoice: '/api/paystream/issue-invoice',
+      };
 
-      if (toolName === 'aegispay_agent_pay') {
-        const r = await fetch(`${API_BASE}/api/lupa/agent-pay`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(args),
-        });
-        const data = await r.json();
-        sendJsonRpc(id, {
-          content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-        });
-        return;
-      }
-
-      if (toolName === 'aegispay_scamshield_review') {
-        const r = await fetch(`${API_BASE}/api/scamshield/review`, {
+      if (routeMap[toolName]) {
+        const r = await fetch(`${API_BASE}${routeMap[toolName]}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(args),

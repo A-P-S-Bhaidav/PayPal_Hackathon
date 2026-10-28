@@ -2,14 +2,14 @@
   <rect width="1200" height="220" rx="12" fill="#07090E" stroke="#1E293B" stroke-width="1.5" />
   <g transform="translate(40, 32)">
     <text x="0" y="18" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700" letter-spacing="1.5">ARCHITECTURAL SEPARATION OF DUTIES // ZERO LLM PRICING AUTHORITY</text>
-    
+
     <!-- Box 1: AI Layer -->
     <g transform="translate(0, 40)">
       <rect x="0" y="0" width="330" height="116" rx="10" fill="#0B0F19" stroke="#1E293B" stroke-width="1.2" />
       <text x="20" y="30" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">TIER 01 // PERCEPTION &amp; DIALOGUE</text>
-      <text x="20" y="56" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="17" font-weight="700">AI Reasoning Mesh</text>
-      <text x="20" y="80" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12">Gemini 2.5 Flash Primary -&gt; Groq LPU Failover</text>
-      <text x="20" y="100" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">Outputs: Non-monetary telemetry &amp; intents</text>
+      <text x="20" y="56" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="17" font-weight="700">Multi-Provider AI Mesh</text>
+      <text x="20" y="80" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12">Gemini 3.5 Primary -&gt; Groq LPU + Llama Guard</text>
+      <text x="20" y="100" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">Outputs: Non-monetary telemetry &amp; proposals</text>
     </g>
 
     <!-- Connector 1 -->
@@ -21,7 +21,7 @@
       <rect x="0" y="0" width="330" height="116" rx="10" fill="#0B0F19" stroke="#0070E0" stroke-width="1.5" />
       <text x="20" y="30" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">TIER 02 // FINANCIAL GUARDRAILS</text>
       <text x="20" y="56" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="17" font-weight="700">Deterministic Security Kernel</text>
-      <text x="20" y="80" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12">Monotonic Permits, HMAC Nonce, Cent Math</text>
+      <text x="20" y="80" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12">Monotonic Permits, HMAC Nonce, Hamilton Splits</text>
       <text x="20" y="100" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">Proven: 1,000-case property-based fuzzer</text>
     </g>
 
@@ -34,8 +34,8 @@
       <rect x="0" y="0" width="330" height="116" rx="10" fill="#0B0F19" stroke="#1E293B" stroke-width="1.2" />
       <text x="20" y="30" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">TIER 03 // ATOMIC SETTLEMENT</text>
       <text x="20" y="56" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="17" font-weight="700">PayPal Developer Platform</text>
-      <text x="20" y="80" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12">Orders v2, Authorizations, Partial Refunds</text>
-      <text x="20" y="100" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">Verification: Signed Webhook &amp; SHA-256</text>
+      <text x="20" y="80" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12">Orders v2, Vault v3, Invoicing v2, Subs v1</text>
+      <text x="20" y="100" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">Verification: Smart SDK, Refunds &amp; Webhooks</text>
     </g>
   </g>
 </svg>

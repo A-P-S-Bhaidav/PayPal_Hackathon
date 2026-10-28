@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import type { Server } from 'node:http';
-import { createAegisServer } from '../server/index.ts';
+import { createAegisServer } from '../server/index';
 
 describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)', () => {
   let server: Server;
@@ -60,7 +60,7 @@ describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)
     expect(res.result.protocolVersion).toBe('2024-11-05');
   });
 
-  it('lists all 4 AegisPay agentic PayPal tools via tools/list', async () => {
+  it('lists all 6 AegisPay agentic PayPal tools via tools/list', async () => {
     const res = await callMcpRpc({
       jsonrpc: '2.0',
       id: 2,
@@ -73,6 +73,8 @@ describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)
       'aegispay_check_cashflow',
       'aegispay_agent_pay',
       'aegispay_scamshield_review',
+      'aegispay_paystream_create_plan',
+      'aegispay_paystream_issue_invoice',
     ]);
   });
 
@@ -146,10 +148,47 @@ describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)
     expect(parsed.finalVerdict).toBe('BLOCK');
   });
 
+  it('executes aegispay_paystream_create_plan and aegispay_paystream_issue_invoice via tools/call', async () => {
+    const createRes = await callMcpRpc({
+      jsonrpc: '2.0',
+      id: 7,
+      method: 'tools/call',
+      params: {
+        name: 'aegispay_paystream_create_plan',
+        arguments: {
+          projectTitle: 'MCP Smart Milestone Contract',
+          clientEmail: 'client@mcp-test.io',
+          totalBudgetCents: 100000,
+          currency: 'USD',
+          projectBrief: 'Build API server, test suite, and deployment configuration.',
+        },
+      },
+    });
+    const created = JSON.parse(createRes.result.content[0].text);
+    expect(created.plan.pennyExactVerified).toBe(true);
+    expect(created.plan.totalBudgetCents).toBe(100000);
+
+    const invRes = await callMcpRpc({
+      jsonrpc: '2.0',
+      id: 8,
+      method: 'tools/call',
+      params: {
+        name: 'aegispay_paystream_issue_invoice',
+        arguments: {
+          planId: created.plan.planId,
+          milestoneId: created.plan.milestones[0].milestoneId,
+        },
+      },
+    });
+    const issued = JSON.parse(invRes.result.content[0].text);
+    expect(issued.invoice.invoiceId).toBeDefined();
+    expect(issued.invoice.payerViewUrl).toContain('sandbox.paypal.com');
+  });
+
   it('returns JSON-RPC -32601 error on unknown tool name', async () => {
     const res = await callMcpRpc({
       jsonrpc: '2.0',
-      id: 7,
+      id: 9,
       method: 'tools/call',
       params: { name: 'non_existent_tool', arguments: {} },
     });

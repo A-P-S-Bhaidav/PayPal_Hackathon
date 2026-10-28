@@ -1,9 +1,6 @@
 /**
  * Browser-Native WebMCP (Web Model Context Protocol) Tool Registration
- * Follows modern-web-guidance `webmcp` best practices:
- * - Uses AbortController signal for clean lifecycle management
- * - Exposes atomic client-side tools with structured inputSchema
- * - Annotates read-only vs state-modifying tools
+ * Exposes client-side navigation and safety verification tools to Chromium WebMCP agents.
  */
 
 export function registerAegisWebMcpTools(
@@ -30,14 +27,23 @@ export function registerAegisWebMcpTools(
   try {
     ctx.registerTool(
       {
-        name: 'open-aegispay-pillar',
-        description: 'Switch the active AegisPay workspace tab to inspect a specific security or payment pillar.',
+        name: 'open-aegispay-module',
+        description:
+          'Switch the active AegisPay workspace view to inspect a specific payment or AI module.',
         inputSchema: {
           type: 'object',
           properties: {
             pillar: {
               type: 'string',
-              enum: ['command', 'lupa', 'scamshield', 'dealforge', 'cliprefund', 'churnrescue'],
+              enum: [
+                'command',
+                'lupa',
+                'scamshield',
+                'dealforge',
+                'cliprefund',
+                'churnrescue',
+                'paystream',
+              ],
               description: 'Target workspace identifier to display in the UI.',
             },
           },
@@ -45,7 +51,7 @@ export function registerAegisWebMcpTools(
         },
         async execute(args: { pillar: string }) {
           onNavigateTab(args.pillar);
-          return { status: 'switched', activePillar: args.pillar };
+          return { status: 'switched', activeModule: args.pillar };
         },
         annotations: { readOnlyHint: true },
       },
@@ -55,7 +61,8 @@ export function registerAegisWebMcpTools(
     ctx.registerTool(
       {
         name: 'verify-kernel-safety-fuzzer',
-        description: 'Run the 1,000-case property-based deterministic safety fuzzer and update the UI proof table.',
+        description:
+          'Run the 1,000-case property-based deterministic safety fuzzer and update the UI proof table.',
         inputSchema: {
           type: 'object',
           properties: {},

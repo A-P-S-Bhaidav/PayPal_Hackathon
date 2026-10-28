@@ -4,19 +4,23 @@
 
 :root {
   color-scheme: dark;
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
-  scrollbar-color: #262d3d #08090c;
-  --bg-canvas: #08090c;
-  --bg-sidebar: #0b0d13;
-  --bg-surface: #10131b;
-  --bg-elevated: #151923;
-  --border-subtle: #1e2433;
-  --border-hover: #2e384f;
+  scrollbar-color: #242e42 #07090e;
+  --bg-canvas: #07090e;
+  --bg-sidebar: #0a0d14;
+  --bg-surface: #0f141f;
+  --bg-elevated: #141b29;
+  --border-subtle: #1c2436;
+  --border-hover: #2d3a54;
   --accent-paypal: #0070e0;
-  --accent-paypal-light: #38bdf8;
+  --accent-paypal-hover: #005ea6;
 }
 
-body {
+html,
+body,
+#root {
+  min-height: 100dvh;
   margin: 0;
   background-color: var(--bg-canvas);
   color: #f8fafc;
@@ -29,7 +33,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 code,
@@ -50,32 +54,41 @@ pre,
   font-variant-numeric: tabular-nums;
 }
 
-/* Subtle institutional grid background for hero & schematics */
+/* Subtle architectural grid banner backdrop */
 .bg-institutional-grid {
-  background-color: #08090c;
+  background-color: #07090e;
   background-image:
-    linear-gradient(to right, rgba(30, 36, 51, 0.38) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(30, 36, 51, 0.38) 1px, transparent 1px);
-  background-size: 40px 40px;
+    radial-gradient(ellipse 80% 50% at 50% -15%, rgba(0, 112, 224, 0.16), transparent),
+    linear-gradient(to right, rgba(28, 36, 54, 0.42) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(28, 36, 54, 0.42) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    44px 44px,
+    44px 44px;
 }
 
-/* Restrained institutional card surfaces */
+.bg-banner-glow {
+  background: linear-gradient(135deg, rgba(15, 20, 31, 0.96) 0%, rgba(12, 24, 46, 0.92) 100%);
+  border: 1px solid rgba(0, 112, 224, 0.28);
+}
+
+/* Institutional card surfaces */
 .surface-card {
-  background-color: #10131b;
-  border: 1px solid #1e2433;
-  border-radius: 10px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
 }
 
 .surface-card-elevated {
-  background-color: #141822;
-  border: 1px solid #242b3d;
-  border-radius: 10px;
+  background-color: var(--bg-elevated);
+  border: 1px solid #243047;
+  border-radius: 12px;
 }
 
 .surface-card-interactive {
-  background-color: #10131b;
-  border: 1px solid #1e2433;
-  border-radius: 10px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
   transition:
     translate 0.18s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.18s ease,
@@ -83,28 +96,81 @@ pre,
 }
 
 .surface-card-interactive:hover {
-  border-color: #334155;
-  background-color: #131722;
+  border-color: var(--border-hover);
+  background-color: #121826;
   translate: 0 -2px;
   @media (prefers-reduced-motion: reduce) {
     translate: none;
   }
 }
 
-/* Primary PayPal Institutional Button */
+/* Modern form input styling with user-invalid support */
+.input-institutional {
+  width: 100%;
+  min-width: 0;
+  background-color: #0a0e17;
+  border: 1px solid #222c40;
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  color: #f8fafc;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.input-institutional:focus {
+  outline: none;
+  border-color: #0070e0;
+  box-shadow: 0 0 0 3px rgba(0, 112, 224, 0.18);
+}
+
+.input-institutional:user-invalid {
+  border-color: #ef4444;
+}
+
+input[type='file']::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #2a364f;
+  background-color: #141b29;
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+input[type='file']::file-selector-button:hover {
+  background-color: #1d273b;
+}
+
+input[type='range'] {
+  accent-color: #0070e0;
+}
+
+/* Primary PayPal Action Button */
 .btn-paypal-primary {
   background-color: #0070e0;
   color: #ffffff;
   border: 1px solid #0070e0;
+  border-radius: 8px;
+  font-weight: 600;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
-    opacity 0.15s ease;
+    opacity 0.15s ease,
+    translate 0.12s ease;
 }
 
 .btn-paypal-primary:hover:not(:disabled) {
   background-color: #005ea6;
   border-color: #38bdf8;
+}
+
+.btn-paypal-primary:active:not(:disabled) {
+  translate: 0 1px;
 }
 
 .btn-paypal-primary:disabled {
@@ -114,9 +180,11 @@ pre,
 
 /* Secondary Slate Button */
 .btn-institutional-secondary {
-  background-color: #141822;
+  background-color: #141b29;
   color: #e2e8f0;
-  border: 1px solid #242b3d;
+  border: 1px solid #243047;
+  border-radius: 8px;
+  font-weight: 500;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
@@ -124,34 +192,30 @@ pre,
 }
 
 .btn-institutional-secondary:hover:not(:disabled) {
-  background-color: #1c2230;
-  border-color: #3b4661;
+  background-color: #1b2436;
+  border-color: #38496b;
   color: #ffffff;
 }
 
-/* Compositor-only animations with nested prefers-reduced-motion compliance */
+.btn-institutional-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal & Drawer Scroll Isolation */
+.scroll-contain {
+  overscroll-behavior: contain;
+}
+
+/* Compositor-only animations */
 @keyframes aegisEnter {
   from {
     opacity: 0;
-    translate: 0 8px;
+    translate: 0 6px;
   }
   to {
     opacity: 1;
     translate: 0 0;
-  }
-}
-
-@keyframes scanlineSweep {
-  0% {
-    translate: 0 0;
-    opacity: 0.25;
-  }
-  50% {
-    opacity: 0.75;
-  }
-  100% {
-    translate: 0 185px;
-    opacity: 0.25;
   }
 }
 
@@ -163,22 +227,14 @@ pre,
   }
   50% {
     scale: 1.25;
-    opacity: 0.6;
+    opacity: 0.65;
   }
 }
 
 .animate-panel-enter {
-  animation: aegisEnter 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: aegisEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
-  }
-}
-
-.animate-scanline {
-  animation: scanlineSweep 2.8s ease-in-out infinite alternate;
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-    opacity: 0.4;
   }
 }
 
@@ -191,11 +247,11 @@ pre,
 
 /* AG Grid Institutional Slate Customization */
 .ag-theme-quartz-dark {
-  --ag-background-color: #0d1017;
-  --ag-header-background-color: #121620;
-  --ag-odd-row-background-color: #0f121a;
-  --ag-row-hover-color: rgba(0, 112, 224, 0.08);
-  --ag-border-color: #1e2433;
+  --ag-background-color: #0b0f18;
+  --ag-header-background-color: #111724;
+  --ag-odd-row-background-color: #0d121d;
+  --ag-row-hover-color: rgba(0, 112, 224, 0.09);
+  --ag-border-color: #1c2436;
   --ag-foreground-color: #e2e8f0;
   --ag-header-foreground-color: #94a3b8;
   --ag-font-family: 'Inter', -apple-system, sans-serif;

@@ -1,17 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" width="100%" height="100%" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 410" width="100%" height="100%" fill="none">
   <defs>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="1200" y2="380" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1200" y2="410" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#07090E" />
       <stop offset="50%" stop-color="#0B0F19" />
       <stop offset="100%" stop-color="#070A12" />
     </linearGradient>
-    <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#0070E0" />
-      <stop offset="100%" stop-color="#38BDF8" />
-    </linearGradient>
-    <linearGradient id="borderGrad" x1="0" y1="0" x2="1200" y2="380" gradientUnits="userSpaceOnUse">
+    <linearGradient id="borderGrad" x1="0" y1="0" x2="1200" y2="410" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#1E293B" />
-      <stop offset="50%" stop-color="#0070E0" stop-opacity="0.45" />
+      <stop offset="50%" stop-color="#0070E0" stop-opacity="0.5" />
       <stop offset="100%" stop-color="#1E293B" />
     </linearGradient>
     <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -19,90 +15,88 @@
     </pattern>
   </defs>
 
-  <!-- Background -->
-  <rect width="1200" height="380" rx="16" fill="url(#bgGrad)" />
-  <rect width="1200" height="380" rx="16" fill="url(#gridPattern)" />
-  <rect x="1" y="1" width="1198" height="378" rx="15" stroke="url(#borderGrad)" stroke-width="1.5" />
+  <rect width="1200" height="410" rx="16" fill="url(#bgGrad)" />
+  <rect width="1200" height="410" rx="16" fill="url(#gridPattern)" />
+  <rect x="1" y="1" width="1198" height="408" rx="15" stroke="url(#borderGrad)" stroke-width="1.5" />
 
-  <!-- Subtle Glow -->
-  <circle cx="950" cy="190" r="220" fill="#0070E0" fill-opacity="0.08" />
-  <circle cx="200" cy="80" r="160" fill="#0070E0" fill-opacity="0.05" />
+  <circle cx="960" cy="205" r="230" fill="#0070E0" fill-opacity="0.08" />
+  <circle cx="190" cy="85" r="160" fill="#0070E0" fill-opacity="0.05" />
 
   <!-- Left Column: Brand & Thesis -->
-  <g transform="translate(64, 58)">
-    <!-- Top Institutional Pill -->
-    <rect x="0" y="0" width="386" height="28" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
+  <g transform="translate(58, 56)">
+    <rect x="0" y="0" width="424" height="28" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
     <circle cx="16" cy="14" r="4" fill="#0070E0" />
-    <text x="30" y="18" fill="#94A3B8" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="600" letter-spacing="1.2">PAYPAL DEVELOPER SANDBOX V2 // DETERMINISTIC AI OS</text>
+    <text x="30" y="18" fill="#94A3B8" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="600" letter-spacing="1.1">PAYPAL DEVELOPER PLATFORM // DETERMINISTIC AI COMMERCE OS</text>
 
-    <!-- Main Title -->
-    <text x="0" y="88" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="52" font-weight="800" letter-spacing="-1.5">AegisPay OS</text>
-    <rect x="330" y="54" width="76" height="24" rx="4" fill="#0070E0" fill-opacity="0.15" stroke="#0070E0" stroke-width="1" />
-    <text x="342" y="70" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="700" letter-spacing="0.8">v2.4 LTS</text>
+    <text x="0" y="90" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="54" font-weight="800" letter-spacing="-1.5">AegisPay OS</text>
+    <rect x="342" y="56" width="76" height="24" rx="4" fill="#0070E0" fill-opacity="0.16" stroke="#0070E0" stroke-width="1" />
+    <text x="355" y="72" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="700" letter-spacing="0.8">v2.0 LTS</text>
 
-    <!-- Subtitle -->
-    <text x="0" y="128" fill="#CBD5E1" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="19" font-weight="500">The Deterministic Trust &amp; Execution Operating System for Agentic Commerce</text>
-    <text x="0" y="158" fill="#64748B" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="14" font-weight="400">AI handles perception, negotiation, and empathy. Deterministic code enforces every cent. PayPal settles atomically.</text>
+    <text x="0" y="132" fill="#E2E8F0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="19" font-weight="600">AI Proposes. Deterministic Code Decides. PayPal Moves the Money.</text>
+    <text x="0" y="162" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="13.5" font-weight="400">Six end-to-end payment modules combining Gemini 3.5, Groq LPU failover, Llama Prompt Guard,</text>
+    <text x="0" y="182" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="13.5" font-weight="400">penny-exact cryptographic guardrails, and live PayPal Orders, Vault, Invoicing, and Refunds.</text>
 
-    <!-- Divider -->
-    <line x1="0" y1="186" x2="640" y2="186" stroke="#1E293B" stroke-width="1" />
+    <line x1="0" y1="210" x2="650" y2="210" stroke="#1E293B" stroke-width="1" />
 
-    <!-- Bottom Metric Strip -->
-    <g transform="translate(0, 210)">
-      <rect x="0" y="0" width="148" height="54" rx="8" fill="#0B0F19" stroke="#1E293B" stroke-width="1" />
-      <text x="16" y="22" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600" letter-spacing="1">VERIFICATION</text>
-      <text x="16" y="42" fill="#F8FAFC" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16" font-weight="700">325+ Tests</text>
+    <g transform="translate(0, 234)">
+      <rect x="0" y="0" width="150" height="58" rx="8" fill="#0B0F19" stroke="#1E293B" stroke-width="1" />
+      <text x="16" y="23" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600" letter-spacing="1">TEST SUITE</text>
+      <text x="16" y="44" fill="#F8FAFC" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16" font-weight="700">335 Passing</text>
 
-      <rect x="162" y="0" width="164" height="54" rx="8" fill="#0B0F19" stroke="#1E293B" stroke-width="1" />
-      <text x="178" y="22" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600" letter-spacing="1">SAFETY PROVER</text>
-      <text x="178" y="42" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16" font-weight="700">1,000-Case Fuzz</text>
+      <rect x="164" y="0" width="164" height="58" rx="8" fill="#0B0F19" stroke="#1E293B" stroke-width="1" />
+      <text x="180" y="23" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600" letter-spacing="1">SAFETY PROVER</text>
+      <text x="180" y="44" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16" font-weight="700">1,000-Case Fuzz</text>
 
-      <rect x="340" y="0" width="164" height="54" rx="8" fill="#0B0F19" stroke="#1E293B" stroke-width="1" />
-      <text x="356" y="22" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600" letter-spacing="1">AI FAILOVER MESH</text>
-      <text x="356" y="42" fill="#F8FAFC" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16" font-weight="700">Gemini -&gt; Groq</text>
+      <rect x="342" y="0" width="164" height="58" rx="8" fill="#0B0F19" stroke="#1E293B" stroke-width="1" />
+      <text x="358" y="23" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600" letter-spacing="1">AI ROUTER</text>
+      <text x="358" y="44" fill="#F8FAFC" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16" font-weight="700">Gemini -&gt; Groq</text>
 
-      <rect x="518" y="0" width="154" height="54" rx="8" fill="#0B0F19" stroke="#1E293B" stroke-width="1" />
-      <text x="534" y="22" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600" letter-spacing="1">SETTLEMENT</text>
-      <text x="534" y="42" fill="#F8FAFC" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16" font-weight="700">PayPal REST v2</text>
+      <rect x="520" y="0" width="154" height="58" rx="8" fill="#0B0F19" stroke="#1E293B" stroke-width="1" />
+      <text x="536" y="23" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600" letter-spacing="1">PAYPAL APIS</text>
+      <text x="536" y="44" fill="#F8FAFC" font-family="ui-monospace, SFMono-Regular, monospace" font-size="16" font-weight="700">6 Live APIs</text>
     </g>
   </g>
 
-  <!-- Right Column: Architectural Lifecycle Stack Schematic -->
-  <g transform="translate(770, 44)">
-    <rect x="0" y="0" width="366" height="292" rx="12" fill="#0B0F19" stroke="#1E293B" stroke-width="1.2" />
-    <rect x="0" y="0" width="366" height="36" rx="12" fill="#0F172A" />
-    <line x1="0" y1="36" x2="366" y2="36" stroke="#1E293B" stroke-width="1" />
+  <!-- Right Column: 6-Module Execution Schematic -->
+  <g transform="translate(762, 34)">
+    <rect x="0" y="0" width="382" height="342" rx="12" fill="#0B0F19" stroke="#1E293B" stroke-width="1.2" />
+    <rect x="0" y="0" width="382" height="36" rx="12" fill="#0F172A" />
+    <line x1="0" y1="36" x2="382" y2="36" stroke="#1E293B" stroke-width="1" />
     <circle cx="18" cy="18" r="4" fill="#334155" />
     <circle cx="32" cy="18" r="4" fill="#334155" />
     <circle cx="46" cy="18" r="4" fill="#0070E0" />
-    <text x="64" y="22" fill="#94A3B8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600" letter-spacing="1">5-STAGE EXECUTION KERNEL</text>
+    <text x="64" y="22" fill="#94A3B8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600" letter-spacing="1">6-MODULE AUTONOMOUS COMMERCE SUITE</text>
 
-    <!-- Stage Rows -->
-    <g transform="translate(18, 50)">
-      <rect x="0" y="0" width="330" height="38" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
-      <text x="14" y="23" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">01</text>
-      <text x="42" y="23" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="600">LupaPermit &amp; Cashflow Copilot</text>
-      <text x="266" y="23" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">AUTHORIZE</text>
+    <g transform="translate(18, 48)">
+      <rect x="0" y="0" width="346" height="40" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
+      <text x="14" y="24" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">01</text>
+      <text x="42" y="24" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="600">Smart Budget &amp; Agent Permits</text>
+      <text x="268" y="24" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">VAULT V3</text>
 
-      <rect x="0" y="46" width="330" height="38" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
-      <text x="14" y="69" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">02</text>
-      <text x="42" y="69" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="600">ScamShield HMAC Token Gate</text>
-      <text x="266" y="69" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">SHA-256</text>
+      <rect x="0" y="47" width="346" height="40" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
+      <text x="14" y="71" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">02</text>
+      <text x="42" y="71" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="600">Pre-Checkout Firewall &amp; Tamper Lab</text>
+      <text x="268" y="71" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">HMAC GATE</text>
 
-      <rect x="0" y="92" width="330" height="38" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
-      <text x="14" y="115" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">03</text>
-      <text x="42" y="115" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="600">DealForge Multi-Agent Escrow</text>
-      <text x="266" y="115" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">ORDERS V2</text>
+      <rect x="0" y="94" width="346" height="40" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
+      <text x="14" y="118" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">03</text>
+      <text x="42" y="118" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="600">Autonomous Deal Negotiator</text>
+      <text x="268" y="118" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">ORDERS V2</text>
 
-      <rect x="0" y="138" width="330" height="38" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
-      <text x="14" y="161" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">04</text>
-      <text x="42" y="161" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="600">ClipRefund Multimodal Vision</text>
-      <text x="266" y="161" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">REFUND V2</text>
+      <rect x="0" y="141" width="346" height="40" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
+      <text x="14" y="165" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">04</text>
+      <text x="42" y="165" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="600">Instant Keep-Item Photo Refund</text>
+      <text x="268" y="165" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">REFUND V2</text>
 
-      <rect x="0" y="184" width="330" height="38" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
-      <text x="14" y="207" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">05</text>
-      <text x="42" y="207" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="600">ChurnRescue Retention Ladder</text>
-      <text x="266" y="207" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">ROW LOCK</text>
+      <rect x="0" y="188" width="346" height="40" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
+      <text x="14" y="212" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">05</text>
+      <text x="42" y="212" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="600">Subscription Retention Copilot</text>
+      <text x="268" y="212" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">SUBS V1</text>
+
+      <rect x="0" y="235" width="346" height="42" rx="6" fill="#0F172A" stroke="#0070E0" stroke-width="1.2" />
+      <text x="14" y="260" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">06</text>
+      <text x="42" y="260" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="600">PayStream Milestone Studio</text>
+      <text x="268" y="260" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">INVOICE V2</text>
     </g>
   </g>
 </svg>

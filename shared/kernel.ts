@@ -1349,9 +1349,468 @@ export class AtomicExecutionLedger {
 }
 
 // ============================================================================
+// PILLAR 6 (ORIGINAL INNOVATION): PAYSTREAM — PENNY-EXACT SMART MILESTONE
+// & PROOF-OF-DELIVERY REVENUE SPLIT KERNEL
+// ============================================================================
+
+export interface CollaboratorShareInput {
+  collaboratorName: string;
+  paypalEmail: string;
+  role: string;
+  sharePct: number;
+}
+
+export interface MilestoneProposalInput {
+  title: string;
+  weightPct: number;
+  dueInDays: number;
+  acceptanceCriteria: string[];
+}
+
+export interface ComputedCollaboratorPayout {
+  collaboratorName: string;
+  paypalEmail: string;
+  role: string;
+  normalizedSharePct: number;
+  payoutCents: number;
+}
+
+export interface ComputedSmartMilestone {
+  milestoneIndex: number;
+  milestoneId: string;
+  title: string;
+  normalizedSharePct: number;
+  amountCents: number;
+  dueInDays: number;
+  acceptanceCriteria: string[];
+  collaboratorSplits: ComputedCollaboratorPayout[];
+  status: 'PENDING_INVOICE' | 'INVOICED_ON_PAYPAL' | 'PROOF_VERIFIED' | 'SETTLED';
+  paypalInvoiceId?: string;
+  paypalInvoiceUrl?: string;
+  proofAttestationHash?: string;
+}
+
+export interface SmartMilestonePlan {
+  planId: string;
+  projectTitle: string;
+  clientEmail: string;
+  currency: string;
+  totalBudgetCents: number;
+  milestones: ComputedSmartMilestone[];
+  pennyExactVerified: boolean;
+  planSha256: string;
+  createdAtIso: string;
+}
+
+/**
+ * Largest-Remainder (Hamilton) integer allocation: guarantees sum(allocations) === totalCents
+ * with zero floating-point drift for any positive budget and arbitrary weights.
+ */
+export function allocatePennyExact(totalCents: number, rawWeights: number[]): number[] {
+  const safeTotal = Math.max(0, Math.round(totalCents));
+  if (rawWeights.length === 0) return [];
+  const sanitized = rawWeights.map((w) => (Number.isFinite(w) && w > 0 ? w : 1));
+  const weightSum = sanitized.reduce((a, b) => a + b, 0) || sanitized.length;
+
+  const exactQuotas = sanitized.map((w) => (safeTotal * w) / weightSum);
+  const floors = exactQuotas.map((q) => Math.floor(q));
+  let remainder = safeTotal - floors.reduce((a, b) => a + b, 0);
+
+  const remaindersWithIdx = exactQuotas
+    .map((q, idx) => ({ idx, frac: q - floors[idx] }))
+    .sort((a, b) => (b.frac !== a.frac ? b.frac - a.frac : a.idx - b.idx));
+
+  for (let i = 0; i < remaindersWithIdx.length && remainder > 0; i++) {
+    floors[remaindersWithIdx[i].idx] += 1;
+    remainder -= 1;
+  }
+
+  return floors;
+}
+
+export function computePennyExactMilestonePlan(params: {
+  projectTitle: string;
+  clientEmail: string;
+  totalBudgetCents: number;
+  currency?: string;
+  proposals: MilestoneProposalInput[];
+  collaborators: CollaboratorShareInput[];
+  createdAtIso?: string;
+}): SmartMilestonePlan {
+  const totalBudgetCents = Math.max(100, Math.round(params.totalBudgetCents));
+  const currency = (params.currency || 'USD').toUpperCase();
+  const createdAtIso = params.createdAtIso || new Date().toISOString();
+
+  const proposals: MilestoneProposalInput[] =
+    params.proposals.length > 0
+      ? params.proposals.slice(0, 6)
+      : [
+          {
+            title: 'Milestone 1: Architecture & Interactive Prototype',
+            weightPct: 30,
+            dueInDays: 4,
+            acceptanceCriteria: ['System architecture specification', 'Interactive UI flow approved'],
+          },
+          {
+            title: 'Milestone 2: Core PayPal API & Integration Build',
+            weightPct: 40,
+            dueInDays: 9,
+            acceptanceCriteria: ['REST endpoints live', 'Automated test suite passing'],
+          },
+          {
+            title: 'Milestone 3: Production Verification & Handover',
+            weightPct: 30,
+            dueInDays: 14,
+            acceptanceCriteria: ['Production deployment live', 'Documentation delivered'],
+          },
+        ];
+
+  const collaborators: CollaboratorShareInput[] =
+    params.collaborators.length > 0
+      ? params.collaborators.slice(0, 5)
+      : [
+          {
+            collaboratorName: 'Lead Systems Engineer',
+            paypalEmail: 'lead-dev-sbx@personal.example.com',
+            role: 'Engineering',
+            sharePct: 70,
+          },
+          {
+            collaboratorName: 'Product Designer',
+            paypalEmail: 'design-partner-sbx@personal.example.com',
+            role: 'UI/UX Design',
+            sharePct: 30,
+          },
+        ];
+
+  const milestoneAmounts = allocatePennyExact(
+    totalBudgetCents,
+    proposals.map((p) => p.weightPct)
+  );
+  const weightTotal = proposals.reduce((s, p) => s + Math.max(1, p.weightPct), 0) || 100;
+  const collabTotal = collaborators.reduce((s, c) => s + Math.max(1, c.sharePct), 0) || 100;
+
+  const milestones: ComputedSmartMilestone[] = proposals.map((prop, idx) => {
+    const amountCents = milestoneAmounts[idx];
+    const splitAmounts = allocatePennyExact(
+      amountCents,
+      collaborators.map((c) => c.sharePct)
+    );
+
+    const collaboratorSplits: ComputedCollaboratorPayout[] = collaborators.map((c, cIdx) => ({
+      collaboratorName: c.collaboratorName.trim() || `Collaborator ${cIdx + 1}`,
+      paypalEmail: c.paypalEmail.trim() || `collab${cIdx + 1}@personal.example.com`,
+      role: c.role.trim() || 'Contributor',
+      normalizedSharePct: Math.round((Math.max(1, c.sharePct) / collabTotal) * 1000) / 10,
+      payoutCents: splitAmounts[cIdx],
+    }));
+
+    return {
+      milestoneIndex: idx + 1,
+      milestoneId: `MS-${idx + 1}`,
+      title: prop.title.trim() || `Milestone ${idx + 1}`,
+      normalizedSharePct: Math.round((Math.max(1, prop.weightPct) / weightTotal) * 1000) / 10,
+      amountCents,
+      dueInDays: Math.max(1, Math.min(365, Math.round(prop.dueInDays || (idx + 1) * 5))),
+      acceptanceCriteria:
+        prop.acceptanceCriteria.filter((x) => x.trim().length > 0).slice(0, 5).length > 0
+          ? prop.acceptanceCriteria.filter((x) => x.trim().length > 0).slice(0, 5)
+          : ['Deliverable verified against scope'],
+      collaboratorSplits,
+      status: 'PENDING_INVOICE',
+    };
+  });
+
+  const sumMilestones = milestones.reduce((s, m) => s + m.amountCents, 0);
+  const allSplitsExact = milestones.every(
+    (m) => m.collaboratorSplits.reduce((s, c) => s + c.payoutCents, 0) === m.amountCents
+  );
+  const pennyExactVerified = sumMilestones === totalBudgetCents && allSplitsExact;
+
+  const planSha256 = sha256Hex({
+    projectTitle: params.projectTitle,
+    clientEmail: params.clientEmail,
+    totalBudgetCents,
+    currency,
+    milestones: milestones.map((m) => ({
+      milestoneId: m.milestoneId,
+      title: m.title,
+      amountCents: m.amountCents,
+      collaboratorSplits: m.collaboratorSplits,
+    })),
+  });
+
+  const planId = `PSTRM-${planSha256.slice(0, 10).toUpperCase()}`;
+
+  return {
+    planId,
+    projectTitle: params.projectTitle.trim() || 'Custom Digital Deliverable',
+    clientEmail: params.clientEmail.trim() || 'client-treasury@personal.example.com',
+    currency,
+    totalBudgetCents,
+    milestones,
+    pennyExactVerified,
+    planSha256,
+    createdAtIso,
+  };
+}
+
+export interface ProofVerificationResult {
+  approved: boolean;
+  verdict: DecisionVerdict;
+  deterministicScore: number;
+  finalScore: number;
+  promptInjectionDetected: boolean;
+  criteriaMetCount: number;
+  criteriaTotalCount: number;
+  attestationHash: string;
+  explanation: string;
+}
+
+export function verifyDeliverableProofDeterministically(params: {
+  milestone: ComputedSmartMilestone;
+  evidenceText: string;
+  evidenceUrl?: string;
+  aiQualityScore?: number;
+  aiSuggestedVerdict?: DecisionVerdict;
+  neuralInjectionScore?: number;
+}): ProofVerificationResult {
+  const raw = `${params.evidenceText || ''} ${params.evidenceUrl || ''}`.trim();
+  const injectionRegex = /ignore\s+(all\s+)?(previous|prior)\s+instructions|system\s+prompt|mark\s+as\s+verified|force\s+release/i;
+  const promptInjectionDetected =
+    injectionRegex.test(raw) || (typeof params.neuralInjectionScore === 'number' && params.neuralInjectionScore >= 0.85);
+
+  if (promptInjectionDetected) {
+    return {
+      approved: false,
+      verdict: 'BLOCK',
+      deterministicScore: 0,
+      finalScore: 0,
+      promptInjectionDetected: true,
+      criteriaMetCount: 0,
+      criteriaTotalCount: params.milestone.acceptanceCriteria.length,
+      attestationHash: sha256Hex({ milestoneId: params.milestone.milestoneId, blocked: 'PROMPT_INJECTION', raw }),
+      explanation:
+        'Blocked: Deliverable proof contains an adversarial prompt-injection attempt. Milestone payout locked.',
+    };
+  }
+
+  if (raw.length < 20) {
+    return {
+      approved: false,
+      verdict: 'HOLD',
+      deterministicScore: 25,
+      finalScore: 25,
+      promptInjectionDetected: false,
+      criteriaMetCount: 0,
+      criteriaTotalCount: params.milestone.acceptanceCriteria.length,
+      attestationHash: sha256Hex({ milestoneId: params.milestone.milestoneId, insufficient: true, raw }),
+      explanation:
+        'Hold: Deliverable evidence is too brief (<20 chars). Provide concrete commit/deployment links or test metrics.',
+    };
+  }
+
+  const hasValidUrl = /^https?:\/\/[^\s]+\.[^\s]+/i.test(params.evidenceUrl || '') || /https?:\/\/[^\s]+/i.test(raw);
+  const lower = raw.toLowerCase();
+  let matchedCriteria = 0;
+  for (const crit of params.milestone.acceptanceCriteria) {
+    const keywords = crit
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length >= 4);
+    if (keywords.length === 0 || keywords.some((kw) => lower.includes(kw))) {
+      matchedCriteria += 1;
+    }
+  }
+
+  let detScore = 45 + Math.round((matchedCriteria / Math.max(1, params.milestone.acceptanceCriteria.length)) * 35);
+  if (hasValidUrl) detScore += 15;
+  if (raw.length >= 80) detScore += 5;
+  detScore = Math.min(100, detScore);
+
+  const detVerdict: DecisionVerdict = detScore >= 70 ? 'ALLOW' : 'HOLD';
+  const aiVerdict: DecisionVerdict = params.aiSuggestedVerdict || 'ALLOW';
+  // Stricter-only monotonicity: AI can downgrade ALLOW -> HOLD/BLOCK, never upgrade HOLD -> ALLOW
+  const finalVerdict = stricterVerdict(detVerdict, aiVerdict);
+  const finalScore =
+    typeof params.aiQualityScore === 'number'
+      ? Math.min(detScore, Math.max(0, Math.min(100, Math.round(params.aiQualityScore))))
+      : detScore;
+
+  const approved = finalVerdict === 'ALLOW';
+  const attestationHash = sha256Hex({
+    milestoneId: params.milestone.milestoneId,
+    amountCents: params.milestone.amountCents,
+    evidenceDigest: sha256Hex(raw),
+    finalVerdict,
+    finalScore,
+  });
+
+  return {
+    approved,
+    verdict: finalVerdict,
+    deterministicScore: detScore,
+    finalScore,
+    promptInjectionDetected: false,
+    criteriaMetCount: matchedCriteria,
+    criteriaTotalCount: params.milestone.acceptanceCriteria.length,
+    attestationHash,
+    explanation: approved
+      ? `Verified (${finalScore}/100): ${matchedCriteria}/${params.milestone.acceptanceCriteria.length} acceptance criteria evidenced${hasValidUrl ? ' with artifact URL' : ''}. Ready for milestone settlement and collaborator split.`
+      : `Held for Human Client Review (${finalScore}/100): Evidence partially covers ${matchedCriteria}/${params.milestone.acceptanceCriteria.length} criteria; automatic release paused.`,
+  };
+}
+
+// ============================================================================
+// NUMBER-GROUNDING GUARD & NATURAL-LANGUAGE POLICY COMPILER
+// Ensures AI policy drafts can NEVER invent numbers absent from user's prompt.
+// ============================================================================
+
+export function extractNumbersFromText(text: string): number[] {
+  const matches = text.match(/\d+(?:\.\d{1,2})?/g) || [];
+  return matches.map((m) => Number(m)).filter((n) => Number.isFinite(n));
+}
+
+export function verifyGroundedNumbers(userSentence: string, proposedDollarValues: number[]): {
+  grounded: boolean;
+  ungroundedValues: number[];
+} {
+  const inputNums = extractNumbersFromText(userSentence);
+  const allowedSet = new Set<string>();
+  for (const n of inputNums) {
+    allowedSet.add(n.toFixed(0));
+    allowedSet.add(n.toFixed(2));
+  }
+  const ungroundedValues: number[] = [];
+  for (const val of proposedDollarValues) {
+    if (val <= 0) continue;
+    if (!allowedSet.has(val.toFixed(0)) && !allowedSet.has(val.toFixed(2))) {
+      ungroundedValues.push(val);
+    }
+  }
+  return {
+    grounded: ungroundedValues.length === 0,
+    ungroundedValues,
+  };
+}
+
+// ============================================================================
+// MULTI-CURRENCY & PAYPAL INVOICE METADATA EXTRACTOR
+// ============================================================================
+
+export function extractPaymentRequestMetadata(
+  rawText: string,
+  ratesPerUsd: Record<string, number> = { USD: 1, EUR: 0.92, GBP: 0.79, INR: 85.0 }
+): {
+  detectedAmountOriginal: number | null;
+  detectedCurrencyOriginal: string | null;
+  convertedUsdCents: number | null;
+  conversionNote: string | null;
+  detectedPayee: string | null;
+  detectedUrl: string | null;
+  detectedPayPalInvoiceId: string | null;
+} {
+  const patterns: Array<[RegExp, string]> = [
+    [/(?:\u20b9|rs\.?|inr)\s*([\d,]+(?:\.\d{1,2})?)/i, 'INR'],
+    [/([\d,]+(?:\.\d{1,2})?)\s*(?:rupees|inr)\b/i, 'INR'],
+    [/(?:\u20ac|eur)\s*([\d,]+(?:\.\d{1,2})?)/i, 'EUR'],
+    [/([\d,]+(?:\.\d{1,2})?)\s*(?:eur|euros?)\b/i, 'EUR'],
+    [/(?:\u00a3|gbp)\s*([\d,]+(?:\.\d{1,2})?)/i, 'GBP'],
+    [/([\d,]+(?:\.\d{1,2})?)\s*(?:gbp|pounds?)\b/i, 'GBP'],
+    [/(?:\$|usd)\s*([\d,]+(?:\.\d{1,2})?)/i, 'USD'],
+    [/([\d,]+(?:\.\d{1,2})?)\s*usd\b/i, 'USD'],
+  ];
+
+  let detectedAmountOriginal: number | null = null;
+  let detectedCurrencyOriginal: string | null = null;
+  for (const [re, cur] of patterns) {
+    const m = rawText.match(re);
+    if (m) {
+      const val = Number(m[1].replace(/,/g, ''));
+      if (Number.isFinite(val) && val > 0) {
+        detectedAmountOriginal = val;
+        detectedCurrencyOriginal = cur;
+        break;
+      }
+    }
+  }
+
+  let convertedUsdCents: number | null = null;
+  let conversionNote: string | null = null;
+  if (detectedAmountOriginal !== null && detectedCurrencyOriginal) {
+    const rate = ratesPerUsd[detectedCurrencyOriginal] || 1;
+    const usdVal = detectedCurrencyOriginal === 'USD' ? detectedAmountOriginal : detectedAmountOriginal / rate;
+    convertedUsdCents = Math.max(1, Math.round(usdVal * 100));
+    if (detectedCurrencyOriginal !== 'USD') {
+      conversionNote = `Converted ${detectedAmountOriginal.toFixed(2)} ${detectedCurrencyOriginal} -> $${(convertedUsdCents / 100).toFixed(2)} USD (rate: ${rate.toFixed(2)} ${detectedCurrencyOriginal}/USD).`;
+    }
+  }
+
+  const emailMatch = rawText.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
+  const upiMatch = rawText.match(/[a-z0-9._-]{2,}@[a-z]{2,}/i);
+  const urlMatch = rawText.match(/https?:\/\/[^\s"'<>]+/i);
+  const invMatch = rawText.match(/\bINV2-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}\b/i);
+
+  return {
+    detectedAmountOriginal,
+    detectedCurrencyOriginal,
+    convertedUsdCents,
+    conversionNote,
+    detectedPayee: emailMatch?.[0] || upiMatch?.[0] || null,
+    detectedUrl: urlMatch?.[0] || null,
+    detectedPayPalInvoiceId: invMatch ? invMatch[0].toUpperCase() : null,
+  };
+}
+
+// ============================================================================
+// STATELESS SERVERLESS HMAC-SHA256 SESSION SIGNER (VERCEL-PROOF)
+// ============================================================================
+
+export interface StatelessSessionClaims {
+  id: string;
+  email: string;
+  fullName: string;
+  organization: string;
+  role: 'PRINCIPAL_ARCHITECT' | 'TREASURY_OPERATOR' | 'SECURITY_AUDITOR';
+  authProvider: 'EMAIL_PASSWORD' | 'PAYPAL_OAUTH' | 'GOOGLE_OAUTH' | 'GITHUB_OAUTH';
+  paypalMerchantId: string;
+  sessionTokenHash: string;
+  authenticatedAtIso: string;
+  expMs: number;
+}
+
+export function signStatelessSession(claims: Omit<StatelessSessionClaims, 'expMs'>, secret: string, ttlMs = 7 * 86400_000): string {
+  const fullClaims: StatelessSessionClaims = {
+    ...claims,
+    expMs: Date.now() + ttlMs,
+  };
+  const bodyB64 = Buffer.from(JSON.stringify(fullClaims), 'utf8').toString('base64url');
+  const sig = crypto.createHmac('sha256', secret).update(`aegis_sess_.${bodyB64}`, 'utf8').digest('base64url');
+  return `aegis_sess_.${bodyB64}.${sig}`;
+}
+
+export function verifyStatelessSession(token: string, secret: string, nowMs = Date.now()): StatelessSessionClaims | null {
+  if (!token || typeof token !== 'string' || !token.startsWith('aegis_sess_.')) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [, bodyB64, providedSig] = parts;
+  const expectedSig = crypto.createHmac('sha256', secret).update(`aegis_sess_.${bodyB64}`, 'utf8').digest('base64url');
+  const a = Buffer.from(providedSig, 'utf8');
+  const b = Buffer.from(expectedSig, 'utf8');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(bodyB64, 'base64url').toString('utf8')) as StatelessSessionClaims;
+    if (!parsed.expMs || parsed.expMs < nowMs || !parsed.email) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+// ============================================================================
 // 1,000-CASE PROPERTY-BASED MONOTONICITY & SAFETY FUZZER
 // Proves on 1,000 random adversarial cases that AI can NEVER loosen a policy,
-// hallucinate a discount > 50%, or bypass ScamShield / Mandate caps.
+// hallucinate a discount > 50%, drift by 1 cent on splits, or bypass ScamShield.
 // ============================================================================
 
 export interface FuzzSuiteReport {
@@ -1364,6 +1823,7 @@ export interface FuzzSuiteReport {
     circuitBreakerZeroLeakage: boolean;
     mandateCeilingNeverBreached: boolean;
     scamTokenSingleUseAndAmountLock: boolean;
+    milestonePennyExactConservation: boolean;
   };
   durationMs: number;
   sampleProofs: Array<{
@@ -1392,6 +1852,7 @@ export function runDeterministicSafetyFuzzer(iterations = 1000, seed = 20261023)
   let circuitBreakerZeroLeakage = true;
   let mandateCeilingNeverBreached = true;
   let scamTokenSingleUseAndAmountLock = true;
+  let milestonePennyExactConservation = true;
 
   const sampleProofs: FuzzSuiteReport['sampleProofs'] = [];
   const verdicts: DecisionVerdict[] = ['ALLOW', 'HOLD', 'BLOCK'];
@@ -1517,19 +1978,38 @@ export function runDeterministicSafetyFuzzer(iterations = 1000, seed = 20261023)
       continue;
     }
 
+    // 4. Fuzz PayStream Penny-Exact Conservation across prime/awkward cent totals
+    const awkwardBudget = Math.floor(nextRand() * 999999) + 101;
+    const w1 = nextRand() * 100 + 1;
+    const w2 = nextRand() * 100 + 1;
+    const w3 = nextRand() * 100 + 1;
+    const c1 = nextRand() * 100 + 1;
+    const c2 = nextRand() * 100 + 1;
+    const c3 = nextRand() * 100 + 1;
+    const mAlloc = allocatePennyExact(awkwardBudget, [w1, w2, w3]);
+    const cAlloc = allocatePennyExact(mAlloc[0], [c1, c2, c3]);
+    if (
+      mAlloc[0] + mAlloc[1] + mAlloc[2] !== awkwardBudget ||
+      cAlloc[0] + cAlloc[1] + cAlloc[2] !== mAlloc[0]
+    ) {
+      milestonePennyExactConservation = false;
+      failedCases++;
+      continue;
+    }
+
     passedCases++;
 
     if (i <= 5) {
       sampleProofs.push({
         caseId: i,
-        invariant: 'Monotonicity + Concession Floor + Mandate Ceiling',
-        inputSummary: `Amount=$${(amountCents / 100).toFixed(2)} (Cap=$${(maxSingle / 100).toFixed(2)}), AI=${aiSuggestedVerdict}, ChurnUtil=${utilization}%`,
-        outcomeSummary: `Policy=${evalRes.deterministicPolicyVerdict} -> Final=${evalRes.finalVerdict} | ChurnDiscount=${churnRes.approvedDiscountPct}% | ClampedPrice=$${(clampedBuyer.validatedTerms.priceCents / 100).toFixed(2)}`,
+        invariant: 'Monotonicity + Concession Floor + Mandate Ceiling + Penny Conservation',
+        inputSummary: `Amount=$${(amountCents / 100).toFixed(2)} (Cap=$${(maxSingle / 100).toFixed(2)}), AI=${aiSuggestedVerdict}, SplitBudget=$${(awkwardBudget / 100).toFixed(2)}`,
+        outcomeSummary: `Policy=${evalRes.deterministicPolicyVerdict} -> Final=${evalRes.finalVerdict} | ChurnDiscount=${churnRes.approvedDiscountPct}% | SplitSum=$${((mAlloc[0] + mAlloc[1] + mAlloc[2]) / 100).toFixed(2)}`,
       });
     }
   }
 
-  // 4. Verify ScamShield token tamper & replay resistance
+  // 5. Verify ScamShield token tamper & replay resistance
   const vault = new ScamShieldTokenVault('aegispay-fuzz-secret-key-2026');
   const token = vault.issueToken({
     input: {
@@ -1581,8 +2061,10 @@ export function runDeterministicSafetyFuzzer(iterations = 1000, seed = 20261023)
       circuitBreakerZeroLeakage,
       mandateCeilingNeverBreached,
       scamTokenSingleUseAndAmountLock,
+      milestonePennyExactConservation,
     },
     durationMs: Math.max(1, Date.now() - start),
     sampleProofs,
   };
 }
+

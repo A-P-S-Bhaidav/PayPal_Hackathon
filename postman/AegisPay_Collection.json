@@ -1,19 +1,19 @@
 {
   "info": {
-    "name": "AegisPay — PayPal AI Hackathon Official API Collection",
+    "name": "AegisPay OS - PayPal AI Hackathon Official API Collection",
     "_postman_id": "f5c47e0c-3757-42a8-92c1-9f484d182926",
-    "description": "Complete Postman v2.1 API Collection for testing AegisPay's 5 Deterministic + AI Pillars on PayPal Sandbox: LupaPermit, ScamShield, DealForge, ClipRefund, ChurnRescue, and the 1,000-Case Safety Fuzzer.",
+    "description": "Complete Postman v2.1 API Collection for testing AegisPay OS across all 6 PayPal + AI modules: Smart Budget & Permits, Checkout Firewall, Deal Negotiator, Instant Photo Refund, Retention Copilot, and PayStream Smart-Milestone Studio.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8787"
+      "value": "https://aegispay-orpin.vercel.app"
     }
   ],
   "item": [
     {
-      "name": "1. System & PayPal Sandbox Telemetry",
+      "name": "1. System & Live PayPal Sandbox Status",
       "request": {
         "method": "GET",
         "header": [],
@@ -21,19 +21,31 @@
       }
     },
     {
-      "name": "2. LupaPermit — Agent Payment Proposal (Claude Code MCP)",
+      "name": "2. Smart Budget & Permits - Agent Payment Proposal",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"permitId\": \"PRM-CLAUDE-CODE-01\",\n  \"amountCents\": 4500,\n  \"merchantId\": \"merch_nordic_hardware\",\n  \"merchantName\": \"NordicLight Studio Hardware\",\n  \"category\": \"HARDWARE\",\n  \"itemDescription\": \"Architect Minimalist LED Desk Lamp\",\n  \"aiConfidenceScore\": 0.68,\n  \"aiSuggestedVerdict\": \"ALLOW\"\n}"
+          "raw": "{\n  \"permitId\": \"PRM-CLAUDE-CODE-01\",\n  \"amountCents\": 4500,\n  \"merchantId\": \"merch_nordic_hardware\",\n  \"merchantName\": \"NordicLight Studio Hardware\",\n  \"category\": \"HARDWARE\",\n  \"itemDescription\": \"Minimalist LED Desk Lamp\",\n  \"aiConfidenceScore\": 0.68,\n  \"aiSuggestedVerdict\": \"ALLOW\"\n}"
         },
         "url": "{{baseUrl}}/api/lupa/agent-pay"
       }
     },
     {
-      "name": "3. ScamShield — Pre-Payment Threat Review & Single-Use Token",
+      "name": "3. Smart Budget & Permits - Mint Live PayPal Vault v3 Setup Token",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"agentName\": \"Claude Code MCP Agent\",\n  \"maxSingleCents\": 8000\n}"
+        },
+        "url": "{{baseUrl}}/api/lupa/mint-vault-permit"
+      }
+    },
+    {
+      "name": "4. Checkout Firewall - Pre-Payment Threat Scan & Single-Use Token",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -45,19 +57,19 @@
       }
     },
     {
-      "name": "4. DealForge — Multi-Agent Negotiation & SHA-256 Contract",
+      "name": "5. Deal Negotiator - Bilateral Mandates & Live PayPal Deposit Invoice",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"simulatePromptInjection\": true\n}"
+          "raw": "{\n  \"simulatePromptInjection\": true,\n  \"issueLiveInvoice\": true\n}"
         },
         "url": "{{baseUrl}}/api/dealforge/negotiate"
       }
     },
     {
-      "name": "5. ClipRefund — Multimodal Vision Damage Grader & Partial Refund",
+      "name": "6. Instant Photo Refund - Vision Defect Telemetry & Partial Refund",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -69,7 +81,7 @@
       }
     },
     {
-      "name": "6. ChurnRescue — In-App Retention & Concession Ladder",
+      "name": "7. Retention Copilot - Concession Ladder & Live Subscription",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -81,7 +93,31 @@
       }
     },
     {
-      "name": "7. Security Fuzzer — 1,000 Random Adversarial Policy Proof",
+      "name": "8. PayStream Studio - Penny-Exact Smart Milestones",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"projectTitle\": \"AI Commerce Checkout Portal\",\n  \"projectBrief\": \"Design UI, integrate PayPal Orders v2 & Invoicing v2, and deploy to production with automated tests.\",\n  \"clientEmail\": \"client-treasury@personal.example.com\",\n  \"totalBudgetCents\": 250000\n}"
+        },
+        "url": "{{baseUrl}}/api/paystream/create-plan"
+      }
+    },
+    {
+      "name": "9. PayStream Studio - Issue Live PayPal Sandbox Invoice (INV2-...)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"milestoneId\": \"MS-1\"\n}"
+        },
+        "url": "{{baseUrl}}/api/paystream/issue-invoice"
+      }
+    },
+    {
+      "name": "10. Security Verifier - 1,000-Case Adversarial Property Fuzzer",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
