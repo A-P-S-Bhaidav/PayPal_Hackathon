@@ -31,9 +31,16 @@ import {
   verifyGroundedNumbers,
   verifyStatelessSession,
 } from '../shared/kernel';
+import {
+  diagnosePaymentFailureXGBoost,
+  evaluatePayReviveCompliance,
+  PAYREVIVE_SAMPLE_EVENTS,
+  PayReviveContextualBandit,
+  runPayRevive500BatchBenchmark,
+} from '../shared/payrevive';
 import { PayPalSandboxGateway } from '../server/paypal';
 
-describe('AegisPay Deterministic Financial & Cryptographic Kernel (350+ Test Suite)', () => {
+describe('AegisPay Deterministic Financial & Cryptographic Kernel (360+ Test Suite)', () => {
   // ==========================================================================
   // SECTION 1: CRYPTOGRAPHIC PRIMITIVES & CANONICAL SERIALIZATION
   // ==========================================================================
@@ -931,5 +938,82 @@ describe('AegisPay Deterministic Financial & Cryptographic Kernel (350+ Test Sui
         expect(batch.invariantsVerified.milestonePennyExactConservation).toBe(true);
       }
     );
+  });
+
+  // ==========================================================================
+  // SECTION 11: PAYREVIVE XGBOOST + TREESHAP + CONTEXTUAL BANDIT + COMPLIANCE
+  // ==========================================================================
+  describe('11. PayRevive XGBoost + Exact TreeSHAP + Contextual Bandit + Compliance Gate', () => {
+    it('verifies exact path-dependent TreeSHAP additivity across all 5 failed-payment presets', () => {
+      for (const preset of PAYREVIVE_SAMPLE_EVENTS) {
+        const diag = diagnosePaymentFailureXGBoost(preset.event);
+        expect(diag.additivityVerified).toBe(true);
+        expect(diag.additivityDelta).toBeLessThan(1e-6);
+        const sumShap = diag.shapContributions.reduce((acc, c) => acc + c.shapLogOdds, 0);
+        expect(Math.abs(diag.baseLogOdds + sumShap - diag.rawMarginLogOdds)).toBeLessThan(0.02);
+      }
+    });
+
+    it('selects cost-effective positive Net EV recovery actions and abstains when not worth retry cost', () => {
+      const bandit = new PayReviveContextualBandit();
+
+      const payday = bandit.evaluateAndDecide(PAYREVIVE_SAMPLE_EVENTS[0].event);
+      expect(payday.verdict).toBe('EXECUTE_RECOVERY');
+      expect(payday.selectedArmDetails.expectedNetGainCents).toBeGreaterThan(0);
+
+      const walletSwitch = bandit.evaluateAndDecide(PAYREVIVE_SAMPLE_EVENTS[1].event);
+      expect(walletSwitch.verdict).toBe('EXECUTE_RECOVERY');
+      expect(walletSwitch.selectedAction).toBe('PAYPAL_BACKUP_FUNDING_SWITCH');
+
+      const timeoutRetry = bandit.evaluateAndDecide(PAYREVIVE_SAMPLE_EVENTS[2].event);
+      expect(timeoutRetry.verdict).toBe('EXECUTE_RECOVERY');
+      expect(timeoutRetry.selectedAction).toBe('IMMEDIATE_JITTER_RETRY');
+
+      const microPayment = bandit.evaluateAndDecide(PAYREVIVE_SAMPLE_EVENTS[4].event);
+      expect(microPayment.verdict).toBe('ABSTAIN_NOT_WORTH_COST');
+      expect(microPayment.selectedAction).toBe('ABANDON_NO_ACTION');
+    });
+
+    it('enforces hard deterministic compliance gates (fraud/revoked hard declines, retry caps, disputes, quiet hours, opt-outs)', () => {
+      const bandit = new PayReviveContextualBandit();
+      const hardDecline = bandit.evaluateAndDecide(PAYREVIVE_SAMPLE_EVENTS[3].event);
+      expect(hardDecline.verdict).toBe('BLOCKED_BY_COMPLIANCE');
+      expect(hardDecline.selectedAction).toBe('ABANDON_NO_ACTION');
+
+      const exhaustedCheck = evaluatePayReviveCompliance(
+        { ...PAYREVIVE_SAMPLE_EVENTS[0].event, priorRetryCount30d: 3 },
+        'IMMEDIATE_JITTER_RETRY'
+      );
+      expect(exhaustedCheck.allowed).toBe(false);
+
+      const disputeCheck = evaluatePayReviveCompliance(
+        { ...PAYREVIVE_SAMPLE_EVENTS[0].event, hasOpenPayPalDispute: true },
+        'PAYPAL_BACKUP_FUNDING_SWITCH'
+      );
+      expect(disputeCheck.allowed).toBe(false);
+
+      const quietHourCheck = evaluatePayReviveCompliance(
+        { ...PAYREVIVE_SAMPLE_EVENTS[0].event, localCustomerHour: 23 },
+        'SPLIT_TWO_PART_INVOICE'
+      );
+      expect(quietHourCheck.allowed).toBe(false);
+
+      const optOutCheck = evaluatePayReviveCompliance(
+        { ...PAYREVIVE_SAMPLE_EVENTS[0].event, customerOptedOutComms: true },
+        'FEE_WAIVER_GRACE_LINK'
+      );
+      expect(optOutCheck.allowed).toBe(false);
+    });
+
+    it('recovers ~50%+ more net revenue than hand-written static rules across 500 batch runs with 0 compliance violations', () => {
+      const bench = runPayRevive500BatchBenchmark(500, 20, 20261028);
+      expect(bench.batchesSimulated).toBe(500);
+      expect(bench.totalFailedPaymentsEvaluated).toBe(10000);
+      expect(bench.shapAdditivityChecksPassed).toBe(10000);
+      expect(bench.payRevive.complianceViolations).toBe(0);
+      expect(bench.netRecoveryLiftPercent).toBeGreaterThanOrEqual(45);
+      expect(bench.additionalNetRecoveredCents).toBeGreaterThan(10000000);
+      expect(bench.benchmarkProofHash).toHaveLength(64);
+    });
   });
 });

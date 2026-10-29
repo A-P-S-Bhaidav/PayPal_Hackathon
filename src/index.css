@@ -6,15 +6,14 @@
   color-scheme: dark;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
-  scrollbar-color: #242e42 #07090e;
-  --bg-canvas: #07090e;
-  --bg-sidebar: #0a0d14;
-  --bg-surface: #0f141f;
-  --bg-elevated: #141b29;
-  --border-subtle: #1c2436;
-  --border-hover: #2d3a54;
-  --accent-paypal: #0070e0;
-  --accent-paypal-hover: #005ea6;
+  scrollbar-color: #0047ff #050507;
+  --bg-void: #050507;
+  --bg-surface: #0a0c12;
+  --bg-elevated: #101420;
+  --border-grid: #192030;
+  --cobalt: #0047ff;
+  --cobalt-bright: #2962ff;
+  --acid-lime: #ccff00;
 }
 
 html,
@@ -22,31 +21,23 @@ body,
 #root {
   min-height: 100dvh;
   margin: 0;
-  background-color: var(--bg-canvas);
+  background-color: var(--bg-void);
   color: #f8fafc;
-  font-family:
-    'Inter',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
 }
 
+.font-display {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  letter-spacing: -0.025em;
+}
+
 code,
 pre,
 .font-mono {
-  font-family:
-    'JetBrains Mono',
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    monospace;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   font-variant-numeric: tabular-nums;
 }
 
@@ -54,206 +45,377 @@ pre,
   font-variant-numeric: tabular-nums;
 }
 
-/* Subtle architectural grid banner backdrop */
-.bg-institutional-grid {
-  background-color: #07090e;
+/* ==========================================================================
+   ARCHITECTURAL GRID & SPATIAL BACKDROPS (MIDNIGHT + COBALT + ACID LIME)
+   ========================================================================== */
+
+.bg-midnight-grid {
+  background-color: #050507;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -15%, rgba(0, 112, 224, 0.16), transparent),
-    linear-gradient(to right, rgba(28, 36, 54, 0.42) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(28, 36, 54, 0.42) 1px, transparent 1px);
+    radial-gradient(circle 680px at 78% 14%, rgba(0, 71, 255, 0.16), transparent 70%),
+    radial-gradient(circle 460px at 16% 82%, rgba(204, 255, 0, 0.05), transparent 70%),
+    linear-gradient(to right, rgba(25, 32, 48, 0.55) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(25, 32, 48, 0.55) 1px, transparent 1px);
   background-size:
     100% 100%,
-    44px 44px,
-    44px 44px;
+    100% 100%,
+    48px 48px,
+    48px 48px;
 }
 
-.bg-banner-glow {
-  background: linear-gradient(135deg, rgba(15, 20, 31, 0.96) 0%, rgba(12, 24, 46, 0.92) 100%);
-  border: 1px solid rgba(0, 112, 224, 0.28);
+.bg-dashboard-spatial {
+  background-color: #050507;
+  background-image:
+    radial-gradient(ellipse 75% 45% at 50% -10%, rgba(0, 71, 255, 0.2), transparent 68%),
+    radial-gradient(circle 500px at 92% 88%, rgba(204, 255, 0, 0.045), transparent 65%),
+    linear-gradient(to right, rgba(25, 32, 48, 0.36) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(25, 32, 48, 0.36) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    100% 100%,
+    56px 56px,
+    56px 56px;
 }
 
-/* Institutional card surfaces */
-.surface-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-}
+/* ==========================================================================
+   HOME PAGE: BRUTALISM + MINIMALISM + SPATIAL UI
+   ========================================================================== */
 
-.surface-card-elevated {
-  background-color: var(--bg-elevated);
-  border: 1px solid #243047;
-  border-radius: 12px;
-}
-
-.surface-card-interactive {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+.brutalist-card {
+  position: relative;
+  background-color: #090b10;
+  border: 1px solid #1b2234;
+  border-radius: 2px;
   transition:
-    translate 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.18s ease,
-    background-color 0.18s ease;
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease,
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.surface-card-interactive:hover {
-  border-color: var(--border-hover);
-  background-color: #121826;
-  translate: 0 -2px;
-  @media (prefers-reduced-motion: reduce) {
-    translate: none;
-  }
+.brutalist-card:hover {
+  border-color: #0047ff;
+  transform: translate3d(-2px, -2px, 0);
+  box-shadow: 4px 4px 0px #0047ff;
 }
 
-/* Modern form input styling with user-invalid support */
-.input-institutional {
+.brutalist-card-lime:hover {
+  border-color: #ccff00;
+  transform: translate3d(-2px, -2px, 0);
+  box-shadow: 4px 4px 0px #ccff00;
+}
+
+/* Corner architectural tick marks */
+.corner-ticks {
+  position: relative;
+}
+.corner-ticks::before,
+.corner-ticks::after {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  pointer-events: none;
+  transition: border-color 0.2s ease;
+}
+.corner-ticks::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid #ccff00;
+  border-left: 2px solid #ccff00;
+}
+.corner-ticks::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid #0047ff;
+  border-right: 2px solid #0047ff;
+}
+
+/* ==========================================================================
+   DASHBOARD: BRUTALISM + GLASSMORPHISM + MINIMALISM + SPATIAL UI
+   ========================================================================== */
+
+.glass-brutal-panel {
+  position: relative;
+  background: linear-gradient(155deg, rgba(14, 18, 28, 0.78) 0%, rgba(7, 9, 14, 0.86) 100%);
+  backdrop-filter: blur(20px) saturate(165%);
+  -webkit-backdrop-filter: blur(20px) saturate(165%);
+  border: 1px solid rgba(35, 46, 72, 0.9);
+  border-radius: 3px;
+  box-shadow:
+    0 18px 40px -18px rgba(0, 0, 0, 0.78),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    border-color 0.22s ease,
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s ease;
+}
+
+.glass-brutal-panel:hover {
+  border-color: rgba(0, 71, 255, 0.75);
+}
+
+.glass-command-bar {
+  background: rgba(6, 8, 13, 0.8);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border-bottom: 1px solid rgba(0, 71, 255, 0.42);
+}
+
+.spatial-stage {
+  perspective: 1200px;
+}
+
+.spatial-deck {
+  transform-style: preserve-3d;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.spatial-layer-1 {
+  transform: translateZ(14px);
+}
+.spatial-layer-2 {
+  transform: translateZ(30px);
+}
+.spatial-layer-3 {
+  transform: translateZ(46px);
+}
+
+/* ==========================================================================
+   BUTTONS & INPUT CONTROLS (ZERO NEUMORPHISM)
+   ========================================================================== */
+
+.btn-acid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #ccff00;
+  color: #050507;
+  border: 1.5px solid #ccff00;
+  border-radius: 2px;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 3px 3px 0px #0047ff;
+  transition:
+    transform 0.14s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.14s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.14s ease,
+    opacity 0.14s ease;
+}
+
+.btn-acid:hover:not(:disabled) {
+  background-color: #d8ff33;
+  transform: translate3d(-1.5px, -1.5px, 0);
+  box-shadow: 5px 5px 0px #0047ff;
+}
+
+.btn-acid:active:not(:disabled) {
+  transform: translate3d(1px, 1px, 0);
+  box-shadow: 1px 1px 0px #0047ff;
+}
+
+.btn-acid:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-cobalt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #0047ff;
+  color: #f8fafc;
+  border: 1.5px solid #2962ff;
+  border-radius: 2px;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 600;
+  box-shadow: 3px 3px 0px #ccff00;
+  transition:
+    transform 0.14s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.14s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.14s ease,
+    opacity 0.14s ease;
+}
+
+.btn-cobalt:hover:not(:disabled) {
+  background-color: #1f5eff;
+  transform: translate3d(-1.5px, -1.5px, 0);
+  box-shadow: 5px 5px 0px #ccff00;
+}
+
+.btn-cobalt:active:not(:disabled) {
+  transform: translate3d(1px, 1px, 0);
+  box-shadow: 1px 1px 0px #ccff00;
+}
+
+.btn-cobalt:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-ghost-brutal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  background-color: rgba(12, 16, 25, 0.85);
+  color: #e2e8f0;
+  border: 1px solid #242e46;
+  border-radius: 2px;
+  font-weight: 600;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.btn-ghost-brutal:hover:not(:disabled) {
+  border-color: #0047ff;
+  color: #ccff00;
+  background-color: rgba(0, 71, 255, 0.12);
+}
+
+.btn-ghost-brutal:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.input-brutal {
   width: 100%;
   min-width: 0;
-  background-color: #0a0e17;
-  border: 1px solid #222c40;
-  border-radius: 8px;
+  background-color: rgba(6, 8, 14, 0.92);
+  border: 1px solid #222b42;
+  border-radius: 2px;
   padding: 0.55rem 0.75rem;
-  font-size: 0.875rem;
+  font-size: 0.84rem;
   color: #f8fafc;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
 
-.input-institutional:focus {
+.input-brutal:focus {
   outline: none;
-  border-color: #0070e0;
-  box-shadow: 0 0 0 3px rgba(0, 112, 224, 0.18);
-}
-
-.input-institutional:user-invalid {
-  border-color: #ef4444;
-}
-
-input[type='file']::file-selector-button {
-  margin-right: 0.75rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid #2a364f;
-  background-color: #141b29;
-  color: #e2e8f0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-input[type='file']::file-selector-button:hover {
-  background-color: #1d273b;
+  border-color: #0047ff;
+  box-shadow: 2px 2px 0px #ccff00;
 }
 
 input[type='range'] {
-  accent-color: #0070e0;
+  accent-color: #ccff00;
 }
 
-/* Primary PayPal Action Button */
-.btn-paypal-primary {
-  background-color: #0070e0;
-  color: #ffffff;
-  border: 1px solid #0070e0;
-  border-radius: 8px;
-  font-weight: 600;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    opacity 0.15s ease,
-    translate 0.12s ease;
-}
+/* ==========================================================================
+   CREATIVE KINETIC MICRO-ANIMATIONS (COMPOSITOR-SAFE 60FPS)
+   ========================================================================== */
 
-.btn-paypal-primary:hover:not(:disabled) {
-  background-color: #005ea6;
-  border-color: #38bdf8;
-}
-
-.btn-paypal-primary:active:not(:disabled) {
-  translate: 0 1px;
-}
-
-.btn-paypal-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Secondary Slate Button */
-.btn-institutional-secondary {
-  background-color: #141b29;
-  color: #e2e8f0;
-  border: 1px solid #243047;
-  border-radius: 8px;
-  font-weight: 500;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.btn-institutional-secondary:hover:not(:disabled) {
-  background-color: #1b2436;
-  border-color: #38496b;
-  color: #ffffff;
-}
-
-.btn-institutional-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Modal & Drawer Scroll Isolation */
-.scroll-contain {
-  overscroll-behavior: contain;
-}
-
-/* Compositor-only animations */
-@keyframes aegisEnter {
-  from {
+@keyframes scanSweep {
+  0% {
+    transform: translateY(-100%);
     opacity: 0;
-    translate: 0 6px;
   }
-  to {
-    opacity: 1;
-    translate: 0 0;
+  20% {
+    opacity: 0.85;
+  }
+  80% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(340%);
+    opacity: 0;
   }
 }
 
-@keyframes statusPulse {
+@keyframes pulseBeacon {
   0%,
   100% {
-    scale: 1;
+    transform: scale(1);
     opacity: 1;
   }
   50% {
-    scale: 1.25;
-    opacity: 0.65;
+    transform: scale(1.35);
+    opacity: 0.55;
   }
 }
 
-.animate-panel-enter {
-  animation: aegisEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
+@keyframes panelReveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
-.animate-status-dot {
-  animation: statusPulse 2.4s ease-in-out infinite;
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
+@keyframes barGrow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
   }
 }
 
-/* AG Grid Institutional Slate Customization */
+.scanline-beam {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 44px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(204, 255, 0, 0.14),
+    rgba(0, 71, 255, 0.22),
+    transparent
+  );
+  border-bottom: 1px solid rgba(204, 255, 0, 0.55);
+  pointer-events: none;
+  animation: scanSweep 4.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-beacon {
+  animation: pulseBeacon 2.2s ease-in-out infinite;
+}
+
+.animate-view-enter {
+  animation: panelReveal 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-shap-bar {
+  transform-origin: left center;
+  animation: barGrow 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanline-beam,
+  .animate-beacon,
+  .animate-view-enter,
+  .animate-shap-bar {
+    animation: none !important;
+  }
+  .brutalist-card:hover,
+  .brutalist-card-lime:hover,
+  .btn-acid:hover:not(:disabled),
+  .btn-cobalt:hover:not(:disabled),
+  .spatial-deck {
+    transform: none !important;
+  }
+}
+
+/* AG Grid Midnight + Cobalt + Acid Lime Theme */
 .ag-theme-quartz-dark {
-  --ag-background-color: #0b0f18;
-  --ag-header-background-color: #111724;
-  --ag-odd-row-background-color: #0d121d;
-  --ag-row-hover-color: rgba(0, 112, 224, 0.09);
-  --ag-border-color: #1c2436;
-  --ag-foreground-color: #e2e8f0;
-  --ag-header-foreground-color: #94a3b8;
-  --ag-font-family: 'Inter', -apple-system, sans-serif;
-  --ag-font-size: 12px;
+  --ag-background-color: rgba(7, 9, 15, 0.92);
+  --ag-header-background-color: #0c101b;
+  --ag-odd-row-background-color: rgba(11, 14, 23, 0.85);
+  --ag-row-hover-color: rgba(0, 71, 255, 0.16);
+  --ag-border-color: #1b2234;
+  --ag-foreground-color: #f1f5f9;
+  --ag-header-foreground-color: #ccff00;
+  --ag-font-family: 'JetBrains Mono', monospace;
+  --ag-font-size: 11.5px;
 }

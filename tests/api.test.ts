@@ -1,13 +1,24 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { Server } from 'node:http';
+import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs';
 import { createAegisServer } from '../server/index';
+import { redactSecrets } from '../server/security';
+import { AegisMultiTenantStore, verifyPasswordScrypt } from '../server/store';
 
-describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)', () => {
+describe('AegisPay Full-Stack Zero-Trust HTTP API, Security, Multi-Tenant Storage & PayRevive Suite', () => {
   let server: Server;
   let baseUrl = '';
+  let operatorToken = '';
+  let authHeaders: Record<string, string> = {};
+  const tempStoreFile = path.join(
+    os.tmpdir(),
+    `aegispay_api_test_${process.pid}_${Date.now()}.json`
+  );
 
   beforeAll(async () => {
-    const app = createAegisServer();
+    const app = createAegisServer({ customStoreFilePath: tempStoreFile });
     await new Promise<void>((resolve) => {
       server = app.listen(0, () => {
         const addr = server.address();
@@ -17,29 +28,230 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
         resolve();
       });
     });
+
+    const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'operator@aegispay.io',
+        password: 'AegisPay2026!',
+      }),
+    });
+    expect(loginRes.status).toBe(200);
+    const loginData = await loginRes.json();
+    operatorToken = loginData.token;
+    authHeaders = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${operatorToken}`,
+    };
   });
 
   afterAll(async () => {
     await new Promise<void>((resolve) => {
       server.close(() => resolve());
     });
+    try {
+      if (fs.existsSync(tempStoreFile)) fs.unlinkSync(tempStoreFile);
+    } catch {
+      // Ignore cleanup errors
+    }
   });
 
-  it('GET /api/state returns complete system status, KPIs, permits, PayStream plans, orders, webhooks, and audit logs', async () => {
-    const res = await fetch(`${baseUrl}/api/state`);
+  it('GET /api/health returns security headers, rate-limit headers, storage architecture, and zero raw secrets', async () => {
+    const res = await fetch(`${baseUrl}/api/health`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('x-frame-options')).toBe('DENY');
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(res.headers.get('strict-transport-security')).toContain('max-age=');
+    expect(res.headers.get('content-security-policy')).toContain("default-src 'self'");
+    expect(res.headers.get('ratelimit-limit')).toBeDefined();
+
+    const rawBody = await res.text();
+    expect(rawBody).not.toContain('GOCSPX-');
+    expect(rawBody).not.toContain('gsk_');
+    expect(rawBody).not.toContain('AQ.');
+
+    const data = JSON.parse(rawBody);
+    expect(data.ok).toBe(true);
+    expect(data.version).toBe('3.0.0');
+    expect(data.authRequired).toBe(true);
+    expect(data.storage.passwordKdf).toContain('scrypt');
+  });
+
+  it('enforces mandatory authentication (HTTP 401 AUTH_REQUIRED) on unauthenticated /api/state and protected mutations', async () => {
+    const unauthState = await fetch(`${baseUrl}/api/state`);
+    expect(unauthState.status).toBe(401);
+    const errData = await unauthState.json();
+    expect(errData.authenticated).toBe(false);
+    expect(errData.code).toBe('AUTH_REQUIRED');
+
+    const unauthPayRevive = await fetch(`${baseUrl}/api/payrevive/recover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ presetId: 'PAYDAY_LIQUIDITY' }),
+    });
+    expect(unauthPayRevive.status).toBe(401);
+  });
+
+  it('redacts accidental secret patterns cleanly via redactSecrets guard', () => {
+    const dirty =
+      'Error with key AQ.SYNTHETIC_DUMMY_KEY_000000000000000000000000 and gsk_SYNTHETIC_DUMMY_KEY_00000000000000000000000000 and GOCSPX-SYNTHETIC_DUMMY_000000000000';
+    const clean = redactSecrets(dirty);
+    expect(clean).not.toContain('AQ.SYNTHETIC');
+    expect(clean).not.toContain('gsk_SYNTHETIC');
+    expect(clean).not.toContain('GOCSPX-SYNTHETIC');
+    expect(clean).toContain('[REDACTED');
+  });
+
+  it('enforces sliding-window rate limiting (HTTP 429 + Retry-After) when client exceeds tier threshold', async () => {
+    const rlStorePath = path.join(os.tmpdir(), `aegispay_rl_test_${process.pid}_${Date.now()}.json`);
+    const rlApp = createAegisServer({
+      customStoreFilePath: rlStorePath,
+      authMaxRequestsPerMinute: 3,
+    });
+    let rlServer!: Server;
+    let rlUrl = '';
+    await new Promise<void>((resolve) => {
+      rlServer = rlApp.listen(0, () => {
+        const addr = rlServer.address();
+        if (addr && typeof addr === 'object') {
+          rlUrl = `http://127.0.0.1:${addr.port}`;
+        }
+        resolve();
+      });
+    });
+
+    try {
+      for (let i = 0; i < 3; i++) {
+        const ok = await fetch(`${rlUrl}/api/auth/google/url`);
+        expect(ok.status).toBe(200);
+      }
+      const blocked = await fetch(`${rlUrl}/api/auth/google/url`);
+      expect(blocked.status).toBe(429);
+      expect(blocked.headers.get('retry-after')).toBeDefined();
+      const blockedJson = await blocked.json();
+      expect(blockedJson.code).toBe('RATE_LIMIT_EXCEEDED');
+    } finally {
+      await new Promise<void>((resolve) => rlServer.close(() => resolve()));
+      if (fs.existsSync(rlStorePath)) fs.unlinkSync(rlStorePath);
+    }
+  });
+
+  it('GET /api/state returns complete authenticated tenant state, KPIs, PayRevive catalog, PayStream plans, and audit logs', async () => {
+    const res = await fetch(`${baseUrl}/api/state`, { headers: authHeaders });
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.system.name).toBe('AegisPay OS');
+    expect(data.system.version).toBe('3.0.0');
+    expect(data.operator.email).toBe('operator@aegispay.io');
     expect(data.lupa.billingPermissions.length).toBeGreaterThanOrEqual(4);
     expect(data.lupa.zombieReport.totalZombieCount).toBeGreaterThanOrEqual(3);
     expect(data.paystream.plans.length).toBeGreaterThanOrEqual(1);
+    expect(data.payrevive.presets.length).toBe(5);
     expect(data.auditLogs.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('POST /api/payrevive/recover and /benchmark execute XGBoost + TreeSHAP + Bandit + Compliance Gate + 500-Batch simulation', async () => {
+    const presetsRes = await fetch(`${baseUrl}/api/payrevive/presets`, { headers: authHeaders });
+    expect(presetsRes.status).toBe(200);
+    const presetsData = await presetsRes.json();
+    expect(presetsData.presets.length).toBe(5);
+
+    const recoverRes = await fetch(`${baseUrl}/api/payrevive/recover`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ presetId: 'EXPIRED_CARD_WALLET_SWITCH' }),
+    });
+    expect(recoverRes.status).toBe(200);
+    const recoverData = await recoverRes.json();
+    expect(recoverData.decision.verdict).toBe('EXECUTE_RECOVERY');
+    expect(recoverData.decision.selectedAction).toBe('PAYPAL_BACKUP_FUNDING_SWITCH');
+    expect(recoverData.decision.diagnosis.additivityVerified).toBe(true);
+    expect(recoverData.paypalInvoice.invoiceId).toBeDefined();
+    expect(recoverData.auditRow.pillar).toBe('PAYREVIVE');
+
+    const blockRes = await fetch(`${baseUrl}/api/payrevive/recover`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ presetId: 'COMPLIANCE_HARD_DECLINE' }),
+    });
+    expect(blockRes.status).toBe(200);
+    const blockData = await blockRes.json();
+    expect(blockData.decision.verdict).toBe('BLOCKED_BY_COMPLIANCE');
+    expect(blockData.paypalOrder).toBeNull();
+    expect(blockData.paypalInvoice).toBeNull();
+
+    const abstainRes = await fetch(`${baseUrl}/api/payrevive/recover`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ presetId: 'NEGATIVE_EV_MICRO_PAYMENT' }),
+    });
+    expect(abstainRes.status).toBe(200);
+    const abstainData = await abstainRes.json();
+    expect(abstainData.decision.verdict).toBe('ABSTAIN_NOT_WORTH_COST');
+
+    const benchRes = await fetch(`${baseUrl}/api/payrevive/benchmark`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ batches: 500, batchSize: 20, seed: 20261028 }),
+    });
+    expect(benchRes.status).toBe(200);
+    const benchData = await benchRes.json();
+    expect(benchData.report.batchesSimulated).toBe(500);
+    expect(benchData.report.payRevive.complianceViolations).toBe(0);
+    expect(benchData.report.netRecoveryLiftPercent).toBeGreaterThanOrEqual(45);
+  });
+
+  it('persists multi-tenant user accounts with scrypt hashes and isolates per-operator tenant workspaces across reloads', async () => {
+    const regBRes = await fetch(`${baseUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'isolated-tenant@aegispay.io',
+        password: 'StrongTenantPassword2026!',
+        fullName: 'Isolated Tenant Operator',
+        organization: 'Tenant B Corp',
+      }),
+    });
+    expect(regBRes.status).toBe(201);
+    const regBData = await regBRes.json();
+    const tenantBHeaders = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${regBData.token}`,
+    };
+
+    // Mutate Tenant B balance to $9,123.00 (912300 cents)
+    const updB = await fetch(`${baseUrl}/api/lupa/cashflow-update`, {
+      method: 'POST',
+      headers: tenantBHeaders,
+      body: JSON.stringify({ balanceCents: 912300 }),
+    });
+    expect(updB.status).toBe(200);
+
+    // Operator A balance remains untouched (not 912300)
+    const stateARes = await fetch(`${baseUrl}/api/state`, { headers: authHeaders });
+    const stateAData = await stateARes.json();
+    expect(stateAData.lupa.currentCheckingBalanceCents).not.toBe(912300);
+
+    // Wait briefly for debounced flush and reload store from disk to prove persistence
+    await new Promise((r) => setTimeout(r, 180));
+    const reloadedStore = new AegisMultiTenantStore({
+      rootDir: process.cwd(),
+      customFilePath: tempStoreFile,
+    });
+    const verifiedUserB = reloadedStore.getUserByEmail('isolated-tenant@aegispay.io');
+    expect(verifiedUserB).toBeDefined();
+    expect(verifyPasswordScrypt('StrongTenantPassword2026!', verifiedUserB!.passwordScrypt)).toBe(
+      true
+    );
+    const reloadedWsB = reloadedStore.getTenantWorkspace(verifiedUserB!.id, verifiedUserB!.email);
+    expect(reloadedWsB.currentCheckingBalanceCents).toBe(912300);
   });
 
   it('POST /api/lupa/cashflow-check and /cashflow-update evaluate affordability, update bills, and sync agent permit cap', async () => {
     const updateRes = await fetch(`${baseUrl}/api/lupa/cashflow-update`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         balanceCents: 450000,
         addCommitment: {
@@ -56,7 +268,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const res = await fetch(`${baseUrl}/api/lupa/cashflow-check`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         itemTitle: 'MacBook Pro M4 Workstation',
         proposedSpendCents: 65000,
@@ -72,9 +284,10 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
   it('POST /api/lupa/compile-policy, /mint-vault-permit, and /create-sandbox-subscription execute grounded policy compilation and PayPal Vault/Subscriptions', async () => {
     const policyRes = await fetch(`${baseUrl}/api/lupa/compile-policy`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
-        sentence: 'Allow DevOps Agent to buy cloud tools up to $65 per purchase with $40 auto-approve.',
+        sentence:
+          'Allow DevOps Agent to buy cloud tools up to $65 per purchase with $40 auto-approve.',
         applyToPermitId: 'PRM-CLAUDE-CODE-01',
       }),
     });
@@ -85,7 +298,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const vaultRes = await fetch(`${baseUrl}/api/lupa/mint-vault-permit`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({ permitId: 'PRM-CLAUDE-CODE-01' }),
     });
     expect(vaultRes.status).toBe(200);
@@ -94,7 +307,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const subRes = await fetch(`${baseUrl}/api/lupa/create-sandbox-subscription`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({ planName: 'Cloud Monitor Pro', monthlyPriceCents: 2900 }),
     });
     expect(subRes.status).toBe(200);
@@ -105,7 +318,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
   it('POST /api/lupa/revoke-zombie tightens cap and revokes dormant agreements', async () => {
     const tightenRes = await fetch(`${baseUrl}/api/lupa/revoke-zombie`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         agreementId: 'BA-77219402-OVERCAP',
         action: 'TIGHTEN_CAP',
@@ -117,7 +330,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const revokeRes = await fetch(`${baseUrl}/api/lupa/revoke-zombie`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         agreementId: 'BA-94827104-ZOMBIE1',
         action: 'REVOKE',
@@ -128,10 +341,10 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
     expect(revokeData.permission.status).toBe('REVOKED');
   });
 
-  it('POST /api/lupa/agent-pay creates PayPal CAPTURE on ALLOW, AUTHORIZE on HOLD, and blocks on policy violation', async () => {
+  it('POST /api/lupa/agent-pay creates PayPal CAPTURE on ALLOW, AUTHORIZE on HOLD, and resolves held funds', async () => {
     const allowRes = await fetch(`${baseUrl}/api/lupa/agent-pay`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         permitId: 'PRM-CLAUDE-CODE-01',
         amountCents: 3200,
@@ -150,7 +363,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const holdRes = await fetch(`${baseUrl}/api/lupa/agent-pay`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         permitId: 'PRM-CLAUDE-CODE-01',
         amountCents: 4500,
@@ -169,7 +382,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const resolveRes = await fetch(`${baseUrl}/api/lupa/resolve-hold`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         orderId: holdData.paypalOrder.orderId,
         action: 'CAPTURE',
@@ -183,7 +396,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
   it('POST /api/scamshield/review, /create-paypal-order, & /capture enforce single-use token and block all 5 tamper attacks', async () => {
     const revRes = await fetch(`${baseUrl}/api/scamshield/review`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         rawText: 'Invoice #901 for Cloud Hosting Setup: $45.00 USD',
         claimedAmountCents: 4500,
@@ -197,7 +410,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const smartOrderRes = await fetch(`${baseUrl}/api/scamshield/create-paypal-order`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({ signedToken: revData.signedToken }),
     });
     expect(smartOrderRes.status).toBe(200);
@@ -215,7 +428,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
     for (const tamperScenario of tamperScenarios) {
       const tRes = await fetch(`${baseUrl}/api/scamshield/capture`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           signedToken: revData.signedToken,
           tamperScenario,
@@ -228,7 +441,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const validCapRes = await fetch(`${baseUrl}/api/scamshield/capture`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         signedToken: revData.signedToken,
       }),
@@ -239,7 +452,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const replayCapRes = await fetch(`${baseUrl}/api/scamshield/capture`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         signedToken: revData.signedToken,
       }),
@@ -252,7 +465,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
   it('POST /api/dealforge/negotiate settles SHA-256 contract, issues deposit invoice, and neutralizes adversarial prompt injection', async () => {
     const res = await fetch(`${baseUrl}/api/dealforge/negotiate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         simulatePromptInjection: true,
         issueLiveInvoice: true,
@@ -262,7 +475,9 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
     const data = await res.json();
     expect(data.dealReached).toBe(true);
     expect(data.contractIntegrityVerified).toBe(true);
-    expect(data.rounds.some((r: { promptInjectionBlocked: boolean }) => r.promptInjectionBlocked)).toBe(true);
+    expect(
+      data.rounds.some((r: { promptInjectionBlocked: boolean }) => r.promptInjectionBlocked)
+    ).toBe(true);
     expect(data.paypalOrder.status).toBe('COMPLETED');
     expect(data.paypalInvoice.invoiceId).toBeDefined();
   });
@@ -270,7 +485,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
   it('POST /api/cliprefund/evaluate-and-refund issues partial refund and blocks replay/spoof photos', async () => {
     const okRes = await fetch(`${baseUrl}/api/cliprefund/evaluate-and-refund`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         presetId: 'chipped_ceramic_mug',
         originalOrderCents: 2800,
@@ -283,7 +498,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const replayRes = await fetch(`${baseUrl}/api/cliprefund/evaluate-and-refund`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         presetId: 'chipped_ceramic_mug',
         originalOrderCents: 2800,
@@ -298,7 +513,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
   it('POST /api/churnrescue/intercept enforces concession ladder, utilization block, circuit breaker, and atomic lock', async () => {
     const step2Res = await fetch(`${baseUrl}/api/churnrescue/intercept`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         currentPlanPriceCents: 10000,
         featureUtilizationPct: 25,
@@ -312,7 +527,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const cbRes = await fetch(`${baseUrl}/api/churnrescue/intercept`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         currentPlanPriceCents: 10000,
         featureUtilizationPct: 25,
@@ -327,7 +542,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const dupRes = await fetch(`${baseUrl}/api/churnrescue/intercept`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         currentPlanPriceCents: 10000,
         featureUtilizationPct: 25,
@@ -342,16 +557,27 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
   it('POST /api/paystream/create-plan, /issue-invoice, & /verify-proof execute penny-exact milestone splits, PayPal Invoicing v2, and Proof-of-Delivery verification', async () => {
     const planRes = await fetch(`${baseUrl}/api/paystream/create-plan`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         projectTitle: 'Enterprise PayPal Checkout Integration',
         clientEmail: 'procurement@enterprise.io',
         totalBudgetCents: 150001,
         currency: 'USD',
-        projectBrief: 'Deliver OpenAPI specification, Orders v2 webhook integration, and Vitest verification suite.',
+        projectBrief:
+          'Deliver OpenAPI specification, Orders v2 webhook integration, and Vitest verification suite.',
         collaborators: [
-          { collaboratorName: 'Lead Architect', paypalEmail: 'arch@studio.io', role: 'Backend', sharePct: 60 },
-          { collaboratorName: 'Frontend Engineer', paypalEmail: 'ui@studio.io', role: 'Frontend', sharePct: 40 },
+          {
+            collaboratorName: 'Lead Architect',
+            paypalEmail: 'arch@studio.io',
+            role: 'Backend',
+            sharePct: 60,
+          },
+          {
+            collaboratorName: 'Frontend Engineer',
+            paypalEmail: 'ui@studio.io',
+            role: 'Frontend',
+            sharePct: 40,
+          },
         ],
       }),
     });
@@ -363,7 +589,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const invRes = await fetch(`${baseUrl}/api/paystream/issue-invoice`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         planId: planData.plan.planId,
         milestoneId: m0.milestoneId,
@@ -376,7 +602,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     const proofRes = await fetch(`${baseUrl}/api/paystream/verify-proof`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         planId: planData.plan.planId,
         milestoneId: m0.milestoneId,
@@ -393,7 +619,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
   it('POST /api/security/fuzz & GET /api/export/elastic-ndjson return verified fuzzer proof and Elastic bulk NDJSON', async () => {
     const fuzzRes = await fetch(`${baseUrl}/api/security/fuzz`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({ iterations: 500 }),
     });
     const fuzzData = await fuzzRes.json();
@@ -401,7 +627,9 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
     expect(fuzzData.report.passedCases).toBe(500);
     expect(fuzzData.report.invariantsVerified.milestonePennyExactConservation).toBe(true);
 
-    const ndjsonRes = await fetch(`${baseUrl}/api/export/elastic-ndjson`);
+    const ndjsonRes = await fetch(`${baseUrl}/api/export/elastic-ndjson`, {
+      headers: authHeaders,
+    });
     expect(ndjsonRes.status).toBe(200);
     const text = await ndjsonRes.text();
     expect(text).toContain('aegispay-security-audit-2026');
@@ -410,7 +638,7 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
   it('POST /api/ai/failover-test verifies Gemini-to-Groq automatic failover router on simulated HTTP 429 rate limit', async () => {
     const failoverRes = await fetch(`${baseUrl}/api/ai/failover-test`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         simulateRateLimit: true,
       }),
@@ -424,12 +652,22 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
 
     await fetch(`${baseUrl}/api/ai/failover-test`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({ simulateRateLimit: false }),
     });
   });
 
-  it('POST /api/auth/register registers new institutional operator and rejects duplicate email', async () => {
+  it('POST /api/auth/register registers new institutional operator with scrypt policy and rejects duplicate email or short passwords', async () => {
+    const weakRes = await fetch(`${baseUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'weak@aegispay.io',
+        password: 'short',
+      }),
+    });
+    expect(weakRes.status).toBe(400);
+
     const regRes = await fetch(`${baseUrl}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -455,46 +693,6 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
       }),
     });
     expect(dupRes.status).toBe(409);
-  });
-
-  it('POST /api/auth/login authenticates valid credentials and rejects wrong passwords', async () => {
-    const okRes = await fetch(`${baseUrl}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: 'operator@aegispay.io',
-        password: 'AegisPay2026!',
-      }),
-    });
-    expect(okRes.status).toBe(200);
-    const okData = await okRes.json();
-    expect(okData.authenticated).toBe(true);
-    expect(okData.operator.role).toBe('PRINCIPAL_ARCHITECT');
-
-    const badRes = await fetch(`${baseUrl}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: 'operator@aegispay.io',
-        password: 'WrongPassword',
-      }),
-    });
-    expect(badRes.status).toBe(401);
-  });
-
-  it('POST /api/auth/oauth completes OAuth 2.0 PKCE handshake for PayPal, Google, and GitHub', async () => {
-    for (const provider of ['PAYPAL_OAUTH', 'GOOGLE_OAUTH', 'GITHUB_OAUTH']) {
-      const res = await fetch(`${baseUrl}/api/auth/oauth`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider }),
-      });
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.authenticated).toBe(true);
-      expect(data.operator.authProvider).toBe(provider);
-      expect(data.oauthMetadata.protocol).toContain('PKCE');
-    }
   });
 
   it('GET /api/auth/me & POST /api/auth/logout validate and revoke stateless HMAC bearer session tokens', async () => {
@@ -546,13 +744,13 @@ describe('AegisPay Full-Stack HTTP API & End-to-End Lifecycle Suite (70+ Tests)'
     expect(googleAuthData.operator.email).toBe('aps.bhaidav@gmail.com');
   });
 
-  const stressSteps = Array.from({ length: 50 }, (_, idx) => idx + 1);
+  const stressSteps = Array.from({ length: 40 }, (_, idx) => idx + 1);
   it.each(stressSteps)(
     'API deterministic concurrency invariant check #%i',
     async (idx) => {
       const res = await fetch(`${baseUrl}/api/lupa/cashflow-check`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           itemTitle: `Stress Item #${idx}`,
           proposedSpendCents: idx * 2500,

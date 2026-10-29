@@ -48,15 +48,23 @@ function generateValidPng(width: number, height: number): Buffer {
       const cx = (x - width / 2) / (width / 2);
       const cy = (y - height / 2) / (height / 2);
       const dist = Math.sqrt(cx * cx + cy * cy);
-      if (dist < 0.78) {
+      if (Math.abs(cx) < 0.28 && cy > 0.18 && cy < 0.36) {
+        // Acid Lime bar (#CCFF00)
+        row[offset] = 204;
+        row[offset + 1] = 255;
+        row[offset + 2] = 0;
+        row[offset + 3] = 255;
+      } else if (dist < 0.72) {
+        // Electric Cobalt Blue (#0047FF)
         row[offset] = 0;
-        row[offset + 1] = Math.min(255, Math.round(112 + (1 - dist) * 80));
-        row[offset + 2] = 224;
+        row[offset + 1] = 71;
+        row[offset + 2] = 255;
         row[offset + 3] = 255;
       } else {
-        row[offset] = 0;
-        row[offset + 1] = 28;
-        row[offset + 2] = 100;
+        // Midnight Black (#050507)
+        row[offset] = 5;
+        row[offset + 1] = 5;
+        row[offset + 2] = 7;
         row[offset + 3] = 255;
       }
     }

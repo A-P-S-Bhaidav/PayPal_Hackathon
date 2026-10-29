@@ -1,30 +1,99 @@
 {
   "info": {
-    "name": "AegisPay OS - PayPal AI Hackathon Official API Collection",
+    "name": "AegisPay OS v3.0 - PayPal AI Hackathon Official API Collection",
     "_postman_id": "f5c47e0c-3757-42a8-92c1-9f484d182926",
-    "description": "Complete Postman v2.1 API Collection for testing AegisPay OS across all 6 PayPal + AI modules: Smart Budget & Permits, Checkout Firewall, Deal Negotiator, Instant Photo Refund, Retention Copilot, and PayStream Smart-Milestone Studio.",
+    "description": "Zero-Trust Postman v2.1 API Collection for AegisPay OS v3.0 across Mandatory Auth, PayRevive Autonomous Revenue Recovery (XGBoost + TreeSHAP + Bandit + 500-Batch Benchmark), Smart Budget & Permits, Checkout Firewall, Deal Negotiator, Instant Photo Refund, Retention Copilot, and PayStream Studio.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
       "value": "https://aegispay-orpin.vercel.app"
+    },
+    {
+      "key": "authToken",
+      "value": ""
     }
   ],
   "item": [
     {
-      "name": "1. System & Live PayPal Sandbox Status",
+      "name": "0. Public Security & Health Manifest",
       "request": {
         "method": "GET",
         "header": [],
+        "url": "{{baseUrl}}/api/health"
+      }
+    },
+    {
+      "name": "1. Mandatory Zero-Trust Login (Captures Bearer Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json && json.token) { pm.collectionVariables.set('authToken', json.token); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"operator@aegispay.io\",\n  \"password\": \"AegisPay2026!\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      }
+    },
+    {
+      "name": "2. Tenant Workspace & Live PayPal Sandbox Status",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
         "url": "{{baseUrl}}/api/state"
       }
     },
     {
-      "name": "2. Smart Budget & Permits - Agent Payment Proposal",
+      "name": "3. PayRevive - XGBoost + TreeSHAP + Bandit Failed-Payment Recovery",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"presetId\": \"EXPIRED_CARD_WALLET_SWITCH\"\n}"
+        },
+        "url": "{{baseUrl}}/api/payrevive/recover"
+      }
+    },
+    {
+      "name": "4. PayRevive - 500-Batch Monte Carlo Simulation Benchmark",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"batches\": 500,\n  \"batchSize\": 20,\n  \"seed\": 20261028\n}"
+        },
+        "url": "{{baseUrl}}/api/payrevive/benchmark"
+      }
+    },
+    {
+      "name": "5. Smart Budget & Permits - Agent Payment Proposal",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"permitId\": \"PRM-CLAUDE-CODE-01\",\n  \"amountCents\": 4500,\n  \"merchantId\": \"merch_nordic_hardware\",\n  \"merchantName\": \"NordicLight Studio Hardware\",\n  \"category\": \"HARDWARE\",\n  \"itemDescription\": \"Minimalist LED Desk Lamp\",\n  \"aiConfidenceScore\": 0.68,\n  \"aiSuggestedVerdict\": \"ALLOW\"\n}"
@@ -33,22 +102,13 @@
       }
     },
     {
-      "name": "3. Smart Budget & Permits - Mint Live PayPal Vault v3 Setup Token",
+      "name": "6. Checkout Firewall - Pre-Payment Threat Scan & Single-Use Token",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"agentName\": \"Claude Code MCP Agent\",\n  \"maxSingleCents\": 8000\n}"
-        },
-        "url": "{{baseUrl}}/api/lupa/mint-vault-permit"
-      }
-    },
-    {
-      "name": "4. Checkout Firewall - Pre-Payment Threat Scan & Single-Use Token",
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"rawText\": \"Invoice #2049 for UI Design Milestone: $45.00 USD via PayPal Checkout.\",\n  \"claimedAmountCents\": 4500,\n  \"currency\": \"USD\",\n  \"payeeIdentifier\": \"billing@verified-studio.io\"\n}"
@@ -57,10 +117,13 @@
       }
     },
     {
-      "name": "5. Deal Negotiator - Bilateral Mandates & Live PayPal Deposit Invoice",
+      "name": "7. Deal Negotiator - Bilateral Mandates & Live PayPal Deposit Invoice",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"simulatePromptInjection\": true,\n  \"issueLiveInvoice\": true\n}"
@@ -69,10 +132,13 @@
       }
     },
     {
-      "name": "6. Instant Photo Refund - Vision Defect Telemetry & Partial Refund",
+      "name": "8. Instant Photo Refund - Vision Defect Telemetry & Partial Refund",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"presetId\": \"chipped_ceramic_mug\",\n  \"originalOrderCents\": 2800,\n  \"itemTitle\": \"Handcrafted Stoneware Espresso Mug\"\n}"
@@ -81,10 +147,13 @@
       }
     },
     {
-      "name": "7. Retention Copilot - Concession Ladder & Live Subscription",
+      "name": "9. Retention Copilot - Concession Ladder & Live Subscription",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"accountId\": \"ACC-SAAS-9042\",\n  \"customerName\": \"Jordan Vance\",\n  \"planName\": \"Aegis Cloud Pro Plan\",\n  \"currentPlanPriceCents\": 9900,\n  \"featureUtilizationPct\": 34,\n  \"negotiationStep\": 2,\n  \"customerMessage\": \"Our PayPal billing declined and $99/mo is too expensive right now.\"\n}"
@@ -93,10 +162,13 @@
       }
     },
     {
-      "name": "8. PayStream Studio - Penny-Exact Smart Milestones",
+      "name": "10. PayStream Studio - Penny-Exact Smart Milestones & Invoice",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"projectTitle\": \"AI Commerce Checkout Portal\",\n  \"projectBrief\": \"Design UI, integrate PayPal Orders v2 & Invoicing v2, and deploy to production with automated tests.\",\n  \"clientEmail\": \"client-treasury@personal.example.com\",\n  \"totalBudgetCents\": 250000\n}"
@@ -105,22 +177,13 @@
       }
     },
     {
-      "name": "9. PayStream Studio - Issue Live PayPal Sandbox Invoice (INV2-...)",
+      "name": "11. Security Verifier - 1,000-Case Adversarial Property Fuzzer",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"milestoneId\": \"MS-1\"\n}"
-        },
-        "url": "{{baseUrl}}/api/paystream/issue-invoice"
-      }
-    },
-    {
-      "name": "10. Security Verifier - 1,000-Case Adversarial Property Fuzzer",
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{authToken}}" }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"iterations\": 1000\n}"

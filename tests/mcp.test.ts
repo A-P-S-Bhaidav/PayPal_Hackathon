@@ -1,15 +1,21 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs';
 import type { Server } from 'node:http';
 import { createAegisServer } from '../server/index';
 
 describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)', () => {
   let server: Server;
   let apiUrl = '';
+  const tempStoreFile = path.join(
+    os.tmpdir(),
+    `aegispay_mcp_test_${process.pid}_${Date.now()}.json`
+  );
 
   beforeAll(async () => {
-    const app = createAegisServer();
+    const app = createAegisServer({ customStoreFilePath: tempStoreFile });
     await new Promise<void>((resolve) => {
       server = app.listen(0, () => {
         const addr = server.address();
@@ -25,6 +31,11 @@ describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)
     await new Promise<void>((resolve) => {
       server.close(() => resolve());
     });
+    try {
+      if (fs.existsSync(tempStoreFile)) fs.unlinkSync(tempStoreFile);
+    } catch {
+      // Ignore cleanup errors
+    }
   });
 
   async function callMcpRpc(requestObj: Record<string, unknown>): Promise<any> {
@@ -49,7 +60,7 @@ describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)
     });
   }
 
-  it('responds to JSON-RPC 2.0 initialize handshake with server capabilities', async () => {
+  it('responds to JSON-RPC 2.0 initialize handshake with v3.0.0 server capabilities', async () => {
     const res = await callMcpRpc({
       jsonrpc: '2.0',
       id: 1,
@@ -57,10 +68,11 @@ describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)
       params: {},
     });
     expect(res.result.serverInfo.name).toBe('aegispay-paypal-mcp-server');
+    expect(res.result.serverInfo.version).toBe('3.0.0');
     expect(res.result.protocolVersion).toBe('2024-11-05');
   });
 
-  it('lists all 6 AegisPay agentic PayPal tools via tools/list', async () => {
+  it('lists all 7 AegisPay agentic PayPal tools via tools/list including PayRevive', async () => {
     const res = await callMcpRpc({
       jsonrpc: '2.0',
       id: 2,
@@ -75,10 +87,11 @@ describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)
       'aegispay_scamshield_review',
       'aegispay_paystream_create_plan',
       'aegispay_paystream_issue_invoice',
+      'aegispay_payrevive_recover',
     ]);
   });
 
-  it('executes aegispay_list_permits via tools/call', async () => {
+  it('executes aegispay_list_permits via zero-trust authenticated tools/call', async () => {
     const res = await callMcpRpc({
       jsonrpc: '2.0',
       id: 3,
@@ -185,10 +198,44 @@ describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)
     expect(issued.invoice.payerViewUrl).toContain('sandbox.paypal.com');
   });
 
+  it('executes aegispay_payrevive_recover via tools/call for recoverable and compliance-blocked failures', async () => {
+    const recRes = await callMcpRpc({
+      jsonrpc: '2.0',
+      id: 9,
+      method: 'tools/call',
+      params: {
+        name: 'aegispay_payrevive_recover',
+        arguments: {
+          presetId: 'EXPIRED_CARD_WALLET_SWITCH',
+        },
+      },
+    });
+    const recParsed = JSON.parse(recRes.result.content[0].text);
+    expect(recParsed.decision.verdict).toBe('EXECUTE_RECOVERY');
+    expect(recParsed.decision.selectedAction).toBe('PAYPAL_BACKUP_FUNDING_SWITCH');
+    expect(recParsed.decision.diagnosis.additivityVerified).toBe(true);
+
+    const blockRes = await callMcpRpc({
+      jsonrpc: '2.0',
+      id: 10,
+      method: 'tools/call',
+      params: {
+        name: 'aegispay_payrevive_recover',
+        arguments: {
+          presetId: 'COMPLIANCE_HARD_DECLINE',
+        },
+      },
+    });
+    const blockParsed = JSON.parse(blockRes.result.content[0].text);
+    expect(blockParsed.decision.verdict).toBe('BLOCKED_BY_COMPLIANCE');
+    expect(blockParsed.paypalOrder).toBeNull();
+    expect(blockParsed.paypalInvoice).toBeNull();
+  });
+
   it('returns JSON-RPC -32601 error on unknown tool name', async () => {
     const res = await callMcpRpc({
       jsonrpc: '2.0',
-      id: 9,
+      id: 11,
       method: 'tools/call',
       params: { name: 'non_existent_tool', arguments: {} },
     });

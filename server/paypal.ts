@@ -14,7 +14,8 @@ export type PayPalPillar =
   | 'DEALFORGE'
   | 'CLIPREFUND'
   | 'CHURNRESCUE'
-  | 'PAYSTREAM';
+  | 'PAYSTREAM'
+  | 'PAYREVIVE';
 
 export interface PayPalOrderRecord {
   orderId: string;

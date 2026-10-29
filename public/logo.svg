@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 64" fill="none">
+  <rect x="2" y="4" width="56" height="56" rx="10" fill="#050507" stroke="#0047FF" stroke-width="2.5"/>
+  <path d="M30 12L46 19.5V31.5C46 41.3 39.2 48.8 30 51.2C20.8 48.8 14 41.3 14 31.5V19.5L30 12Z" fill="#0A0E1A" stroke="#0047FF" stroke-width="2.2"/>
+  <path d="M30 17.5L40.5 22.5V31C40.5 37.8 35.9 43 30 45V17.5Z" fill="#0047FF" fill-opacity="0.35"/>
+  <path d="M22 35L30 19L38 35H33.3L30 28.2L26.7 35H22Z" fill="#F8FAFC"/>
+  <rect x="24" y="38" width="12" height="3.5" fill="#CCFF00"/>
+  <circle cx="48" cy="14" r="3.5" fill="#CCFF00"/>
+  <text x="72" y="34" fill="#F8FAFC" font-family="'Space Grotesk', 'Inter', sans-serif" font-weight="700" font-size="24" letter-spacing="-0.03em">AEGISPAY</text>
+  <rect x="194" y="16" width="44" height="22" rx="3" fill="#CCFF00"/>
+  <text x="204" y="31" fill="#050507" font-family="'JetBrains Mono', monospace" font-weight="800" font-size="13" letter-spacing="0.04em">OS</text>
+  <text x="73" y="50" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-weight="500" font-size="10" letter-spacing="0.14em">PAYPAL DETERMINISTIC KERNEL</text>
+</svg>

@@ -1,41 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 220" width="100%" height="100%" fill="none">
-  <rect width="1200" height="220" rx="12" fill="#07090E" stroke="#1E293B" stroke-width="1.5" />
-  <g transform="translate(40, 32)">
-    <text x="0" y="18" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700" letter-spacing="1.5">ARCHITECTURAL SEPARATION OF DUTIES // ZERO LLM PRICING AUTHORITY</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 280" fill="none">
+  <rect width="1200" height="280" fill="#050507"/>
+  <rect x="24" y="24" width="1152" height="232" fill="#0A0C12" stroke="#1E2433" stroke-width="1.5"/>
+  <!-- 4 Symmetrical Architectural Stages -->
+  <g font-family="'JetBrains Mono', monospace">
+    <!-- Stage 1 -->
+    <rect x="52" y="56" width="250" height="168" fill="#050507" stroke="#0047FF" stroke-width="1.5"/>
+    <rect x="52" y="56" width="250" height="4" fill="#0047FF"/>
+    <text x="70" y="86" fill="#0047FF" font-size="11" font-weight="700">01 // AUTH &amp; RATE SHIELD</text>
+    <text x="70" y="114" fill="#F8FAFC" font-family="'Inter', sans-serif" font-size="14" font-weight="700">Mandatory Zero-Trust Gate</text>
+    <text x="70" y="138" fill="#94A3B8" font-size="11">Google OAuth 2.0 + scrypt</text>
+    <text x="70" y="158" fill="#94A3B8" font-size="11">HMAC Session + Token Bucket</text>
+    <text x="70" y="198" fill="#CCFF00" font-size="11" font-weight="700">TENANT-ISOLATED STORE</text>
 
-    <!-- Box 1: AI Layer -->
-    <g transform="translate(0, 40)">
-      <rect x="0" y="0" width="330" height="116" rx="10" fill="#0B0F19" stroke="#1E293B" stroke-width="1.2" />
-      <text x="20" y="30" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">TIER 01 // PERCEPTION &amp; DIALOGUE</text>
-      <text x="20" y="56" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="17" font-weight="700">Multi-Provider AI Mesh</text>
-      <text x="20" y="80" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12">Gemini 3.5 Primary -&gt; Groq LPU + Llama Guard</text>
-      <text x="20" y="100" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">Outputs: Non-monetary telemetry &amp; proposals</text>
-    </g>
+    <!-- Arrow 1 -->
+    <line x1="302" y1="140" x2="334" y2="140" stroke="#CCFF00" stroke-width="2"/>
 
-    <!-- Connector 1 -->
-    <path d="M 340 98 L 385 98" stroke="#0070E0" stroke-width="1.5" stroke-dasharray="4 4" />
-    <polygon points="385,94 393,98 385,102" fill="#0070E0" />
+    <!-- Stage 2 -->
+    <rect x="334" y="56" width="250" height="168" fill="#050507" stroke="#1E2433" stroke-width="1.5"/>
+    <rect x="334" y="56" width="250" height="4" fill="#CCFF00"/>
+    <text x="352" y="86" fill="#CCFF00" font-size="11" font-weight="700">02 // AI + ML INFERENCE</text>
+    <text x="352" y="114" fill="#F8FAFC" font-family="'Inter', sans-serif" font-size="14" font-weight="700">Signal &amp; SHAP Diagnosis</text>
+    <text x="352" y="138" fill="#94A3B8" font-size="11">Gemini 3 -&gt; Groq LPU Failover</text>
+    <text x="352" y="158" fill="#94A3B8" font-size="11">XGBoost + Exact TreeSHAP</text>
+    <text x="352" y="198" fill="#0047FF" font-size="11" font-weight="700">CONTEXTUAL BANDIT EV</text>
 
-    <!-- Box 2: Deterministic Kernel -->
-    <g transform="translate(395, 40)">
-      <rect x="0" y="0" width="330" height="116" rx="10" fill="#0B0F19" stroke="#0070E0" stroke-width="1.5" />
-      <text x="20" y="30" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">TIER 02 // FINANCIAL GUARDRAILS</text>
-      <text x="20" y="56" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="17" font-weight="700">Deterministic Security Kernel</text>
-      <text x="20" y="80" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12">Monotonic Permits, HMAC Nonce, Hamilton Splits</text>
-      <text x="20" y="100" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">Proven: 1,000-case property-based fuzzer</text>
-    </g>
+    <!-- Arrow 2 -->
+    <line x1="584" y1="140" x2="616" y2="140" stroke="#CCFF00" stroke-width="2"/>
 
-    <!-- Connector 2 -->
-    <path d="M 735 98 L 780 98" stroke="#0070E0" stroke-width="1.5" stroke-dasharray="4 4" />
-    <polygon points="780,94 788,98 780,102" fill="#0070E0" />
+    <!-- Stage 3 -->
+    <rect x="616" y="56" width="250" height="168" fill="#050507" stroke="#0047FF" stroke-width="1.5"/>
+    <rect x="616" y="56" width="250" height="4" fill="#0047FF"/>
+    <text x="634" y="86" fill="#0047FF" font-size="11" font-weight="700">03 // COMPLIANCE KERNEL</text>
+    <text x="634" y="114" fill="#F8FAFC" font-family="'Inter', sans-serif" font-size="14" font-weight="700">Deterministic Verdict</text>
+    <text x="634" y="138" fill="#94A3B8" font-size="11">Monotonic ALLOW / HOLD / BLOCK</text>
+    <text x="634" y="158" fill="#94A3B8" font-size="11">0 Compliance Refusal Breaches</text>
+    <text x="634" y="198" fill="#CCFF00" font-size="11" font-weight="700">INTEGER-CENT INVARIANTS</text>
 
-    <!-- Box 3: PayPal Settlement -->
-    <g transform="translate(790, 40)">
-      <rect x="0" y="0" width="330" height="116" rx="10" fill="#0B0F19" stroke="#1E293B" stroke-width="1.2" />
-      <text x="20" y="30" fill="#38BDF8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" font-weight="700">TIER 03 // ATOMIC SETTLEMENT</text>
-      <text x="20" y="56" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="17" font-weight="700">PayPal Developer Platform</text>
-      <text x="20" y="80" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12">Orders v2, Vault v3, Invoicing v2, Subs v1</text>
-      <text x="20" y="100" fill="#64748B" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">Verification: Smart SDK, Refunds &amp; Webhooks</text>
-    </g>
+    <!-- Arrow 3 -->
+    <line x1="866" y1="140" x2="898" y2="140" stroke="#CCFF00" stroke-width="2"/>
+
+    <!-- Stage 4 -->
+    <rect x="898" y="56" width="250" height="168" fill="#0047FF"/>
+    <rect x="898" y="56" width="250" height="4" fill="#CCFF00"/>
+    <text x="916" y="86" fill="#CCFF00" font-size="11" font-weight="700">04 // PAYPAL EXECUTION</text>
+    <text x="916" y="114" fill="#F8FAFC" font-family="'Inter', sans-serif" font-size="14" font-weight="700">Live Sandbox Settlement</text>
+    <text x="916" y="138" fill="#E2E8F0" font-size="11">Orders v2 + Partial Refunds</text>
+    <text x="916" y="158" fill="#E2E8F0" font-size="11">Vault v3 + Invoicing v2</text>
+    <text x="916" y="198" fill="#CCFF00" font-size="11" font-weight="700">SHA-256 AUDIT TRAIL</text>
   </g>
 </svg>

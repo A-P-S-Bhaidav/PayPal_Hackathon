@@ -1,18 +1,41 @@
 #!/usr/bin/env node
 /**
  * AegisPay Model Context Protocol (MCP) Server for Autonomous AI Agents
- * Allows Claude Code, Cursor, or any MCP-compatible AI agent to:
- * 1. List buyer-delegated PayPal spending permits (`aegispay_list_permits`)
- * 2. Check post-bill disposable cashflow affordability (`aegispay_check_cashflow`)
- * 3. Propose a payment under deterministic monotonic policy (`aegispay_agent_pay`)
- * 4. Scan an external invoice for scams/prompt-injections (`aegispay_scamshield_review`)
- * 5. Architect penny-exact PayPal milestone plans (`aegispay_paystream_create_plan`)
- * 6. Issue live PayPal Invoicing v2 milestone invoices (`aegispay_paystream_issue_invoice`)
+ * Authenticates via Zero-Trust HMAC Session and exposes 7 PayPal + AI tools:
+ * 1. aegispay_list_permits
+ * 2. aegispay_check_cashflow
+ * 3. aegispay_agent_pay
+ * 4. aegispay_scamshield_review
+ * 5. aegispay_paystream_create_plan
+ * 6. aegispay_paystream_issue_invoice
+ * 7. aegispay_payrevive_recover
  */
 
 import readline from 'node:readline';
 
 const API_BASE = process.env.AEGISPAY_API_URL || 'http://localhost:8787';
+const OPERATOR_EMAIL = process.env.AEGISPAY_OPERATOR_EMAIL || 'operator@aegispay.io';
+const OPERATOR_PASSWORD = process.env.AEGISPAY_OPERATOR_PASSWORD || 'AegisPay2026!';
+
+let cachedSessionToken = process.env.AEGISPAY_SESSION_TOKEN || '';
+
+async function ensureAuthHeaders() {
+  if (!cachedSessionToken) {
+    const loginRes = await fetch(`${API_BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: OPERATOR_EMAIL, password: OPERATOR_PASSWORD }),
+    });
+    if (loginRes.ok) {
+      const loginData = await loginRes.json();
+      cachedSessionToken = loginData.token || '';
+    }
+  }
+  return {
+    'Content-Type': 'application/json',
+    ...(cachedSessionToken ? { Authorization: `Bearer ${cachedSessionToken}` } : {}),
+  };
+}
 
 const TOOLS = [
   {
@@ -113,6 +136,28 @@ const TOOLS = [
       required: ['milestoneId'],
     },
   },
+  {
+    name: 'aegispay_payrevive_recover',
+    description:
+      'Diagnose a failed PayPal payment via XGBoost + Exact TreeSHAP, evaluate Contextual Bandit expected net recovery value, enforce hard compliance gates, and execute PayPal recovery if allowed and worth the cost.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        presetId: {
+          type: 'string',
+          description:
+            'Optional preset ID (PAYDAY_LIQUIDITY, EXPIRED_CARD_WALLET_SWITCH, ISSUER_GATEWAY_TIMEOUT, COMPLIANCE_HARD_DECLINE, NEGATIVE_EV_MICRO_PAYMENT)',
+        },
+        amountCents: { type: 'integer', description: 'Failed payment amount in integer cents' },
+        declineCode: {
+          type: 'string',
+          description:
+            'Decline code (INSUFFICIENT_FUNDS, ISSUER_TIMEOUT, EXPIRED_CARD, VELOCITY_EXCEEDED, STOLEN_OR_FRAUD_CARD, REVOKED_AUTHORIZATION)',
+        },
+        daysUntilPayday: { type: 'integer', description: 'Estimated days until payday (0..14)' },
+      },
+    },
+  },
 ];
 
 const rl = readline.createInterface({
@@ -141,7 +186,7 @@ rl.on('line', async (line) => {
     sendJsonRpc(id, {
       protocolVersion: '2024-11-05',
       capabilities: { tools: {} },
-      serverInfo: { name: 'aegispay-paypal-mcp-server', version: '2.0.0' },
+      serverInfo: { name: 'aegispay-paypal-mcp-server', version: '3.0.0' },
     });
     return;
   }
@@ -156,8 +201,10 @@ rl.on('line', async (line) => {
     const args = params?.arguments || {};
 
     try {
+      const headers = await ensureAuthHeaders();
+
       if (toolName === 'aegispay_list_permits') {
-        const r = await fetch(`${API_BASE}/api/state`);
+        const r = await fetch(`${API_BASE}/api/state`, { headers });
         const state = await r.json();
         sendJsonRpc(id, {
           content: [{ type: 'text', text: JSON.stringify(state.lupa.agentPermits, null, 2) }],
@@ -171,12 +218,13 @@ rl.on('line', async (line) => {
         aegispay_scamshield_review: '/api/scamshield/review',
         aegispay_paystream_create_plan: '/api/paystream/create-plan',
         aegispay_paystream_issue_invoice: '/api/paystream/issue-invoice',
+        aegispay_payrevive_recover: '/api/payrevive/recover',
       };
 
       if (routeMap[toolName]) {
         const r = await fetch(`${API_BASE}${routeMap[toolName]}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(args),
         });
         const data = await r.json();

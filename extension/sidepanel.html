@@ -9,7 +9,7 @@
       :root {
         color-scheme: dark;
         font-family: system-ui, -apple-system, sans-serif;
-        background: #020617;
+        background: #050507;
         color: #f8fafc;
       }
       body {
@@ -20,65 +20,76 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border-bottom: 1px solid #1e293b;
+        border-bottom: 1.5px solid #0047ff;
         padding-bottom: 12px;
         margin-bottom: 14px;
       }
       .brand {
         font-weight: 800;
-        font-size: 14px;
-        letter-spacing: 0.02em;
-        color: #38bdf8;
+        font-size: 13px;
+        letter-spacing: 0.06em;
+        color: #f8fafc;
       }
       .badge {
+        font-family: monospace;
         font-size: 10px;
-        font-weight: 700;
+        font-weight: 800;
         padding: 3px 8px;
-        border-radius: 999px;
-        background: #0f172a;
-        border: 1px solid #334155;
+        background: #ccff00;
+        color: #050507;
       }
       label {
         display: block;
-        font-size: 11px;
-        font-weight: 600;
+        font-family: monospace;
+        font-size: 10px;
+        font-weight: 700;
         text-transform: uppercase;
+        letter-spacing: 0.08em;
         color: #94a3b8;
-        margin-top: 10px;
+        margin-top: 12px;
         margin-bottom: 4px;
       }
       textarea, input {
         width: 100%;
         box-sizing: border-box;
-        background: #0f172a;
-        border: 1px solid #334155;
+        background: #0a0c12;
+        border: 1px solid #1e2433;
         color: #f8fafc;
-        border-radius: 8px;
+        border-radius: 2px;
         padding: 8px 10px;
         font-size: 12px;
+      }
+      textarea:focus, input:focus {
+        outline: none;
+        border-color: #0047ff;
       }
       button {
         width: 100%;
         margin-top: 12px;
         padding: 10px 14px;
-        border: none;
-        border-radius: 8px;
-        background: linear-gradient(135deg, #0070E0, #009CDE);
-        color: white;
-        font-weight: 700;
-        font-size: 12px;
+        border: 1.5px solid #0047ff;
+        border-radius: 2px;
+        background: #ccff00;
+        color: #050507;
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        box-shadow: 3px 3px 0 #0047ff;
         cursor: pointer;
       }
       button.secondary {
-        background: #1e293b;
-        border: 1px solid #334155;
+        background: #0a0c12;
+        color: #f8fafc;
+        border: 1px solid #1e2433;
+        box-shadow: none;
       }
       .result-card {
         margin-top: 14px;
         padding: 12px;
-        border-radius: 10px;
-        background: #0f172a;
-        border: 1px solid #334155;
+        border-radius: 2px;
+        background: #0a0c12;
+        border: 1.5px solid #0047ff;
         font-size: 12px;
       }
       .mono {
@@ -92,23 +103,23 @@
   <body>
     <div class="header">
       <div class="brand">AEGISPAY FIREWALL</div>
-      <span class="badge">MV3 SIDE PANEL</span>
+      <span class="badge">MV3 GUARD</span>
     </div>
 
-    <label for="payeeInput">Payee / Merchant Identifier</label>
+    <label for="payeeInput">Payee Identifier</label>
     <input id="payeeInput" type="text" value="billing@FreelanceStudio.io" />
 
-    <label for="amountInput">Claimed Amount (USD $)</label>
+    <label for="amountInput">Claimed Amount (USD)</label>
     <input id="amountInput" type="number" step="0.01" value="45.00" />
 
-    <label for="textInput">Selected Invoice / Payment Request Text</label>
-    <textarea id="textInput" rows="5">Invoice #1049 for UI Icons Milestone: $45.00 USD via PayPal Checkout.</textarea>
+    <label for="textInput">Invoice / Payment Text</label>
+    <textarea id="textInput" rows="4">Invoice #1049 for UI Icons Milestone: $45.00 USD via PayPal Checkout.</textarea>
 
-    <button id="scanBtn" type="button">Scan &amp; Issue Single-Use PayPal Token</button>
-    <button id="injectScamBtn" type="button" class="secondary">Load Sample Urgent Friends &amp; Family Scam</button>
+    <button id="scanBtn" type="button">Scan &amp; Mint PayPal Token</button>
+    <button id="injectScamBtn" type="button" class="secondary">Load Adversarial Scam Test</button>
 
     <div id="resultBox" class="result-card" hidden>
-      <div id="verdictTitle" style="font-weight: 800; font-size: 14px; margin-bottom: 6px;"></div>
+      <div id="verdictTitle" style="font-weight: 800; font-size: 13px; margin-bottom: 6px;"></div>
       <div id="verdictSummary" style="margin-bottom: 8px;"></div>
       <div id="tokenBox" class="mono"></div>
     </div>

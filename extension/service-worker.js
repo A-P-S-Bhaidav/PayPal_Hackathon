@@ -1,10 +1,7 @@
 // AegisPay Checkout Firewall Manifest V3 Service Worker
-// Automatically connects to localhost:8787 if running, or fails over to https://aegispay-orpin.vercel.app
+// Authenticates via HMAC session and connects to localhost:8787 or https://aegispay-orpin.vercel.app
 
-const DEFAULT_ENDPOINTS = [
-  'http://localhost:8787',
-  'https://aegispay-orpin.vercel.app',
-];
+const DEFAULT_ENDPOINTS = ['http://localhost:8787', 'https://aegispay-orpin.vercel.app'];
 
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
@@ -58,15 +55,15 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
             bottom: '20px',
             right: '20px',
             zIndex: '2147483647',
-            background: '#090D16',
-            color: '#ffffff',
+            background: '#050507',
+            color: '#F8FAFC',
             padding: '12px 18px',
-            borderRadius: '10px',
-            fontFamily: 'system-ui, sans-serif',
-            fontSize: '13px',
-            fontWeight: '600',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.35)',
-            border: '1px solid #0070E0',
+            borderRadius: '2px',
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            fontWeight: '700',
+            boxShadow: '4px 4px 0 #CCFF00',
+            border: '1.5px solid #0047FF',
           });
           document.body.appendChild(toast);
           setTimeout(() => toast.remove(), 3200);
@@ -79,15 +76,57 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 });
 
+async function getOrMintSessionToken(base) {
+  const { operatorTokenMap = {} } = await chrome.storage.local.get('operatorTokenMap');
+  if (operatorTokenMap[base]) {
+    return operatorTokenMap[base];
+  }
+  const loginRes = await fetch(`${base}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: 'operator@aegispay.io',
+      password: 'AegisPay2026!',
+    }),
+  });
+  if (loginRes.ok) {
+    const data = await loginRes.json();
+    if (data.token) {
+      operatorTokenMap[base] = data.token;
+      await chrome.storage.local.set({ operatorTokenMap });
+      return data.token;
+    }
+  }
+  return '';
+}
+
 async function fetchWithEndpointFailover(path, payload) {
   let lastError = null;
   for (const base of DEFAULT_ENDPOINTS) {
     try {
-      const response = await fetch(`${base}${path}`, {
+      let token = await getOrMintSessionToken(base);
+      let response = await fetch(`${base}${path}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
+      if (response.status === 401) {
+        const { operatorTokenMap = {} } = await chrome.storage.local.get('operatorTokenMap');
+        delete operatorTokenMap[base];
+        await chrome.storage.local.set({ operatorTokenMap });
+        token = await getOrMintSessionToken(base);
+        response = await fetch(`${base}${path}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(payload),
+        });
+      }
       if (response.ok) {
         const data = await response.json();
         return { data, endpointUsed: base };
@@ -123,7 +162,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         await chrome.storage.local.set({ scanHistory: updatedHistory, lastReviewResult: data });
         await chrome.action.setBadgeText({ text: data.finalVerdict === 'BLOCK' ? 'BLK' : 'OK' });
         await chrome.action.setBadgeBackgroundColor({
-          color: data.finalVerdict === 'BLOCK' ? '#DC2626' : '#059669',
+          color: data.finalVerdict === 'BLOCK' ? '#FF3355' : '#CCFF00',
         });
         sendResponse({ ok: true, data, endpointUsed });
         return;

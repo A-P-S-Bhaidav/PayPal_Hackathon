@@ -93,24 +93,24 @@ export const PayPalSmartCheckout: React.FC<PayPalSmartCheckoutProps> = ({
         if (data.approvalUrl) {
           setCreatedApprovalUrl(data.approvalUrl);
         }
-        setStatusMessage(`Live PayPal Order ${data.orderId} ready for buyer approval.`);
+        setStatusMessage(`Live PayPal Order ${data.orderId} ready.`);
         return data.orderId;
       },
       onApprove: async (data: { orderID: string }) => {
-        setStatusMessage(`Capturing buyer-approved Order ${data.orderID}...`);
+        setStatusMessage(`Capturing Order ${data.orderID}...`);
         const res = await apiFetch('/api/scamshield/capture-paypal-order', {
           method: 'POST',
           body: JSON.stringify({ orderId: data.orderID, signedToken }),
         });
         const cap = await res.json();
         if (!cancelled && cap.captured) {
-          setStatusMessage(`Captured Order ${cap.orderId} (Capture ${cap.captureId}).`);
+          setStatusMessage(`Captured Order ${cap.orderId} (${cap.captureId}).`);
           onCaptured({ orderId: cap.orderId, captureId: cap.captureId });
         }
       },
       onError: (err: unknown) => {
         if (!cancelled) {
-          setStatusMessage(`PayPal popup note: ${String(err)}`);
+          setStatusMessage(`PayPal SDK note: ${String(err)}`);
         }
       },
     });
@@ -127,7 +127,7 @@ export const PayPalSmartCheckout: React.FC<PayPalSmartCheckoutProps> = ({
   }, [sdkReady, signedToken, amountCents, payeeIdentifier]);
 
   const handleGenerateDirectSandboxLink = async () => {
-    setStatusMessage('Minting live PayPal Sandbox Checkout URL...');
+    setStatusMessage('Minting PayPal Sandbox Checkout URL...');
     const res = await apiFetch('/api/scamshield/create-paypal-order', {
       method: 'POST',
       body: JSON.stringify({ signedToken }),
@@ -135,18 +135,18 @@ export const PayPalSmartCheckout: React.FC<PayPalSmartCheckoutProps> = ({
     const data = await res.json();
     if (data.approvalUrl) {
       setCreatedApprovalUrl(data.approvalUrl);
-      setStatusMessage(`Live Sandbox Order ${data.orderId} ready.`);
+      setStatusMessage(`Sandbox Order ${data.orderId} ready.`);
     }
   };
 
   return (
-    <div className="rounded-xl border border-[#0070e0]/35 bg-[#091224] p-4 space-y-3">
+    <div className="border border-[#0047FF] bg-[#06080F] p-4 space-y-3 corner-ticks">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-xs font-semibold text-sky-300">
-          <ShieldCheck className="w-4 h-4 text-[#0070e0]" />
-          <span>Firewall-Unlocked Live PayPal Sandbox Wallet Checkout</span>
+        <div className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wider text-[#CCFF00]">
+          <ShieldCheck className="w-4 h-4 text-[#CCFF00]" />
+          <span>Firewall-Unlocked PayPal Checkout</span>
         </div>
-        <span className="text-xs font-mono text-slate-300 tabular-nums">
+        <span className="text-xs font-mono font-bold text-[#F8FAFC] tabular-nums">
           ${(amountCents / 100).toFixed(2)} {currency}
         </span>
       </div>
@@ -154,9 +154,8 @@ export const PayPalSmartCheckout: React.FC<PayPalSmartCheckoutProps> = ({
       {publicClientId ? (
         <div ref={containerRef} className="min-h-[42px]" />
       ) : (
-        <div className="text-xs text-slate-400">
-          Configure PayPal Sandbox Client ID in API Credentials to render live Smart Payment Buttons,
-          or execute server-side verified capture below.
+        <div className="text-xs text-[#94A3B8]">
+          Server-side PayPal Sandbox capture unlocked below.
         </div>
       )}
 
@@ -164,9 +163,9 @@ export const PayPalSmartCheckout: React.FC<PayPalSmartCheckoutProps> = ({
         <button
           type="button"
           onClick={handleGenerateDirectSandboxLink}
-          className="btn-institutional-secondary px-3 py-1.5 text-xs inline-flex items-center gap-1.5"
+          className="btn-ghost-brutal px-3 py-1.5 text-xs"
         >
-          <span>Generate Direct Sandbox Checkout URL</span>
+          <span>Mint Sandbox Checkout Link</span>
           <ExternalLink className="w-3.5 h-3.5" />
         </button>
 
@@ -175,17 +174,17 @@ export const PayPalSmartCheckout: React.FC<PayPalSmartCheckoutProps> = ({
             href={createdApprovalUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#0070e0]/20 border border-[#0070e0]/50 px-3 py-1.5 text-xs font-semibold text-sky-200 hover:bg-[#0070e0]/30"
+            className="btn-cobalt px-3 py-1.5 text-xs"
           >
-            <span>Open sandbox.paypal.com Checkout</span>
+            <span>Open sandbox.paypal.com</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         )}
       </div>
 
-      {sdkError && <p className="text-xs text-amber-300">{sdkError}</p>}
+      {sdkError && <p className="text-xs font-mono text-[#94A3B8]">{sdkError}</p>}
       {statusMessage && (
-        <div className="flex items-center gap-1.5 text-xs text-emerald-300">
+        <div className="flex items-center gap-1.5 text-xs font-mono text-[#CCFF00]">
           <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
           <span>{statusMessage}</span>
         </div>
