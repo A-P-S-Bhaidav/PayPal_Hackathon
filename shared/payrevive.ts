@@ -1,14 +1,22 @@
 import { canonicalJson, sha256Hex } from './kernel';
+import {
+  GBDTNodeArtifact,
+  PAYREVIVE_MODEL_METADATA,
+  TRAINED_GBDT_BASE_LOG_ODDS,
+  TRAINED_PAYREVIVE_GBDT_TREES,
+} from './payreviveModelArtifact';
 
 // ============================================================================
-// PAYREVIVE: AUTONOMOUS AI FAILED-PAYMENT REVENUE RECOVERY ENGINE
+// PAYREVIVE: AUTONOMOUS FAILED-PAYMENT REVENUE RECOVERY ENGINE
 // Architecture:
-//   1. XGBoost-Style Gradient Boosted Decision Trees (12-Tree Ensemble)
+//   1. Trained 16-Tree Second-Order Newton GBDT Ensemble (Held-Out AUC=0.8301)
 //   2. Exact Path-Dependent TreeSHAP Feature Attribution (Verified Additivity)
-//   3. Cost-Aware Contextual Bandit Action Selector (Net EV > 0 Mandate)
+//   3. Disjoint LinUCB Contextual Bandit (Sherman-Morrison Ridge Regression)
 //   4. Hard Deterministic Compliance Gate (Zero Refused Actions Executed)
-//   5. 500-Batch Monte Carlo Benchmark vs Hand-Written Static Rule System
+//   5. Non-Stationary Noisy 500-Batch Benchmark vs Strong Static Rule System
 // ============================================================================
+
+export { PAYREVIVE_MODEL_METADATA };
 
 export type PaymentDeclineCode =
   | 'INSUFFICIENT_FUNDS'
@@ -68,6 +76,7 @@ export interface XGBoostShapDiagnosis {
   predictedRootCause: RecoveryRootCause;
   rootCauseSummary: string;
   shapContributions: ShapFeatureContribution[];
+  modelMetadata: typeof PAYREVIVE_MODEL_METADATA;
 }
 
 export interface ComplianceCheckResult {
@@ -80,10 +89,12 @@ export interface ComplianceCheckResult {
 export interface BanditArmEvaluation {
   actionId: RecoveryActionId;
   actionLabel: string;
+  customerActionTitle: string;
   paypalMechanism: 'PAYPAL_ORDERS_V2_RETRY' | 'PAYPAL_INVOICING_V2_LINK' | 'NONE';
   requiresCustomerOutreach: boolean;
   actionCostCents: number;
   estimatedSuccessProbability: number;
+  uncertaintyRadius: number;
   expectedGrossRecoveryCents: number;
   expectedNetGainCents: number;
   ucbScoreCents: number;
@@ -104,6 +115,9 @@ export interface PayReviveDecision {
   complianceBlockedTopChoice: boolean;
   auditHash: string;
   deterministicRationale: string;
+  plainEnglishCause: string;
+  plainEnglishRecommendation: string;
+  settlementConfirmed: boolean;
 }
 
 // ----------------------------------------------------------------------------
@@ -128,340 +142,249 @@ export function extractPayReviveFeatures(e: FailedPaymentEvent): {
   values: number[];
   displays: string[];
 } {
-  const isHard =
+  const isHardDecline =
     e.declineCode === 'STOLEN_OR_FRAUD_CARD' || e.declineCode === 'REVOKED_AUTHORIZATION' ? 1 : 0;
-  const isTimeout = e.declineCode === 'ISSUER_TIMEOUT' || e.issuerLatencyMs >= 1800 ? 1 : 0;
-  const isInstErr =
+  const isIssuerTimeout = e.declineCode === 'ISSUER_TIMEOUT' || e.issuerLatencyMs >= 1800 ? 1 : 0;
+  const isInstrumentError =
     e.declineCode === 'EXPIRED_CARD' || e.declineCode === 'VELOCITY_EXCEEDED' ? 1 : 0;
-  const amountDollars = Math.max(0.01, e.amountCents / 100);
+  const amountDollars = Number((e.amountCents / 100).toFixed(2));
 
-  return {
-    values: [
-      isHard,
-      isTimeout,
-      isInstErr,
-      e.daysUntilPayday,
-      e.priorRetryCount30d,
-      e.historicalCaptureRate,
-      e.hasPayPalBackupFunding ? 1 : 0,
-      amountDollars,
-    ],
-    displays: [
-      isHard ? e.declineCode : 'None (Soft Decline)',
-      `${e.issuerLatencyMs}ms (${e.declineCode === 'ISSUER_TIMEOUT' ? 'Timeout' : 'Normal'})`,
-      isInstErr ? e.declineCode : 'Card Active',
-      `${e.daysUntilPayday}d`,
-      `${e.priorRetryCount30d} / 3 cap`,
-      `${Math.round(e.historicalCaptureRate * 100)}%`,
-      e.hasPayPalBackupFunding ? 'Linked' : 'None',
-      `$${amountDollars.toFixed(2)}`,
-    ],
-  };
+  const values = [
+    isHardDecline,
+    isIssuerTimeout,
+    isInstrumentError,
+    e.daysUntilPayday,
+    e.priorRetryCount30d,
+    e.historicalCaptureRate,
+    e.hasPayPalBackupFunding ? 1 : 0,
+    amountDollars,
+  ];
+
+  const displays = [
+    isHardDecline ? `YES (${e.declineCode})` : 'NO',
+    isIssuerTimeout ? `YES (${e.issuerLatencyMs}ms)` : `${e.issuerLatencyMs}ms`,
+    isInstrumentError ? `YES (${e.declineCode})` : 'NO',
+    `${e.daysUntilPayday}d`,
+    `${e.priorRetryCount30d} retries`,
+    `${Math.round(e.historicalCaptureRate * 100)}%`,
+    e.hasPayPalBackupFunding ? 'Available' : 'None',
+    `$${amountDollars.toFixed(2)}`,
+  ];
+
+  return { values, displays };
 }
 
 // ----------------------------------------------------------------------------
-// 2. XGBOOST-STYLE GRADIENT BOOSTED TREES + EXACT TREESHAP ENGINE
+// 2. TRAINED NEWTON GBDT INFERENCE + EXACT PATH-DEPENDENT TREESHAP
 // ----------------------------------------------------------------------------
 
-interface GBDTNode {
-  cover: number;
-  leafValue?: number;
-  featureIndex?: number;
-  threshold?: number;
-  left?: GBDTNode;
-  right?: GBDTNode;
+function isLeaf(node: GBDTNodeArtifact): boolean {
+  return (
+    node.leafValue !== undefined ||
+    node.featureIndex === undefined ||
+    node.threshold === undefined ||
+    !node.left ||
+    !node.right
+  );
 }
 
-const GBDT_BASE_LOG_ODDS = -0.15;
-
-// 12 calibrated gradient-boosted regression trees over the 8 payment telemetry features
-const PAYREVIVE_GBDT_TREES: ReadonlyArray<GBDTNode> = [
-  // Tree 1: Hard decline detector (dominant negative log-odds)
-  {
-    cover: 1000,
-    featureIndex: 0,
-    threshold: 0.5,
-    left: {
-      cover: 840,
-      featureIndex: 4,
-      threshold: 2.5,
-      left: { cover: 720, leafValue: 0.28 },
-      right: { cover: 120, leafValue: -0.95 },
-    },
-    right: { cover: 160, leafValue: -3.4 },
-  },
-  // Tree 2: Issuer timeout + historical reliability boost
-  {
-    cover: 1000,
-    featureIndex: 1,
-    threshold: 0.5,
-    left: { cover: 780, leafValue: -0.08 },
-    right: {
-      cover: 220,
-      featureIndex: 5,
-      threshold: 0.55,
-      left: { cover: 50, leafValue: 0.35 },
-      right: { cover: 170, leafValue: 1.18 },
-    },
-  },
-  // Tree 3: Instrument error x PayPal Backup Funding interaction
-  {
-    cover: 1000,
-    featureIndex: 2,
-    threshold: 0.5,
-    left: { cover: 740, leafValue: 0.06 },
-    right: {
-      cover: 260,
-      featureIndex: 6,
-      threshold: 0.5,
-      left: { cover: 105, leafValue: -0.52 },
-      right: { cover: 155, leafValue: 0.92 },
-    },
-  },
-  // Tree 4: Payday timing gap on liquidity declines
-  {
-    cover: 1000,
-    featureIndex: 3,
-    threshold: 1.5,
-    left: { cover: 360, leafValue: 0.34 },
-    right: {
-      cover: 640,
-      featureIndex: 3,
-      threshold: 7.5,
-      left: { cover: 420, leafValue: 0.14 },
-      right: { cover: 220, leafValue: -0.36 },
-    },
-  },
-  // Tree 5: Historical capture rate loyalty signal
-  {
-    cover: 1000,
-    featureIndex: 5,
-    threshold: 0.7,
-    left: {
-      cover: 390,
-      featureIndex: 5,
-      threshold: 0.35,
-      left: { cover: 130, leafValue: -0.78 },
-      right: { cover: 260, leafValue: -0.18 },
-    },
-    right: { cover: 610, leafValue: 0.56 },
-  },
-  // Tree 6: Prior retry fatigue curve
-  {
-    cover: 1000,
-    featureIndex: 4,
-    threshold: 0.5,
-    left: { cover: 520, leafValue: 0.26 },
-    right: {
-      cover: 480,
-      featureIndex: 4,
-      threshold: 1.5,
-      left: { cover: 290, leafValue: -0.05 },
-      right: { cover: 190, leafValue: -0.68 },
-    },
-  },
-  // Tree 7: Backup PayPal Wallet availability across soft declines
-  {
-    cover: 1000,
-    featureIndex: 6,
-    threshold: 0.5,
-    left: { cover: 460, leafValue: -0.22 },
-    right: {
-      cover: 540,
-      featureIndex: 0,
-      threshold: 0.5,
-      left: { cover: 460, leafValue: 0.44 },
-      right: { cover: 80, leafValue: -0.6 },
-    },
-  },
-  // Tree 8: High-ticket invoice pressure vs split potential
-  {
-    cover: 1000,
-    featureIndex: 7,
-    threshold: 250,
-    left: {
-      cover: 680,
-      featureIndex: 7,
-      threshold: 4.5,
-      left: { cover: 90, leafValue: -0.25 },
-      right: { cover: 590, leafValue: 0.16 },
-    },
-    right: {
-      cover: 320,
-      featureIndex: 5,
-      threshold: 0.65,
-      left: { cover: 120, leafValue: -0.48 },
-      right: { cover: 200, leafValue: 0.22 },
-    },
-  },
-  // Tree 9: Liquidity crunch + backup wallet synergy
-  {
-    cover: 1000,
-    featureIndex: 3,
-    threshold: 3.5,
-    left: { cover: 540, leafValue: 0.12 },
-    right: {
-      cover: 460,
-      featureIndex: 6,
-      threshold: 0.5,
-      left: { cover: 220, leafValue: -0.31 },
-      right: { cover: 240, leafValue: 0.24 },
-    },
-  },
-  // Tree 10: Timeout fast-recovery booster when retries are fresh
-  {
-    cover: 1000,
-    featureIndex: 1,
-    threshold: 0.5,
-    left: { cover: 780, leafValue: -0.04 },
-    right: {
-      cover: 220,
-      featureIndex: 4,
-      threshold: 1.5,
-      left: { cover: 175, leafValue: 0.52 },
-      right: { cover: 45, leafValue: -0.15 },
-    },
-  },
-  // Tree 11: Hard decline reinforcement
-  {
-    cover: 1000,
-    featureIndex: 0,
-    threshold: 0.5,
-    left: { cover: 840, leafValue: 0.11 },
-    right: { cover: 160, leafValue: -1.85 },
-  },
-  // Tree 12: High capture history + moderate amount boost
-  {
-    cover: 1000,
-    featureIndex: 5,
-    threshold: 0.82,
-    left: { cover: 620, leafValue: -0.07 },
-    right: {
-      cover: 380,
-      featureIndex: 7,
-      threshold: 500,
-      left: { cover: 310, leafValue: 0.31 },
-      right: { cover: 70, leafValue: 0.05 },
-    },
-  },
-];
-
-function sigmoid(z: number): number {
-  if (z >= 20) return 0.999999998;
-  if (z <= -20) return 0.000000002;
-  return 1 / (1 + Math.exp(-z));
-}
-
-function collectTreeFeatures(node: GBDTNode, acc: Set<number>): void {
-  if (node.featureIndex !== undefined && node.left && node.right) {
-    acc.add(node.featureIndex);
-    collectTreeFeatures(node.left, acc);
-    collectTreeFeatures(node.right, acc);
-  }
-}
-
-function conditionalTreeExpectation(
-  node: GBDTNode,
-  x: number[],
-  activeMask: ReadonlySet<number>
-): number {
-  if (node.leafValue !== undefined || node.featureIndex === undefined || !node.left || !node.right) {
+function predictSingleTree(node: GBDTNodeArtifact, x: number[]): number {
+  if (isLeaf(node)) {
     return node.leafValue ?? 0;
   }
-  if (activeMask.has(node.featureIndex)) {
-    const branch = x[node.featureIndex] <= (node.threshold ?? 0) ? node.left : node.right;
-    return conditionalTreeExpectation(branch, x, activeMask);
-  }
-  const leftVal = conditionalTreeExpectation(node.left, x, activeMask);
-  const rightVal = conditionalTreeExpectation(node.right, x, activeMask);
-  return (node.left.cover * leftVal + node.right.cover * rightVal) / node.cover;
+  return x[node.featureIndex!] < node.threshold!
+    ? predictSingleTree(node.left!, x)
+    : predictSingleTree(node.right!, x);
 }
 
-const FACTORIAL = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
+function computeExpectedTreeValue(node: GBDTNodeArtifact): number {
+  if (isLeaf(node)) {
+    return node.leafValue ?? 0;
+  }
+  const leftCover = node.left!.cover;
+  const rightCover = node.right!.cover;
+  const total = leftCover + rightCover;
+  return (
+    (leftCover * computeExpectedTreeValue(node.left!) +
+      rightCover * computeExpectedTreeValue(node.right!)) /
+    total
+  );
+}
 
-/**
- * Exact path-dependent TreeSHAP computation over the 12-tree GBDT ensemble.
- * Guarantees local accuracy: baseLogOdds + sum(phi_i) === rawMarginLogOdds.
- */
+interface TreeShapPathElem {
+  feature: number;
+  zeroFraction: number;
+  oneFraction: number;
+  pweight: number;
+}
+
+function extendPath(
+  path: TreeShapPathElem[],
+  zeroFraction: number,
+  oneFraction: number,
+  featureIndex: number
+): TreeShapPathElem[] {
+  const depth = path.length;
+  const next: TreeShapPathElem[] = path.map((p) => ({ ...p }));
+  next.push({
+    feature: featureIndex,
+    zeroFraction,
+    oneFraction,
+    pweight: depth === 0 ? 1.0 : 0.0,
+  });
+
+  for (let i = depth - 1; i >= 0; i--) {
+    next[i + 1].pweight += oneFraction * next[i].pweight * ((i + 1) / (depth + 1));
+    next[i].pweight = zeroFraction * next[i].pweight * ((depth - i) / (depth + 1));
+  }
+  return next;
+}
+
+function unwindPath(path: TreeShapPathElem[], pathIndex: number): TreeShapPathElem[] {
+  const depth = path.length - 1;
+  const next = path.map((p) => ({ ...p }));
+  const oneFraction = next[pathIndex].oneFraction;
+  const zeroFraction = next[pathIndex].zeroFraction;
+  let nextOnePortion = next[depth].pweight;
+
+  for (let i = depth - 1; i >= 0; i--) {
+    if (oneFraction !== 0) {
+      const tmp = next[i].pweight;
+      next[i].pweight = (nextOnePortion * (depth + 1)) / ((i + 1) * oneFraction);
+      nextOnePortion = tmp - next[i].pweight * zeroFraction * ((depth - i) / (depth + 1));
+    } else {
+      next[i].pweight = (next[i].pweight * (depth + 1)) / (zeroFraction * (depth - i));
+    }
+  }
+
+  for (let i = pathIndex; i < depth; i++) {
+    next[i].feature = next[i + 1].feature;
+    next[i].zeroFraction = next[i + 1].zeroFraction;
+    next[i].oneFraction = next[i + 1].oneFraction;
+  }
+  next.pop();
+  return next;
+}
+
+function unwoundPathSum(path: TreeShapPathElem[], pathIndex: number): number {
+  const depth = path.length - 1;
+  const oneFraction = path[pathIndex].oneFraction;
+  const zeroFraction = path[pathIndex].zeroFraction;
+  let nextOnePortion = path[depth].pweight;
+  let total = 0;
+
+  for (let i = depth - 1; i >= 0; i--) {
+    if (oneFraction !== 0) {
+      const tmp = (nextOnePortion * (depth + 1)) / ((i + 1) * oneFraction);
+      total += tmp;
+      nextOnePortion = path[i].pweight - tmp * zeroFraction * ((depth - i) / (depth + 1));
+    } else if (zeroFraction !== 0) {
+      total += (path[i].pweight / zeroFraction) / ((depth - i) / (depth + 1));
+    }
+  }
+  return total;
+}
+
+function computeTreeShapForSingleTree(
+  root: GBDTNodeArtifact,
+  x: number[],
+  phiOut: number[]
+): void {
+  function recurse(
+    node: GBDTNodeArtifact,
+    incomingPath: TreeShapPathElem[],
+    incomingZeroFrac: number,
+    incomingOneFrac: number,
+    incomingFeature: number
+  ): void {
+    const path = extendPath(incomingPath, incomingZeroFrac, incomingOneFrac, incomingFeature);
+
+    if (isLeaf(node)) {
+      const leafVal = node.leafValue ?? 0;
+      for (let i = 1; i < path.length; i++) {
+        const w = unwoundPathSum(path, i);
+        const elem = path[i];
+        phiOut[elem.feature] += w * (elem.oneFraction - elem.zeroFraction) * leafVal;
+      }
+      return;
+    }
+
+    const fIdx = node.featureIndex!;
+    const goesLeft = x[fIdx] < node.threshold!;
+    const hotChild = goesLeft ? node.left! : node.right!;
+    const coldChild = goesLeft ? node.right! : node.left!;
+
+    let incomingZero = 1.0;
+    let incomingOne = 1.0;
+    let workingPath = path;
+
+    const existingIdx = workingPath.findIndex((p, idx) => idx > 0 && p.feature === fIdx);
+    if (existingIdx !== -1) {
+      incomingZero = workingPath[existingIdx].zeroFraction;
+      incomingOne = workingPath[existingIdx].oneFraction;
+      workingPath = unwindPath(workingPath, existingIdx);
+    }
+
+    const totalCover = node.left!.cover + node.right!.cover;
+    const hotCoverFrac = hotChild.cover / totalCover;
+    const coldCoverFrac = coldChild.cover / totalCover;
+
+    recurse(hotChild, workingPath, incomingZero * hotCoverFrac, incomingOne, fIdx);
+    recurse(coldChild, workingPath, incomingZero * coldCoverFrac, 0.0, fIdx);
+  }
+
+  recurse(root, [], 1.0, 1.0, -1);
+}
+
+function sigmoid(z: number): number {
+  if (z >= 0) {
+    const ez = Math.exp(-z);
+    return 1 / (1 + ez);
+  }
+  const ez = Math.exp(z);
+  return ez / (1 + ez);
+}
+
 export function diagnosePaymentFailureXGBoost(event: FailedPaymentEvent): XGBoostShapDiagnosis {
-  const { values: x, displays } = extractPayReviveFeatures(event);
+  const { values, displays } = extractPayReviveFeatures(event);
   const numFeatures = PAYREVIVE_FEATURE_META.length;
   const shapValues = new Array<number>(numFeatures).fill(0);
 
-  let expectedEnsembleBase = GBDT_BASE_LOG_ODDS;
-  let exactEnsembleMargin = GBDT_BASE_LOG_ODDS;
+  let expectedEnsembleBase = TRAINED_GBDT_BASE_LOG_ODDS;
+  let exactEnsembleMargin = TRAINED_GBDT_BASE_LOG_ODDS;
 
-  for (const tree of PAYREVIVE_GBDT_TREES) {
-    const featureSet = new Set<number>();
-    collectTreeFeatures(tree, featureSet);
-    const treeFeatures = Array.from(featureSet);
-    const m = treeFeatures.length;
-
-    const emptySet = new Set<number>();
-    const fullSet = new Set<number>(treeFeatures);
-    expectedEnsembleBase += conditionalTreeExpectation(tree, x, emptySet);
-    exactEnsembleMargin += conditionalTreeExpectation(tree, x, fullSet);
-
-    if (m === 0) continue;
-
-    // Precompute coalition values for all 2^m subsets (m <= 3 -> <= 8 coalitions per tree)
-    const coalitionValues = new Float64Array(1 << m);
-    for (let mask = 0; mask < 1 << m; mask++) {
-      const subset = new Set<number>();
-      for (let bit = 0; bit < m; bit++) {
-        if ((mask & (1 << bit)) !== 0) {
-          subset.add(treeFeatures[bit]);
-        }
-      }
-      coalitionValues[mask] = conditionalTreeExpectation(tree, x, subset);
-    }
-
-    for (let bit = 0; bit < m; bit++) {
-      const featIdx = treeFeatures[bit];
-      let phi = 0;
-      for (let mask = 0; mask < 1 << m; mask++) {
-        if ((mask & (1 << bit)) !== 0) continue;
-        // Count |S|
-        let sSize = 0;
-        let tmp = mask;
-        while (tmp > 0) {
-          sSize += tmp & 1;
-          tmp >>= 1;
-        }
-        const weight = (FACTORIAL[sSize] * FACTORIAL[m - sSize - 1]) / FACTORIAL[m];
-        const withFeature = coalitionValues[mask | (1 << bit)];
-        const withoutFeature = coalitionValues[mask];
-        phi += weight * (withFeature - withoutFeature);
-      }
-      shapValues[featIdx] += phi;
-    }
+  for (const tree of TRAINED_PAYREVIVE_GBDT_TREES) {
+    expectedEnsembleBase += computeExpectedTreeValue(tree);
+    exactEnsembleMargin += predictSingleTree(tree, values);
+    computeTreeShapForSingleTree(tree, values, shapValues);
   }
 
   const shapSum = shapValues.reduce((acc, v) => acc + v, 0);
   const additivityDelta = Math.abs(expectedEnsembleBase + shapSum - exactEnsembleMargin);
   const recoverabilityProbability = Number(sigmoid(exactEnsembleMargin).toFixed(4));
 
-  let predictedRootCause: RecoveryRootCause = 'LIQUIDITY_PAYDAY_GAP';
-  let rootCauseSummary = '';
+  let predictedRootCause: RecoveryRootCause;
+  let rootCauseSummary: string;
 
   if (
     event.declineCode === 'STOLEN_OR_FRAUD_CARD' ||
-    event.declineCode === 'REVOKED_AUTHORIZATION'
+    event.declineCode === 'REVOKED_AUTHORIZATION' ||
+    event.hasOpenPayPalDispute
   ) {
     predictedRootCause = 'COMPLIANCE_HARD_DECLINE';
-    rootCauseSummary = `Permanent compliance hard decline (${event.declineCode}); re-debit strictly prohibited.`;
+    rootCauseSummary = `Hard decline or active dispute (${event.declineCode}); recovery actions are prohibited.`;
   } else if (event.declineCode === 'ISSUER_TIMEOUT' || event.issuerLatencyMs >= 1800) {
     predictedRootCause = 'TRANSIENT_ISSUER_TIMEOUT';
-    rootCauseSummary = `Transient issuer gateway timeout (${event.issuerLatencyMs}ms); high immediate retry recoverability.`;
+    rootCauseSummary = `Temporary bank network timeout (${event.issuerLatencyMs}ms); immediate smart retry has high success odds.`;
   } else if (event.declineCode === 'EXPIRED_CARD' || event.declineCode === 'VELOCITY_EXCEEDED') {
     predictedRootCause = 'DEGRADED_FUNDING_INSTRUMENT';
-    rootCauseSummary = `Primary card ${event.declineCode.toLowerCase().replace(/_/g, ' ')}; standard card retry will fail unless switched to PayPal Backup Funding.`;
+    rootCauseSummary = `Customer's card is ${event.declineCode.toLowerCase().replace(/_/g, ' ')}; switching to PayPal Backup Funding avoids card decline.`;
   } else if (event.priorRetryCount30d >= 3 || event.historicalCaptureRate < 0.35) {
     predictedRootCause = 'LOW_INTENT_EXHAUSTED_RETRIES';
-    rootCauseSummary = `Exhausted retry window (${event.priorRetryCount30d} prior attempts) or chronically low capture rate.`;
+    rootCauseSummary = `Retry limit exhausted (${event.priorRetryCount30d} prior attempts) or low historical completion.`;
   } else {
     predictedRootCause = 'LIQUIDITY_PAYDAY_GAP';
-    rootCauseSummary = `Temporary balance shortfall (${event.daysUntilPayday}d until predicted payday liquidity window).`;
+    rootCauseSummary = `Temporary balance shortfall (${event.daysUntilPayday} days before estimated payday).`;
   }
 
   const shapContributions: ShapFeatureContribution[] = PAYREVIVE_FEATURE_META.map((meta, idx) => {
@@ -486,6 +409,7 @@ export function diagnosePaymentFailureXGBoost(event: FailedPaymentEvent): XGBoos
     predictedRootCause,
     rootCauseSummary,
     shapContributions,
+    modelMetadata: PAYREVIVE_MODEL_METADATA,
   };
 }
 
@@ -496,48 +420,55 @@ export function diagnosePaymentFailureXGBoost(event: FailedPaymentEvent): XGBoos
 export const RECOVERY_ACTION_CATALOG: ReadonlyArray<{
   actionId: RecoveryActionId;
   actionLabel: string;
+  customerActionTitle: string;
   paypalMechanism: BanditArmEvaluation['paypalMechanism'];
   requiresCustomerOutreach: boolean;
   actionCostCents: number;
 }> = [
   {
     actionId: 'IMMEDIATE_JITTER_RETRY',
-    actionLabel: 'Immediate Jittered PayPal Capture Retry',
+    actionLabel: 'Immediate Jittered PayPal Order Retry',
+    customerActionTitle: 'Retry Payment Automatically Now',
     paypalMechanism: 'PAYPAL_ORDERS_V2_RETRY',
     requiresCustomerOutreach: false,
     actionCostCents: 18,
   },
   {
     actionId: 'PAYDAY_SCHEDULED_SMART_RETRY',
-    actionLabel: 'Payday-Aligned Smart Capture Schedule',
+    actionLabel: 'Payday-Aligned PayPal Smart Retry Hold',
+    customerActionTitle: 'Schedule Retry for Customer Payday',
     paypalMechanism: 'PAYPAL_ORDERS_V2_RETRY',
     requiresCustomerOutreach: false,
-    actionCostCents: 22,
+    actionCostCents: 24,
   },
   {
     actionId: 'PAYPAL_BACKUP_FUNDING_SWITCH',
-    actionLabel: 'PayPal Wallet / ACH Backup Funding Link',
+    actionLabel: 'PayPal Backup Wallet / ACH Invoice Link',
+    customerActionTitle: 'Send PayPal Backup Funding Link',
     paypalMechanism: 'PAYPAL_INVOICING_V2_LINK',
     requiresCustomerOutreach: true,
     actionCostCents: 55,
   },
   {
     actionId: 'SPLIT_TWO_PART_INVOICE',
-    actionLabel: '50/50 Two-Part PayPal Installment Invoice',
+    actionLabel: 'Split 50/50 Two-Part PayPal Recovery Invoice',
+    customerActionTitle: 'Offer Two-Part Split Payment Link',
     paypalMechanism: 'PAYPAL_INVOICING_V2_LINK',
     requiresCustomerOutreach: true,
-    actionCostCents: 125,
+    actionCostCents: 85,
   },
   {
     actionId: 'FEE_WAIVER_GRACE_LINK',
-    actionLabel: 'Late-Fee Waiver + 48h PayPal Grace Link',
+    actionLabel: '7-Day Grace Extension PayPal Invoice Link',
+    customerActionTitle: 'Send 7-Day Grace Payment Link',
     paypalMechanism: 'PAYPAL_INVOICING_V2_LINK',
     requiresCustomerOutreach: true,
-    actionCostCents: 240,
+    actionCostCents: 65,
   },
   {
     actionId: 'ABANDON_NO_ACTION',
-    actionLabel: 'Abstain (Do Not Retry — Protect Margin & Compliance)',
+    actionLabel: 'Abstain — Do Not Retry or Contact',
+    customerActionTitle: 'Do Not Retry (Save Retry Fees)',
     paypalMechanism: 'NONE',
     requiresCustomerOutreach: false,
     actionCostCents: 0,
@@ -552,216 +483,307 @@ export function evaluatePayReviveCompliance(
     return {
       allowed: true,
       ruleId: 'COMP-SAFE-ABSTAIN',
-      reason: 'Zero-action abstention is always compliant.',
+      reason: 'Abstaining incurs zero network retries and zero customer outreach.',
       blockedFlags: [],
     };
   }
 
+  const spec = RECOVERY_ACTION_CATALOG.find((a) => a.actionId === actionId)!;
   const blockedFlags: string[] = [];
 
-  // Rule C1: Hard Declines (Card Network & PayPal Mandate Law — Zero Retry / Zero Dunning)
   if (
     event.declineCode === 'STOLEN_OR_FRAUD_CARD' ||
     event.declineCode === 'REVOKED_AUTHORIZATION'
   ) {
-    blockedFlags.push(`HARD_DECLINE_${event.declineCode}`);
+    blockedFlags.push(`CARD_NETWORK_HARD_DECLINE_${event.declineCode}`);
   }
-
-  // Rule C2: Active Open PayPal Dispute Freeze
   if (event.hasOpenPayPalDispute) {
     blockedFlags.push('ACTIVE_PAYPAL_DISPUTE_FREEZE');
   }
-
-  const spec = RECOVERY_ACTION_CATALOG.find((a) => a.actionId === actionId)!;
-
-  // Rule C3: Card-Network 30-Day Automated Re-Debit Ceiling (Max 3 retries)
-  if (!spec.requiresCustomerOutreach && event.priorRetryCount30d >= 3) {
-    blockedFlags.push('MAX_3_AUTO_RETRIES_EXCEEDED_30D');
+  if (spec.paypalMechanism === 'PAYPAL_ORDERS_V2_RETRY' && event.priorRetryCount30d >= 3) {
+    blockedFlags.push('MAX_3_RETRIES_30D_EXCEEDED');
   }
-
-  // Rule C4: Excessive total contact/retry cap (>= 4 attempts blocks all actions)
-  if (event.priorRetryCount30d >= 4) {
-    blockedFlags.push('GLOBAL_ATTEMPT_CAP_EXCEEDED');
+  if (spec.paypalMechanism === 'PAYPAL_ORDERS_V2_RETRY' && event.declineCode === 'EXPIRED_CARD') {
+    blockedFlags.push('CARD_NETWORK_EXPIRED_INSTRUMENT_RETRY_BAN');
   }
-
-  // Rule C5: TCPA / GDPR Communication Opt-Out & Quiet Hours (21:00 - 07:59 local)
-  if (spec.requiresCustomerOutreach) {
-    if (event.customerOptedOutComms) {
-      blockedFlags.push('CUSTOMER_COMMUNICATION_OPT_OUT');
-    }
-    if (event.localCustomerHour >= 21 || event.localCustomerHour < 8) {
-      blockedFlags.push(`QUIET_HOURS_RESTRICTION_${event.localCustomerHour}H`);
-    }
+  if (spec.requiresCustomerOutreach && event.customerOptedOutComms) {
+    blockedFlags.push('TCPA_GDPR_COMMS_OPT_OUT');
+  }
+  if (
+    spec.requiresCustomerOutreach &&
+    (event.localCustomerHour < 8 || event.localCustomerHour >= 21)
+  ) {
+    blockedFlags.push(`QUIET_HOURS_RESTRICTION_${event.localCustomerHour}H`);
+  }
+  if (actionId === 'SPLIT_TWO_PART_INVOICE' && event.amountCents < 4000) {
+    blockedFlags.push('SPLIT_INVOICE_MIN_AMOUNT_40_USD');
   }
 
   if (blockedFlags.length > 0) {
     return {
       allowed: false,
-      ruleId: `COMP-BLOCK-${blockedFlags[0]}`,
-      reason: `Refused by compliance gate: ${blockedFlags.join(', ')}`,
+      ruleId: blockedFlags[0],
+      reason: `Blocked by compliance rule(s): ${blockedFlags.join(', ')}`,
       blockedFlags,
     };
   }
 
   return {
     allowed: true,
-    ruleId: 'COMP-ALLOW-VERIFIED',
-    reason: 'Passed card-network retry ceiling, mandate validity, dispute check, and TCPA/GDPR rules.',
+    ruleId: 'COMP-ALL-CLEAR',
+    reason: 'Permitted under card-network retry caps, PayPal dispute rules, and outreach hours.',
     blockedFlags: [],
   };
 }
 
 // ----------------------------------------------------------------------------
-// 4. COST-AWARE CONTEXTUAL BANDIT ACTION SELECTOR
+// 4. DISJOINT LINUCB CONTEXTUAL BANDIT (Li et al., WWW 2010)
+//    Per-arm ridge regression with exact Sherman-Morrison O(d^2) inverse updates:
+//      theta_a = A_a^{-1} b_a
+//      p_hat_a(x) = clip(theta_a^T x, 0.005, 0.96)
+//      ucb_a(x)   = clip(p_hat_a(x) + alpha * sqrt(x^T A_a^{-1} x), 0.005, 0.98)
 // ----------------------------------------------------------------------------
 
-export interface BanditPosteriorEntry {
-  alpha: number;
-  beta: number;
+const CONTEXT_DIM = 9;
+
+export interface SerializedLinUcbArm {
+  AInv: number[][];
+  b: number[];
   pulls: number;
 }
 
+export type SerializedBanditState = Record<string, SerializedLinUcbArm>;
+
+function createScaledIdentity(dim: number, scale: number): number[][] {
+  const mat: number[][] = [];
+  for (let i = 0; i < dim; i++) {
+    const row = new Array<number>(dim).fill(0);
+    row[i] = scale;
+    mat.push(row);
+  }
+  return mat;
+}
+
+function matVecMul(M: number[][], v: number[]): number[] {
+  const out = new Array<number>(M.length).fill(0);
+  for (let i = 0; i < M.length; i++) {
+    let s = 0;
+    for (let j = 0; j < v.length; j++) {
+      s += M[i][j] * v[j];
+    }
+    out[i] = s;
+  }
+  return out;
+}
+
+function dot(u: number[], v: number[]): number {
+  let s = 0;
+  for (let i = 0; i < u.length; i++) s += u[i] * v[i];
+  return s;
+}
+
+/**
+ * Sherman-Morrison rank-1 inverse update:
+ *   (A + x x^T)^{-1} = A^{-1} - (A^{-1} x x^T A^{-1}) / (1 + x^T A^{-1} x)
+ */
+function shermanMorrisonUpdate(AInv: number[][], x: number[]): void {
+  const z = matVecMul(AInv, x); // A^{-1} x
+  const denom = 1 + dot(x, z);
+  if (denom <= 1e-9) return;
+  for (let i = 0; i < AInv.length; i++) {
+    for (let j = 0; j < AInv.length; j++) {
+      AInv[i][j] -= (z[i] * z[j]) / denom;
+    }
+  }
+}
+
+export function buildBanditContextVector(
+  event: FailedPaymentEvent,
+  diagnosis: XGBoostShapDiagnosis
+): number[] {
+  const isIssuerTimeout =
+    event.declineCode === 'ISSUER_TIMEOUT' || event.issuerLatencyMs >= 1800 ? 1 : 0;
+  const isInsufficientFunds = event.declineCode === 'INSUFFICIENT_FUNDS' ? 1 : 0;
+  const isInstrumentError =
+    event.declineCode === 'EXPIRED_CARD' || event.declineCode === 'VELOCITY_EXCEEDED' ? 1 : 0;
+  const paydaySoon = event.daysUntilPayday >= 1 && event.daysUntilPayday <= 10 ? 1 : 0;
+  const highTicket = event.amountCents >= 15000 ? 1 : 0;
+  const backupWallet = event.hasPayPalBackupFunding ? 1 : 0;
+  const retryFatigue = Math.min(1, event.priorRetryCount30d / 3);
+
+  return [
+    1.0, // bias
+    diagnosis.recoverabilityProbability, // GBDT calibrated base score
+    isIssuerTimeout,
+    isInsufficientFunds,
+    isInstrumentError,
+    paydaySoon,
+    highTicket,
+    backupWallet,
+    retryFatigue,
+  ];
+}
+
 export class PayReviveContextualBandit {
-  private readonly posteriors = new Map<string, BanditPosteriorEntry>();
-  private totalDecisions = 0;
+  private arms = new Map<RecoveryActionId, SerializedLinUcbArm>();
+  private readonly alphaExploration: number;
 
-  constructor() {
-    this.seedCalibratedPriors();
+  constructor(initialState?: SerializedBanditState, alphaExploration = 0.14) {
+    this.alphaExploration = alphaExploration;
+    if (initialState && Object.keys(initialState).length > 0) {
+      this.importState(initialState);
+    } else {
+      this.initializeWarmStartCohort();
+    }
   }
 
-  private key(cause: RecoveryRootCause, actionId: RecoveryActionId): string {
-    return `${cause}::${actionId}`;
+  /**
+   * Initializes ridge matrices A_a = 2.0 * I_d and warms them with a small
+   * 180-event historical burn-in cohort using exact Sherman-Morrison updates
+   * (zero hardcoded inference multipliers).
+   */
+  private initializeWarmStartCohort(): void {
+    const activeActions: RecoveryActionId[] = [
+      'IMMEDIATE_JITTER_RETRY',
+      'PAYDAY_SCHEDULED_SMART_RETRY',
+      'PAYPAL_BACKUP_FUNDING_SWITCH',
+      'SPLIT_TWO_PART_INVOICE',
+      'FEE_WAIVER_GRACE_LINK',
+    ];
+    for (const act of activeActions) {
+      this.arms.set(act, {
+        AInv: createScaledIdentity(CONTEXT_DIM, 0.5), // lambda = 2.0
+        b: new Array<number>(CONTEXT_DIM).fill(0),
+        pulls: 0,
+      });
+    }
+
+    // Small offline burn-in log (seed 101) so day-1 exploration does not guess blindly
+    const rng = mulberry32(10101);
+    const declineTypes: PaymentDeclineCode[] = [
+      'INSUFFICIENT_FUNDS',
+      'ISSUER_TIMEOUT',
+      'EXPIRED_CARD',
+      'VELOCITY_EXCEEDED',
+    ];
+    for (let i = 0; i < 180; i++) {
+      const declineCode = declineTypes[i % declineTypes.length];
+      const e: FailedPaymentEvent = {
+        eventId: `WARM-${i}`,
+        customerEmail: 'warm@cohort.local',
+        merchantOrderRef: `W-${i}`,
+        amountCents: [2900, 8900, 18900, 29000][Math.floor(rng() * 4)],
+        currency: 'USD',
+        declineCode,
+        daysUntilPayday: Math.floor(rng() * 11),
+        priorRetryCount30d: Math.floor(rng() * 3),
+        historicalCaptureRate: 0.35 + rng() * 0.6,
+        hasPayPalBackupFunding: rng() < 0.6,
+        issuerLatencyMs: declineCode === 'ISSUER_TIMEOUT' ? 2300 : 250,
+        accountTenureDays: 200,
+        customerOptedOutComms: false,
+        localCustomerHour: 13,
+        hasOpenPayPalDispute: false,
+      };
+      const diag = diagnosePaymentFailureXGBoost(e);
+      const x = buildBanditContextVector(e, diag);
+      const act = activeActions[i % activeActions.length];
+      const p = simulateRealWorldEnvironmentOutcome(e, act, (rng() - 0.5) * 0.4);
+      const reward: 0 | 1 = rng() < p ? 1 : 0;
+      this.recordContextualOutcome(x, act, reward);
+    }
   }
 
-  private seedCalibratedPriors(): void {
-    const priors: Record<RecoveryRootCause, Record<RecoveryActionId, [number, number]>> = {
-      TRANSIENT_ISSUER_TIMEOUT: {
-        IMMEDIATE_JITTER_RETRY: [34, 8],
-        PAYDAY_SCHEDULED_SMART_RETRY: [18, 14],
-        PAYPAL_BACKUP_FUNDING_SWITCH: [16, 14],
-        SPLIT_TWO_PART_INVOICE: [10, 18],
-        FEE_WAIVER_GRACE_LINK: [9, 19],
-        ABANDON_NO_ACTION: [1, 99],
-      },
-      LIQUIDITY_PAYDAY_GAP: {
-        IMMEDIATE_JITTER_RETRY: [6, 30],
-        PAYDAY_SCHEDULED_SMART_RETRY: [31, 10],
-        PAYPAL_BACKUP_FUNDING_SWITCH: [19, 15],
-        SPLIT_TWO_PART_INVOICE: [27, 11],
-        FEE_WAIVER_GRACE_LINK: [15, 17],
-        ABANDON_NO_ACTION: [1, 99],
-      },
-      DEGRADED_FUNDING_INSTRUMENT: {
-        IMMEDIATE_JITTER_RETRY: [2, 38],
-        PAYDAY_SCHEDULED_SMART_RETRY: [3, 37],
-        PAYPAL_BACKUP_FUNDING_SWITCH: [33, 9],
-        SPLIT_TWO_PART_INVOICE: [11, 23],
-        FEE_WAIVER_GRACE_LINK: [14, 21],
-        ABANDON_NO_ACTION: [1, 99],
-      },
-      LOW_INTENT_EXHAUSTED_RETRIES: {
-        IMMEDIATE_JITTER_RETRY: [3, 35],
-        PAYDAY_SCHEDULED_SMART_RETRY: [5, 31],
-        PAYPAL_BACKUP_FUNDING_SWITCH: [9, 26],
-        SPLIT_TWO_PART_INVOICE: [10, 24],
-        FEE_WAIVER_GRACE_LINK: [13, 21],
-        ABANDON_NO_ACTION: [1, 99],
-      },
-      COMPLIANCE_HARD_DECLINE: {
-        IMMEDIATE_JITTER_RETRY: [1, 99],
-        PAYDAY_SCHEDULED_SMART_RETRY: [1, 99],
-        PAYPAL_BACKUP_FUNDING_SWITCH: [1, 99],
-        SPLIT_TWO_PART_INVOICE: [1, 99],
-        FEE_WAIVER_GRACE_LINK: [1, 99],
-        ABANDON_NO_ACTION: [1, 99],
-      },
-    };
+  public exportState(): SerializedBanditState {
+    const out: SerializedBanditState = {};
+    for (const [act, arm] of this.arms.entries()) {
+      out[act] = {
+        AInv: arm.AInv.map((row) => [...row]),
+        b: [...arm.b],
+        pulls: arm.pulls,
+      };
+    }
+    return out;
+  }
 
-    for (const cause of Object.keys(priors) as RecoveryRootCause[]) {
-      for (const actionId of Object.keys(priors[cause]) as RecoveryActionId[]) {
-        const [alpha, beta] = priors[cause][actionId];
-        this.posteriors.set(this.key(cause, actionId), {
-          alpha,
-          beta,
-          pulls: alpha + beta,
+  public importState(state: SerializedBanditState): void {
+    this.arms.clear();
+    for (const [act, arm] of Object.entries(state)) {
+      if (arm?.AInv && arm?.b) {
+        this.arms.set(act as RecoveryActionId, {
+          AInv: arm.AInv.map((row) => [...row]),
+          b: [...arm.b],
+          pulls: Number(arm.pulls || 0),
         });
       }
     }
   }
 
-  public estimateActionSuccessProbability(
-    event: FailedPaymentEvent,
-    diagnosis: XGBoostShapDiagnosis,
+  public scoreArm(
+    x: number[],
     actionId: RecoveryActionId
-  ): { meanProb: number; ucbProb: number } {
+  ): { meanProb: number; ucbProb: number; uncertainty: number } {
     if (actionId === 'ABANDON_NO_ACTION') {
-      return { meanProb: 0, ucbProb: 0 };
+      return { meanProb: 0, ucbProb: 0, uncertainty: 0 };
     }
-    const post = this.posteriors.get(this.key(diagnosis.predictedRootCause, actionId)) || {
-      alpha: 2,
-      beta: 8,
-      pulls: 10,
-    };
-    const armPriorMean = post.alpha / (post.alpha + post.beta);
+    const arm = this.arms.get(actionId);
+    if (!arm) {
+      return { meanProb: 0.1, ucbProb: 0.2, uncertainty: 0.1 };
+    }
+    const theta = matVecMul(arm.AInv, arm.b);
+    const rawPred = dot(theta, x);
+    const AInvX = matVecMul(arm.AInv, x);
+    const varianceQuad = Math.max(0, dot(x, AInvX));
+    const uncertainty = this.alphaExploration * Math.sqrt(varianceQuad);
 
-    // Combine XGBoost base recoverability with contextual bandit arm affinity & feature modifiers
-    let modifier = 1.0;
-    if (actionId === 'PAYPAL_BACKUP_FUNDING_SWITCH') {
-      modifier *= event.hasPayPalBackupFunding ? 1.24 : 0.48;
-    }
-    if (actionId === 'SPLIT_TWO_PART_INVOICE') {
-      modifier *= event.amountCents >= 18000 ? 1.22 : 0.72;
-    }
-    if (actionId === 'PAYDAY_SCHEDULED_SMART_RETRY') {
-      modifier *= event.daysUntilPayday >= 1 && event.daysUntilPayday <= 10 ? 1.18 : 0.84;
-    }
-    if (actionId === 'IMMEDIATE_JITTER_RETRY' && event.declineCode === 'INSUFFICIENT_FUNDS') {
-      modifier *= event.daysUntilPayday === 0 ? 0.92 : 0.28;
-    }
-
-    const blended = Math.min(
-      0.96,
-      Math.max(0.005, (0.42 * diagnosis.recoverabilityProbability + 0.58 * armPriorMean) * modifier)
-    );
-    const totalN = Math.max(10, this.totalDecisions + 50);
-    const bonus = Math.min(0.08, Math.sqrt((0.35 * Math.log(totalN)) / Math.max(1, post.pulls)));
-
+    const meanProb = Number(Math.min(0.95, Math.max(0.005, rawPred)).toFixed(4));
+    const ucbProb = Number(Math.min(0.98, Math.max(0.005, meanProb + uncertainty)).toFixed(4));
     return {
-      meanProb: Number(blended.toFixed(4)),
-      ucbProb: Number(Math.min(0.98, blended + bonus).toFixed(4)),
+      meanProb,
+      ucbProb,
+      uncertainty: Number(uncertainty.toFixed(4)),
     };
   }
 
-  public updateOutcome(
-    cause: RecoveryRootCause,
+  private recordContextualOutcome(
+    x: number[],
+    actionId: RecoveryActionId,
+    reward: 0 | 1
+  ): void {
+    if (actionId === 'ABANDON_NO_ACTION') return;
+    const arm = this.arms.get(actionId);
+    if (!arm) return;
+    shermanMorrisonUpdate(arm.AInv, x);
+    for (let i = 0; i < CONTEXT_DIM; i++) {
+      arm.b[i] += reward * x[i];
+    }
+    arm.pulls += 1;
+  }
+
+  public updateOutcomeForEvent(
+    event: FailedPaymentEvent,
     actionId: RecoveryActionId,
     recovered: boolean
   ): void {
-    this.totalDecisions += 1;
     if (actionId === 'ABANDON_NO_ACTION') return;
-    const k = this.key(cause, actionId);
-    const entry = this.posteriors.get(k) || { alpha: 2, beta: 2, pulls: 4 };
-    entry.pulls += 1;
-    if (recovered) {
-      entry.alpha += 1;
-    } else {
-      entry.beta += 1;
-    }
-    this.posteriors.set(k, entry);
+    const diag = diagnosePaymentFailureXGBoost(event);
+    const x = buildBanditContextVector(event, diag);
+    this.recordContextualOutcome(x, actionId, recovered ? 1 : 0);
   }
 
   public evaluateAndDecide(event: FailedPaymentEvent): PayReviveDecision {
     const diagnosis = diagnosePaymentFailureXGBoost(event);
+    const x = buildBanditContextVector(event, diagnosis);
 
     const allArms: BanditArmEvaluation[] = RECOVERY_ACTION_CATALOG.map((spec) => {
-      const { meanProb, ucbProb } = this.estimateActionSuccessProbability(
-        event,
-        diagnosis,
-        spec.actionId
-      );
-      const expectedGrossRecoveryCents = Math.round(meanProb * event.amountCents);
+      const { meanProb, ucbProb, uncertainty } = this.scoreArm(x, spec.actionId);
+      const isHardDecline = diagnosis.predictedRootCause === 'COMPLIANCE_HARD_DECLINE';
+      const effectiveMean = isHardDecline ? 0 : meanProb;
+      const effectiveUcb = isHardDecline ? 0 : ucbProb;
+
+      const expectedGrossRecoveryCents = Math.round(effectiveMean * event.amountCents);
       const expectedNetGainCents = expectedGrossRecoveryCents - spec.actionCostCents;
-      const ucbScoreCents = Math.round(ucbProb * event.amountCents) - spec.actionCostCents;
+      const ucbScoreCents = Math.round(effectiveUcb * event.amountCents) - spec.actionCostCents;
       const compliance = evaluatePayReviveCompliance(event, spec.actionId);
 
       const eligibleAndWorthCost =
@@ -770,10 +792,12 @@ export class PayReviveContextualBandit {
       return {
         actionId: spec.actionId,
         actionLabel: spec.actionLabel,
+        customerActionTitle: spec.customerActionTitle,
         paypalMechanism: spec.paypalMechanism,
         requiresCustomerOutreach: spec.requiresCustomerOutreach,
         actionCostCents: spec.actionCostCents,
-        estimatedSuccessProbability: meanProb,
+        estimatedSuccessProbability: effectiveMean,
+        uncertaintyRadius: uncertainty,
         expectedGrossRecoveryCents,
         expectedNetGainCents,
         ucbScoreCents,
@@ -782,14 +806,12 @@ export class PayReviveContextualBandit {
       };
     });
 
-    // Unconstrained bandit top choice (ignoring compliance, to detect compliance blocks!)
     const positiveRawArms = allArms
       .filter((a) => a.actionId !== 'ABANDON_NO_ACTION' && a.expectedNetGainCents > 0)
       .sort((a, b) => b.ucbScoreCents - a.ucbScoreCents);
     const banditRawTopAction: RecoveryActionId =
       positiveRawArms.length > 0 ? positiveRawArms[0].actionId : 'ABANDON_NO_ACTION';
 
-    // Compliant & positive-EV arms sorted by Bandit UCB Expected Net Gain
     const compliantWorthwhileArms = allArms
       .filter((a) => a.eligibleAndWorthCost)
       .sort((a, b) => b.ucbScoreCents - a.ucbScoreCents);
@@ -800,6 +822,7 @@ export class PayReviveContextualBandit {
     let verdict: PayReviveDecision['verdict'] = 'ABSTAIN_NOT_WORTH_COST';
     let complianceBlockedTopChoice = false;
     let deterministicRationale = '';
+    let plainEnglishRecommendation = '';
 
     const rawTopArmObj = allArms.find((a) => a.actionId === banditRawTopAction);
     if (rawTopArmObj && !rawTopArmObj.compliance.allowed) {
@@ -810,20 +833,22 @@ export class PayReviveContextualBandit {
       selectedArmDetails = compliantWorthwhileArms[0];
       verdict = 'EXECUTE_RECOVERY';
       deterministicRationale = complianceBlockedTopChoice
-        ? `Compliance Gate blocked ${banditRawTopAction} (${rawTopArmObj?.compliance.ruleId}); Bandit rerouted to compliant positive-EV arm ${selectedArmDetails.actionId} (Net EV +$${(selectedArmDetails.expectedNetGainCents / 100).toFixed(2)}).`
-        : `Approved ${selectedArmDetails.actionId}: Diagnosis=${diagnosis.predictedRootCause}, Net EV +$${(selectedArmDetails.expectedNetGainCents / 100).toFixed(2)} exceeds $${(selectedArmDetails.actionCostCents / 100).toFixed(2)} action cost and passed all compliance checks.`;
+        ? `Compliance Gate blocked ${banditRawTopAction} (${rawTopArmObj?.compliance.ruleId}); LinUCB Bandit selected compliant arm ${selectedArmDetails.actionId} (Net EV +$${(selectedArmDetails.expectedNetGainCents / 100).toFixed(2)}).`
+        : `Approved ${selectedArmDetails.actionId}: Diagnosis=${diagnosis.predictedRootCause}, Net EV +$${(selectedArmDetails.expectedNetGainCents / 100).toFixed(2)} exceeds $${(selectedArmDetails.actionCostCents / 100).toFixed(2)} cost and passed all compliance checks.`;
+      plainEnglishRecommendation = `${selectedArmDetails.customerActionTitle} — estimated net recovery is $${(selectedArmDetails.expectedNetGainCents / 100).toFixed(2)} after a $${(selectedArmDetails.actionCostCents / 100).toFixed(2)} processing cost.`;
     } else {
-      // Check if all non-abandon arms were blocked by compliance vs simply negative EV
       const anyAllowedNonAbandon = allArms.some(
         (a) => a.actionId !== 'ABANDON_NO_ACTION' && a.compliance.allowed
       );
-      if (!anyAllowedNonAbandon || complianceBlockedTopChoice) {
+      if (!anyAllowedNonAbandon || diagnosis.predictedRootCause === 'COMPLIANCE_HARD_DECLINE') {
         verdict = 'BLOCKED_BY_COMPLIANCE';
         const primaryBlockReason =
           rawTopArmObj && !rawTopArmObj.compliance.allowed
             ? rawTopArmObj.compliance.reason
             : allArms[0].compliance.reason;
         deterministicRationale = `Blocked by Compliance Gate: ${primaryBlockReason}. Zero recovery actions executed.`;
+        plainEnglishRecommendation =
+          'Do not retry or contact this customer. Card-network safety and compliance rules prohibit recovery on this payment.';
       } else {
         verdict = 'ABSTAIN_NOT_WORTH_COST';
         const bestNet = Math.max(
@@ -832,6 +857,7 @@ export class PayReviveContextualBandit {
             .map((a) => a.expectedNetGainCents)
         );
         deterministicRationale = `Abstained: Best candidate net expected value ($${(bestNet / 100).toFixed(2)}) does not justify action cost on $${(event.amountCents / 100).toFixed(2)} payment.`;
+        plainEnglishRecommendation = `Skip retry — the $${(event.amountCents / 100).toFixed(2)} payment is smaller than the expected retry fee, so skipping saves you money.`;
       }
     }
 
@@ -861,12 +887,15 @@ export class PayReviveContextualBandit {
       complianceBlockedTopChoice,
       auditHash,
       deterministicRationale,
+      plainEnglishCause: diagnosis.rootCauseSummary,
+      plainEnglishRecommendation,
+      settlementConfirmed: false,
     };
   }
 }
 
 // ----------------------------------------------------------------------------
-// 5. PRESET SCENARIOS FOR INTERACTIVE UI & TESTING
+// 5. PRESET SCENARIOS FOR WORKSPACE & DIAGNOSTICS
 // ----------------------------------------------------------------------------
 
 export const PAYREVIVE_SAMPLE_EVENTS: ReadonlyArray<{
@@ -877,8 +906,8 @@ export const PAYREVIVE_SAMPLE_EVENTS: ReadonlyArray<{
 }> = [
   {
     presetId: 'PAYDAY_LIQUIDITY',
-    title: 'SaaS Annual Renewal — Payday Liquidity Gap ($189.00)',
-    subtitle: 'Soft insufficient funds 3 days before payday; strong 88% capture history',
+    title: 'Annual Plan Renewal — Temporary Low Balance ($189.00)',
+    subtitle: 'Insufficient funds 3 days before customer payday; strong payment history',
     event: {
       eventId: 'EVT-SBX-901',
       customerEmail: 'ops@northstar-analytics.io',
@@ -899,8 +928,8 @@ export const PAYREVIVE_SAMPLE_EVENTS: ReadonlyArray<{
   },
   {
     presetId: 'EXPIRED_CARD_WALLET_SWITCH',
-    title: 'Expired Primary Card with Linked PayPal ACH ($240.00)',
-    subtitle: 'Standard card retries fail; Bandit switches to PayPal Backup Funding Link',
+    title: 'Expired Card with Linked PayPal Balance ($240.00)',
+    subtitle: 'Card is expired, so retrying the card fails — send a PayPal Backup Funding link',
     event: {
       eventId: 'EVT-SBX-902',
       customerEmail: 'treasury@aurora-design.co',
@@ -921,8 +950,8 @@ export const PAYREVIVE_SAMPLE_EVENTS: ReadonlyArray<{
   },
   {
     presetId: 'ISSUER_GATEWAY_TIMEOUT',
-    title: 'Issuer Gateway 2,640ms Timeout ($96.00)',
-    subtitle: 'Transient network drop; Bandit selects low-cost $0.18 Immediate Jitter Retry',
+    title: 'Bank Network Timeout ($96.00)',
+    subtitle: 'Temporary bank connection drop; automatic immediate retry recovers cleanly',
     event: {
       eventId: 'EVT-SBX-903',
       customerEmail: 'billing@vectorcloud.dev',
@@ -943,8 +972,8 @@ export const PAYREVIVE_SAMPLE_EVENTS: ReadonlyArray<{
   },
   {
     presetId: 'COMPLIANCE_HARD_DECLINE',
-    title: 'Revoked Mandate / Stolen Card Hard Decline ($310.00)',
-    subtitle: 'Compliance Gate deterministically blocks all retry and dunning actions',
+    title: 'Flagged / Revoked Card ($310.00) — Must Block',
+    subtitle: 'Safety & compliance rules automatically block all retries and emails',
     event: {
       eventId: 'EVT-SBX-904',
       customerEmail: 'flagged@cardholder-alert.net',
@@ -965,21 +994,21 @@ export const PAYREVIVE_SAMPLE_EVENTS: ReadonlyArray<{
   },
   {
     presetId: 'NEGATIVE_EV_MICRO_PAYMENT',
-    title: 'Micro-Usage Overage ($0.45) — Not Worth Retry Cost',
-    subtitle: 'Expected recovery ($0.14) < $0.18 retry cost; Bandit abstains automatically',
+    title: 'Tiny Usage Overage ($0.35) — Not Worth Retry Fee',
+    subtitle: 'Expected recovery is less than the retry processing fee — skip automatically',
     event: {
       eventId: 'EVT-SBX-905',
       customerEmail: 'free-tier@sandbox-user.org',
       merchantOrderRef: 'PP-MIC-00412',
-      amountCents: 45,
+      amountCents: 35,
       currency: 'USD',
       declineCode: 'INSUFFICIENT_FUNDS',
-      daysUntilPayday: 11,
+      daysUntilPayday: 13,
       priorRetryCount30d: 2,
-      historicalCaptureRate: 0.32,
+      historicalCaptureRate: 0.22,
       hasPayPalBackupFunding: false,
       issuerLatencyMs: 260,
-      accountTenureDays: 25,
+      accountTenureDays: 18,
       customerOptedOutComms: false,
       localCustomerHour: 15,
       hasOpenPayPalDispute: false,
@@ -988,7 +1017,7 @@ export const PAYREVIVE_SAMPLE_EVENTS: ReadonlyArray<{
 ];
 
 // ----------------------------------------------------------------------------
-// 6. 500-BATCH SIMULATION BENCHMARK (PAYREVIVE vs HAND-WRITTEN STATIC RULES)
+// 6. 500-BATCH SIMULATION BENCHMARK WITH EXOGENOUS NOISE & COVARIATE DRIFT
 // ----------------------------------------------------------------------------
 
 export interface PayReviveBatchCurvePoint {
@@ -1004,6 +1033,7 @@ export interface PayReviveBenchmarkReport {
   totalFailedPaymentsEvaluated: number;
   seed: number;
   durationMs: number;
+  modelMetadata: typeof PAYREVIVE_MODEL_METADATA;
   payRevive: {
     grossRecoveredCents: number;
     actionCostSpentCents: number;
@@ -1042,12 +1072,13 @@ function mulberry32(seed: number): () => number {
 }
 
 /**
- * Ground-truth latent recovery probability in the payment network environment
- * for a given event and chosen recovery action.
+ * Simulates real-world payment recovery with unobserved exogenous customer shocks
+ * (noiseShock not visible to either model or rule system) and non-linear interactions.
  */
-function latentTrueRecoveryProbability(
+function simulateRealWorldEnvironmentOutcome(
   event: FailedPaymentEvent,
-  actionId: RecoveryActionId
+  actionId: RecoveryActionId,
+  unobservedCustomerShock: number
 ): number {
   if (actionId === 'ABANDON_NO_ACTION') return 0;
   if (
@@ -1058,47 +1089,57 @@ function latentTrueRecoveryProbability(
     return 0;
   }
 
-  const loyalty = 0.55 + 0.45 * event.historicalCaptureRate;
+  const baseAffinity = Math.max(
+    0.2,
+    Math.min(1.15, 0.52 + 0.48 * event.historicalCaptureRate + unobservedCustomerShock)
+  );
+  const fatiguePenalty = Math.max(0.25, 1 - 0.22 * event.priorRetryCount30d);
 
   switch (event.declineCode) {
     case 'ISSUER_TIMEOUT': {
-      if (actionId === 'IMMEDIATE_JITTER_RETRY') return Math.min(0.92, 0.84 * loyalty);
-      if (actionId === 'PAYDAY_SCHEDULED_SMART_RETRY') return 0.58 * loyalty;
-      if (actionId === 'PAYPAL_BACKUP_FUNDING_SWITCH') return 0.54 * loyalty;
-      return 0.42 * loyalty;
+      if (actionId === 'IMMEDIATE_JITTER_RETRY')
+        return Math.min(0.93, 0.85 * baseAffinity * fatiguePenalty);
+      if (actionId === 'PAYDAY_SCHEDULED_SMART_RETRY') return 0.56 * baseAffinity * fatiguePenalty;
+      if (actionId === 'PAYPAL_BACKUP_FUNDING_SWITCH') return 0.52 * baseAffinity * fatiguePenalty;
+      return 0.38 * baseAffinity * fatiguePenalty;
     }
     case 'INSUFFICIENT_FUNDS': {
       if (actionId === 'IMMEDIATE_JITTER_RETRY') {
-        // Immediate retry when broke before payday almost always fails!
-        return event.daysUntilPayday === 0 ? 0.56 * loyalty : 0.14 * loyalty;
+        return (event.daysUntilPayday === 0 ? 0.58 : 0.13) * baseAffinity * fatiguePenalty;
       }
       if (actionId === 'PAYDAY_SCHEDULED_SMART_RETRY') {
-        return event.amountCents > 32000 ? 0.46 * loyalty : 0.78 * loyalty;
+        const ticketDrag = event.amountCents >= 22000 ? 0.48 : 0.82;
+        return Math.min(0.92, ticketDrag * baseAffinity * fatiguePenalty);
       }
       if (actionId === 'SPLIT_TWO_PART_INVOICE') {
-        return event.amountCents >= 18000 ? 0.81 * loyalty : 0.49 * loyalty;
+        const highTicketFit = event.amountCents >= 16000 ? 0.84 : 0.46;
+        return Math.min(0.91, highTicketFit * baseAffinity * fatiguePenalty);
       }
       if (actionId === 'PAYPAL_BACKUP_FUNDING_SWITCH') {
-        return event.hasPayPalBackupFunding ? 0.71 * loyalty : 0.22 * loyalty;
+        return (event.hasPayPalBackupFunding ? 0.76 : 0.19) * baseAffinity * fatiguePenalty;
       }
       if (actionId === 'FEE_WAIVER_GRACE_LINK') {
-        return 0.44 * loyalty;
+        return 0.41 * baseAffinity * fatiguePenalty;
       }
       return 0;
     }
     case 'EXPIRED_CARD':
     case 'VELOCITY_EXCEEDED': {
       if (actionId === 'IMMEDIATE_JITTER_RETRY' || actionId === 'PAYDAY_SCHEDULED_SMART_RETRY') {
-        // Retrying an expired or velocity-locked card without switching instrument fails ~94% of time
-        return event.declineCode === 'EXPIRED_CARD' ? 0.03 : 0.16 * loyalty;
+        return event.declineCode === 'EXPIRED_CARD'
+          ? 0.0
+          : 0.15 * baseAffinity * fatiguePenalty;
       }
       if (actionId === 'PAYPAL_BACKUP_FUNDING_SWITCH') {
-        return event.hasPayPalBackupFunding ? 0.85 * loyalty : 0.42 * loyalty;
+        return Math.min(
+          0.92,
+          (event.hasPayPalBackupFunding ? 0.86 : 0.39) * baseAffinity * fatiguePenalty
+        );
       }
       if (actionId === 'FEE_WAIVER_GRACE_LINK') {
-        return 0.36 * loyalty;
+        return 0.34 * baseAffinity * fatiguePenalty;
       }
-      return 0.25 * loyalty;
+      return 0.24 * baseAffinity * fatiguePenalty;
     }
     default:
       return 0;
@@ -1106,9 +1147,9 @@ function latentTrueRecoveryProbability(
 }
 
 /**
- * Good Hand-Written Production Rule System Baseline:
- * Uses static fields available to rule-based dunning (declineCode, priorRetryCount30d),
- * without XGBoost payday prediction or Bandit backup-instrument selection.
+ * Strong Hand-Written Production Dunning Rule System:
+ * Respects hard declines, retry caps, expired-card rules, quiet hours, and opt-outs,
+ * using standard scheduled dunning retries + grace links.
  */
 function selectHandWrittenRuleAction(event: FailedPaymentEvent): RecoveryActionId {
   if (
@@ -1119,20 +1160,22 @@ function selectHandWrittenRuleAction(event: FailedPaymentEvent): RecoveryActionI
   ) {
     return 'ABANDON_NO_ACTION';
   }
+  const commsAllowed =
+    !event.customerOptedOutComms && event.localCustomerHour >= 8 && event.localCustomerHour < 21;
+
   if (event.declineCode === 'ISSUER_TIMEOUT') {
     return 'IMMEDIATE_JITTER_RETRY';
   }
-  const commsAllowed =
-    !event.customerOptedOutComms && event.localCustomerHour >= 8 && event.localCustomerHour < 21;
+  if (event.declineCode === 'EXPIRED_CARD') {
+    if (!commsAllowed) return 'ABANDON_NO_ACTION';
+    return event.hasPayPalBackupFunding ? 'PAYPAL_BACKUP_FUNDING_SWITCH' : 'FEE_WAIVER_GRACE_LINK';
+  }
   if (event.declineCode === 'INSUFFICIENT_FUNDS') {
-    if (event.priorRetryCount30d <= 1) return 'IMMEDIATE_JITTER_RETRY';
+    if (event.priorRetryCount30d === 0) return 'IMMEDIATE_JITTER_RETRY';
     return commsAllowed ? 'FEE_WAIVER_GRACE_LINK' : 'IMMEDIATE_JITTER_RETRY';
   }
-  if (event.declineCode === 'EXPIRED_CARD') {
-    return commsAllowed ? 'PAYPAL_BACKUP_FUNDING_SWITCH' : 'IMMEDIATE_JITTER_RETRY';
-  }
   if (event.declineCode === 'VELOCITY_EXCEEDED') {
-    if (event.priorRetryCount30d === 0) return 'IMMEDIATE_JITTER_RETRY';
+    if (commsAllowed && event.hasPayPalBackupFunding) return 'PAYPAL_BACKUP_FUNDING_SWITCH';
     return commsAllowed ? 'FEE_WAIVER_GRACE_LINK' : 'IMMEDIATE_JITTER_RETRY';
   }
   return 'ABANDON_NO_ACTION';
@@ -1174,17 +1217,20 @@ export function runPayRevive500BatchBenchmark(
   const curveCheckpoints: PayReviveBatchCurvePoint[] = [];
 
   const declinePool: Array<{ code: PaymentDeclineCode; weight: number }> = [
-    { code: 'INSUFFICIENT_FUNDS', weight: 0.38 },
+    { code: 'INSUFFICIENT_FUNDS', weight: 0.40 },
     { code: 'EXPIRED_CARD', weight: 0.21 },
-    { code: 'ISSUER_TIMEOUT', weight: 0.16 },
-    { code: 'VELOCITY_EXCEEDED', weight: 0.11 },
+    { code: 'ISSUER_TIMEOUT', weight: 0.15 },
+    { code: 'VELOCITY_EXCEEDED', weight: 0.10 },
     { code: 'STOLEN_OR_FRAUD_CARD', weight: 0.08 },
     { code: 'REVOKED_AUTHORIZATION', weight: 0.06 },
   ];
 
-  const amountBuckets = [65, 190, 2900, 4900, 8900, 14900, 22900, 38900];
+  const amountBuckets = [35, 140, 2900, 4900, 8900, 15900, 23900, 38900];
 
   for (let b = 1; b <= batches; b++) {
+    // Non-stationary seasonal drift across batches
+    const seasonalDrift = Math.sin((b / batches) * Math.PI * 2) * 0.06;
+
     for (let i = 0; i < batchSize; i++) {
       const rDecline = rng();
       let accW = 0;
@@ -1198,9 +1244,11 @@ export function runPayRevive500BatchBenchmark(
       }
 
       const amountCents = amountBuckets[Math.floor(rng() * amountBuckets.length)];
-      const daysUntilPayday = Math.floor(rng() * 12);
+      const daysUntilPayday = Math.floor(rng() * 13);
       const priorRetryCount30d = rng() < 0.16 ? 3 : Math.floor(rng() * 3);
-      const historicalCaptureRate = Number((0.25 + rng() * 0.72).toFixed(2));
+      const historicalCaptureRate = Number(
+        Math.max(0.1, Math.min(0.98, 0.25 + rng() * 0.72 + seasonalDrift)).toFixed(2)
+      );
       const hasPayPalBackupFunding = rng() < 0.64;
       const issuerLatencyMs =
         declineCode === 'ISSUER_TIMEOUT'
@@ -1209,6 +1257,9 @@ export function runPayRevive500BatchBenchmark(
       const customerOptedOutComms = rng() < 0.14;
       const localCustomerHour = Math.floor(rng() * 24);
       const hasOpenPayPalDispute = rng() < 0.05;
+
+      // Unobserved customer-level latent shock (hidden from both algorithms!)
+      const unobservedShock = (rng() - 0.5) * 0.36;
 
       const event: FailedPaymentEvent = {
         eventId: `SIM-${b}-${i}`,
@@ -1228,7 +1279,7 @@ export function runPayRevive500BatchBenchmark(
         hasOpenPayPalDispute,
       };
 
-      // 1. Evaluate PayRevive
+      // 1. Evaluate PayRevive (Trained Newton GBDT + LinUCB Bandit + Hard Compliance Gate)
       const decision = bandit.evaluateAndDecide(event);
       if (decision.diagnosis.additivityVerified) {
         shapAdditivityChecksPassed += 1;
@@ -1249,16 +1300,16 @@ export function runPayRevive500BatchBenchmark(
       } else {
         prExecuted += 1;
         prCost += decision.selectedArmDetails.actionCostCents;
-        const pTrue = latentTrueRecoveryProbability(event, prAction);
+        const pTrue = simulateRealWorldEnvironmentOutcome(event, prAction, unobservedShock);
         const recovered = rng() < pTrue;
-        bandit.updateOutcome(decision.diagnosis.predictedRootCause, prAction, recovered);
+        bandit.updateOutcomeForEvent(event, prAction, recovered);
         if (recovered) {
           prSuccesses += 1;
           prGross += event.amountCents;
         }
       }
 
-      // 2. Evaluate Hand-Written Static Rule System on exact same event
+      // 2. Evaluate Hand-Written Static Rule System on exact same event & shock
       const ruleAction = selectHandWrittenRuleAction(event);
       if (ruleAction !== 'ABANDON_NO_ACTION') {
         const ruleComp = evaluatePayReviveCompliance(event, ruleAction);
@@ -1268,7 +1319,7 @@ export function runPayRevive500BatchBenchmark(
         const ruleSpec = RECOVERY_ACTION_CATALOG.find((a) => a.actionId === ruleAction)!;
         ruleExecuted += 1;
         ruleCost += ruleSpec.actionCostCents;
-        const pRuleTrue = latentTrueRecoveryProbability(event, ruleAction);
+        const pRuleTrue = simulateRealWorldEnvironmentOutcome(event, ruleAction, unobservedShock);
         if (rng() < pRuleTrue) {
           ruleSuccesses += 1;
           ruleGross += event.amountCents;
@@ -1303,6 +1354,7 @@ export function runPayRevive500BatchBenchmark(
       batches,
       batchSize,
       seed,
+      modelSha256: PAYREVIVE_MODEL_METADATA.artifactSha256,
       prNet,
       ruleNet,
       netRecoveryLiftPercent,
@@ -1316,6 +1368,7 @@ export function runPayRevive500BatchBenchmark(
     totalFailedPaymentsEvaluated,
     seed,
     durationMs,
+    modelMetadata: PAYREVIVE_MODEL_METADATA,
     payRevive: {
       grossRecoveredCents: prGross,
       actionCostSpentCents: prCost,

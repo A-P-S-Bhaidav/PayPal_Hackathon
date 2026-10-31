@@ -1,16 +1,16 @@
 <div align="center">
 
-![AegisPay OS Hero Banner](./public/assets/aegispay-hero-banner.svg)
+![AegisPay Hero Banner](./public/assets/aegispay-hero-banner.svg)
 
-# AegisPay OS v3.0
+# AegisPay v3.1
 
-### Autonomous AI Commerce, Security & Revenue Recovery Platform on PayPal
+### Safer Payments, Automated Failed-Payment Recovery & Milestone Billing on PayPal
 
 [![License: MIT](https://img.shields.io/badge/LICENSE-MIT-0047FF?style=flat-square&labelColor=050507)](./LICENSE)
 [![Live Deployment](https://img.shields.io/badge/LIVE_DEMO-AEGISPAY--ORPIN.VERCEL.APP-CCFF00?style=flat-square&labelColor=050507&logoColor=050507)](https://aegispay-orpin.vercel.app)
 [![PayPal Platform](https://img.shields.io/badge/PAYPAL_SANDBOX-ORDERS_%7C_VAULT_%7C_INVOICING_%7C_SUBS-0047FF?style=flat-square&labelColor=050507)](https://developer.paypal.com)
-[![PayRevive Lift](https://img.shields.io/badge/PAYREVIVE_500_BATCHES-%2B66.4%25_NET_RECOVERY_%7C_0_VIOLATIONS-CCFF00?style=flat-square&labelColor=050507)](./shared/payrevive.ts)
-[![Automated Tests](https://img.shields.io/badge/VERIFICATION-334_PASSING_TESTS-0047FF?style=flat-square&labelColor=050507)](./tests)
+[![PayRevive Lift](https://img.shields.io/badge/PAYREVIVE_500_BATCHES-%2B51.4%25_NET_RECOVERY_%7C_0_VIOLATIONS-CCFF00?style=flat-square&labelColor=050507)](./shared/payrevive.ts)
+[![Automated Tests](https://img.shields.io/badge/VERIFICATION-337_PASSING_TESTS-0047FF?style=flat-square&labelColor=050507)](./tests)
 
 **[Live Production App](https://aegispay-orpin.vercel.app)** | **[Master Setup & Deployment Guide](./MASTER_GUIDE.md)** | **[System Architecture](./docs/SYSTEM_ARCHITECTURE.md)** | **[Postman Collection v2.1](./postman/AegisPay_Collection.json)** | **[Chrome Extension MV3](./CHROMEWEBSTORE.md)**
 
@@ -18,100 +18,81 @@
 
 ---
 
-## 1. Core Architectural Invariant
+## 1. Product Experience vs. Isolated Verification Lab
 
-Giving an LLM direct pricing, dunning, or payment-capture authority exposes users and merchants to prompt-injection fund drains, ungrounded policy limits, non-compliant retries, and rounding drift. **AegisPay OS v3.0** unifies autonomous commerce and failed-payment recovery on the PayPal Developer Platform under one deterministic rule:
+**AegisPay v3.1** strictly separates the everyday customer product from engineering benchmarks and adversarial test harnesses:
 
-> **"AI Proposes. Deterministic Code Decides. PayPal Moves the Money."**
+1. **Clean Customer Workspace (`Overview`, `Pay Safely`, `Merchant Recovery`, `Get Paid`)**:
+   - Plain-English, symmetrical **Midnight Black (`#050507`) + Electric Cobalt (`#0047FF`) + Acid Lime (`#CCFF00`)** interface with zero internal ML/cryptographic jargon exposed to end users.
+   - Includes an accessible **5-Step Interactive Guided Tour** (`src/components/InteractiveTour.tsx`) that automatically walks new users through every workflow with live **Try Sample Action** buttons and spotlight focus rings, replayable anytime from the header.
+2. **Lazy-Loaded Verification Lab (`src/components/DiagnosticsLab.tsx`)**:
+   - Code-split via `React.lazy` so `AG Grid` and benchmark tooling never bloat the customer entry bundle.
+   - Houses the **500-Batch PayRevive Simulation**, **Held-Out GBDT Model Card & TreeSHAP Waterfall**, **1,000-Case Property-Based Safety Fuzzer**, **5-Scenario Checkout Tamper Lab**, **Gemini-to-Groq HTTP 429 Failover Tester**, **AG Grid Cryptographic Audit Ledger** (CSV + Elastic NDJSON export), and **`PRINCIPAL_ARCHITECT` Admin RBAC Controls**.
 
 ![AegisPay Three-Tier Architecture Banner](./public/assets/aegispay-architecture-banner.svg)
 
 | Execution Tier | Primary Components | Architectural Responsibility | Security Invariant |
 | :--- | :--- | :--- | :--- |
-| **Tier 01: Cognitive & ML Mesh** | Google Gemini (`Primary`) + Groq Cloud LPU (`Failover`) + Llama Prompt Guard 2 + **PayRevive XGBoost/TreeSHAP** | Semantic invoice analysis, policy compilation, multi-agent negotiation, vision defect grading, scope decomposition, and failed-payment root-cause diagnosis. | **Zero Direct Pricing Authority**: AI/ML outputs feed deterministic bounds, Net-EV checks, and compliance gates. |
-| **Tier 02: Deterministic Security Kernel** | [`shared/kernel.ts`](./shared/kernel.ts) & [`shared/payrevive.ts`](./shared/payrevive.ts) | Monotonic permit evaluation, number-grounding guard, single-use HMAC tokens, mandate clamping, Hamilton penny-exact splits, and hard dunning compliance gates. | **Monotonic & Compliant**: AI can tighten (`ALLOW -> HOLD -> BLOCK`), never loosen. `0` compliance violations proven across 500-batch and 1,000-case fuzz suites. |
-| **Tier 03: Atomic PayPal Settlement** | [`server/paypal.ts`](./server/paypal.ts) + PayPal JS SDK + AG Grid Ledger | PayPal OAuth2, Orders v2 (`CAPTURE` & `AUTHORIZE`), Vault v3 Setup Tokens, Invoicing v2 (`INV2-...`), Subscriptions v1 (`I-...`), Partial Refunds, and Signed Webhooks. | **Idempotent Execution**: Single-use nonces, atomic row locks, and SHA-256 audit hashes prevent replay and duplicate captures. |
+| **Tier 01: Cognitive & ML Mesh** | Google Gemini (`Primary`) + Groq Cloud LPU (`Failover`) + Llama Prompt Guard 2 + **Trained Newton GBDT + TreeSHAP** | Invoice scam review, policy compilation, multi-agent negotiation, vision defect grading, milestone planning, and failed-payment root-cause diagnosis. | **Zero Direct Pricing Authority**: AI/ML outputs feed deterministic bounds, Net-EV checks, and compliance gates. |
+| **Tier 02: Deterministic Security Kernel** | [`shared/kernel.ts`](./shared/kernel.ts) & [`shared/payrevive.ts`](./shared/payrevive.ts) | Monotonic permit evaluation, number-grounding guard, single-use HMAC tokens, mandate clamping, Hamilton penny-exact splits, Disjoint LinUCB bandit, and hard compliance gates. | **Monotonic & Compliant**: AI can tighten (`ALLOW -> HOLD -> BLOCK`), never loosen. `0` compliance violations across 500-batch and 1,000-case suites. |
+| **Tier 03: Atomic PayPal Settlement** | [`server/paypal.ts`](./server/paypal.ts) + PayPal JS SDK + Per-Tenant Isolation | PayPal OAuth2, Orders v2 (`CAPTURE` & `AUTHORIZE`), Vault v3 Setup Tokens, Invoicing v2 (`INV2-...`), Subscriptions v1 (`I-...`), Partial Refunds, and Verified Webhooks. | **Idempotent & Honest Settlement**: Tracks exact settlement stage (`LIVE_PAYER_APPROVAL_READY` vs `LIVE_BUYER_CAPTURED`) and enforces per-tenant isolation. |
 
 ---
 
-## 2. The 7-Module Autonomous Commerce & Recovery Suite
+## 2. Core Workflows & Technical Capabilities
 
 ```mermaid
 flowchart LR
-    AUTH["Mandatory Zero-Trust Auth\n(Google OAuth 2.0 + Scrypt + HMAC)"] --> M7
-    M7["[01] PayRevive Recovery\n(XGBoost + TreeSHAP + Bandit)"] --> M1
-    M1["[02] Budget & Permits\n(Vault v3 & Autopay Audit)"] --> M2
-    M2["[03] Checkout Firewall\n(Single-Use HMAC + Smart SDK)"] --> M3
-    M3["[04] Deal Negotiator\n(Mandate Clamp + Orders v2)"] --> M4
-    M4["[05] Photo Refund Grader\n(Canvas Vision + Refund v2)"] --> M5
-    M5["[06] Retention Copilot\n(20-35-50% Ladder + Subs v1)"] --> M6
-    M6["[07] PayStream Studio\n(Penny-Exact Splits + INV2)"] --> AUDIT["AG Grid Ledger\n& 1,000-Case Fuzzer"]
+    AUTH["Verified Auth\n(Google OAuth 2.0 + Scrypt + HttpOnly Cookie)"] --> TOUR["5-Step Guided Tour\n(Plain-English Customer Workspace)"]
+    TOUR --> P1["Pay Safely\n(Invoice Check, Budget Guard, Subscriptions, Limits)"]
+    P1 --> P2["Merchant Recovery\n(Failed Payment Recovery, Photo Refunds, Retention)"]
+    P2 --> P3["Get Paid\n(Milestone Schedules, Live INV2 Invoices, Deals)"]
+    TOUR -. "Isolated Toggle" .-> LAB["Lazy-Loaded Verification Lab\n(500-Batch ML, 1,000-Case Fuzzer, Tamper Lab, AG Grid)"]
 ```
 
-### 1. PayRevive: Autonomous Failed-Payment Revenue Recovery (`shared/payrevive.ts`)
-* **XGBoost Ensemble + Exact TreeSHAP Diagnosis**: Evaluates 8 payment telemetry signals across a 12-tree Gradient Boosted Decision Tree ensemble and computes exact path-dependent TreeSHAP log-odds contributions (`additivityDelta < 1e-6`) to isolate why a payment failed (`TRANSIENT_ISSUER_TIMEOUT`, `LIQUIDITY_PAYDAY_GAP`, `DEGRADED_FUNDING_INSTRUMENT`, `COMPLIANCE_HARD_DECLINE`, `LOW_INTENT_EXHAUSTED_RETRIES`).
-* **Cost-Aware Contextual Bandit**: Evaluates Expected Net Recovery (`P(recover | x, action) * amountCents - actionCostCents`) across PayPal Orders v2 Jitter Retries, Payday Smart Retries, PayPal Backup Funding Switches, and Split Two-Part Invoices—automatically abstaining (`ABSTAIN_NOT_WORTH_COST`) on micro-payments where retry fees exceed expected recovery.
-* **Hard Deterministic Compliance Gate & SHA-256 Audit Trail**: Blocks retries and outreach on fraud/stolen hard declines, revoked mandates, `>=3` retries in 30 days, open PayPal disputes, TCPA/GDPR opt-outs, and customer quiet hours (`21:00–07:59`), logging every decision to the cryptographic ledger.
-* **One-Command 500-Batch Benchmark (`npm run benchmark:payrevive`)**: Across `500` batch runs (`10,000` failed payments), PayRevive recovers **`+66.36%` more net revenue** (`$387,980.27` vs `$233,223.40`, `+$154,756.87` extra net recovered) than a hand-written production rule system with **`0` compliance violations**.
+### 1. Failed-Payment Revenue Recovery (`shared/payrevive.ts` & `scripts/train-payrevive-gbdt.ts`)
+* **Trained 16-Tree Second-Order Newton GBDT + Exact TreeSHAP**: Trained via `npm run train:payrevive` on `N=12,000` labeled payment telemetry records and evaluated on an untouched `N=3,000` held-out split (`ROC-AUC: 0.8301`, `Brier Score: 0.1403`). Computes exact path-dependent TreeSHAP attributions (`additivityDelta < 1e-6`).
+* **Disjoint LinUCB Contextual Bandit (`Sherman-Morrison` Ridge Updates)**: Evaluates Expected Net Recovery (`P(recover | x, action) * amountCents - actionCostCents`) across PayPal Orders v2 Jitter Retries, Payday Smart Retries, PayPal Backup Funding Links (`INV2-...`), and Split Two-Part Invoices—updating arm weights strictly upon verified settlement (`POST /api/payrevive/confirm-settlement`) and abstaining when fees exceed expected value.
+* **Hard Deterministic Compliance Gate**: Blocks retries and customer outreach on stolen/revoked hard declines, `>=3` retries in 30 days, open PayPal disputes, TCPA/GDPR opt-outs, and customer quiet hours (`21:00-07:59`).
+* **One-Command 500-Batch Benchmark (`npm run benchmark:payrevive`)**: Across `500` non-stationary noisy batch runs (`10,000` failed payments), recovers **`+51.35%` more net revenue** than a strong hand-written production dunning rule system with **`0` compliance violations**.
 
-### 2. Smart Budget, Dormant Autopays & Agent Permits
-* **True Free Cashflow & Grounded Rule Compiler**: Calculates disposable post-bill cashflow, compiles plain-English agent rules while `verifyGroundedNumbers` blocks hallucinated caps, audits dormant (`>=365d`) autopays, mints **PayPal Vault v3 Setup Tokens**, and holds low-confidence agent purchases via PayPal `intent: "AUTHORIZE"`.
+### 2. Pay Safely (`src/components/PaySafelyView.tsx`)
+* **Invoice Safety Check**: Scans pasted invoices, screenshots, and live PayPal `INV2-...` links (`USD`/`EUR`/`GBP`/`INR`), unlocking **PayPal Smart Payment Buttons** via a 5-minute single-use token.
+* **Budget Guard, Subscription Cleanup & Spending Limits**: Computes true disposable post-bill balance, cancels or caps dormant PayPal autopays, compiles plain-English spending rules (`verifyGroundedNumbers`), mints **PayPal Vault v3 Setup Tokens**, and holds uncertain purchases via `intent: "AUTHORIZE"`.
 
-### 3. Pre-Payment Checkout Firewall & Tamper Lab
-* **Multimodal & Multi-Currency Invoice Defense**: Scans payment text, screenshots, and live PayPal `INV2-...` invoices (`USD`/`EUR`/`GBP`/`INR`) with **Llama Prompt Guard 2 (`86M`)**, **Gemini / Groq**, and **18 deterministic rules**, unlocking **PayPal Smart Payment Buttons** via a single-use 5-minute HMAC token. Includes a Manifest V3 Chrome Extension (`/extension.zip`).
+### 3. Merchant Recovery, Photo Refunds & Subscriber Retention (`src/components/MerchantRecoveryView.tsx`)
+* **Keep-The-Item Photo Refunds**: Multimodal Vision defect telemetry mapped to per-tenant merchant cent matrices with SHA-256 duplicate-photo replay protection and **PayPal Partial Refunds**.
+* **Subscriber Retention Desk**: Enforces `20% -> 35% -> 50%` discount bounds, blocks `>=60%` active-usage discount gaming, halts automated offers at `0%` on chargeback/legal keywords with human support escalation, and prevents double-click duplicate charges.
 
-### 4. Autonomous Deal Negotiator & Smart Escrow
-* **Sealed ZOPA Mandates + Dual PayPal Settlement**: Buyer and Seller agents (with optional Human Takeover) negotiate price, delivery SLA, revisions, and deposit percentage inside clamped ceilings/floors, neutralizing prompt injection and settling via **PayPal Orders v2** + **Invoicing v2 (`INV2-...`)**.
-
-### 5. Instant Keep-The-Item Photo Refund
-* **Non-Monetary Vision Telemetry + Partial Refund**: Inspects uploaded or HTML5 Canvas defect photos via multimodal Vision AI, maps physical severity to merchant-controlled cent matrices, blocks duplicate image SHA-256 replays, and executes **PayPal Partial Refunds (`/v2/payments/captures/{id}/refund`)**.
-
-### 6. Subscription Retention Copilot
-* **Fixed Concession Ladder & Circuit Breakers**: Enforces `20% -> 35% -> 50%` discount bounds, blocks `>=60%` active-usage discount gaming, kills the AI session at `0%` on legal/chargeback threats with a **Zapier Escalation Webhook**, and enforces atomic row-lock idempotency on **PayPal Subscriptions v1**.
-
-### 7. PayStream Smart-Milestone & Proof-of-Delivery Studio
-* **Hamilton Penny-Exact Splits + Live `INV2-...` Invoicing**: Decomposes project briefs into milestones and collaborator splits with `0-cent` rounding drift (`allocatePennyExact`), issues live **PayPal Sandbox Invoices (`INV2-...`)**, and verifies deliverable proofs against acceptance criteria.
+### 4. Get Paid: Milestone Billing & Deal Escrow (`src/components/GetPaidView.tsx`)
+* **Exact-Cent Milestone Billing**: Uses Hamilton's Largest-Remainder method (`allocatePennyExact`) for `0-cent` rounding drift across milestones and team splits, sends live **PayPal Sandbox Invoices (`INV2-...`)**, and verifies deliverable proof notes/links.
+* **Automated Deal Negotiation**: Clamps Buyer and Seller agent offers inside confidential mandate ceilings/floors and settles via **PayPal Orders v2** + **Invoicing v2**.
 
 ---
 
-## 3. Zero-Trust Security, Data Storage & Horizontal Scalability
+## 3. OWASP Security Hardening & Multi-Tenant Architecture
 
-* **Mandatory Authentication (Never Optional)**: Unauthenticated requests to `/api/state` and all protected `/api/*` endpoints return `401 AUTH_REQUIRED`. Operators authenticate via **Google OAuth 2.0**, **`crypto.scryptSync` (`N=16384`, 16B salt, constant-time `timingSafeEqual`) Email Sign-Up/Sign-In**, or the Sandbox Operator session handshake (`HttpOnly; SameSite=Strict` cookie + signed HMAC-SHA256 bearer token).
-* **Where User Data Is Stored (`server/store.ts`)**:
-  * **Local / Dedicated Node**: Stored in `data/aegispay_store.json` (`0o600` owner-only permissions, atomic write-ahead `.tmp` + `fs.renameSync`, git-ignored).
-  * **Serverless (Vercel)**: Stored in `/tmp/aegispay_store.json` paired with stateless HMAC-SHA256 session tokens (`aegis_sess_.<claims>.<hmac>`) so identity and tenant partitioning work seamlessly across cold starts without sticky instances.
-  * **Multi-Tenant Isolation & Bounded Memory**: Every authenticated operator receives an isolated `TenantWorkspace` inside a bounded `2,000`-tenant LRU memory cache (`max 250` audit rows per tenant).
-* **Zero Secret Leaks & Industry Security Standards (`server/security.ts`)**:
-  * Zero API keys or secrets are stored in client bundles, Git history, or browser `localStorage`. Server-side error/log strings pass through `redactSecrets`.
-  * Enforces `Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, prototype-pollution key sanitization, and a **3-tier Sliding-Window Rate Limiter** (`AUTH`, `MUTATION`, `READ`) emitting standard `RateLimit-*` and `Retry-After` (`HTTP 429`) headers.
+* **Verified Authentication & `HttpOnly` Cookie Transport (`server/index.ts`, `server/security.ts`)**:
+  * **Google OAuth 2.0**: Server-side authorization code exchange + `oauth2.googleapis.com/tokeninfo` verification (`aud === GOOGLE_CLIENT_ID`, `email_verified === true`) protected by a signed 10-minute `aegis_oauth_state` CSRF cookie. Zero unverified email session minting; zero session tokens in URL query strings or `localStorage`.
+  * **Email & Isolated Demo Sandbox**: `crypto.scryptSync` (`N=16384, r=8, p=1`, 16B random salt, `timingSafeEqual`) for email accounts, plus an isolated non-privileged `DEMO_OPERATOR` sandbox (`POST /api/auth/demo`) blocked (`403 Forbidden`) from admin credential endpoints.
+* **Strict CORS, CSRF, SSRF, CSP & Webhook Verification**:
+  * Explicit Origin Allowlist CORS, cookie CSRF header/origin enforcement (`X-Requested-With: AegisPay-Client`), strict `script-src 'self' https://www.paypal.com` CSP (no `'unsafe-inline'`), SSRF blocking (`validateSafeExternalUrl` rejects loopback, RFC1918 private IPs, and `169.254.169.254`), and cryptographic webhook signature verification (`POST /api/paypal/webhook`).
+* **Non-Blocking Multi-Tenant Persistence (`server/store.ts`)**:
+  * Coalesced async write-ahead atomic vault (`fs.promises.writeFile` + `rename` with `0o600` permissions in `data/aegispay_store.json`, git-ignored) with strict per-tenant isolation across PayPal orders, invoices, vault tokens, subscriptions, bandit matrices, refund policies, and `2,000`-tenant LRU caching.
 
 ---
 
-## 4. Quickstart, One-Command Benchmark & Deployment
+## 4. Quickstart & One-Command Verification
 
-### 1. Install Dependencies & Run Verification Suites
 ```bash
 npm install
 npm test
 npm run benchmark:payrevive
-```
-
-### 2. Configure `.env` & Run Production Server on Localhost (`http://localhost:8787`)
-Copy [`.env.example`](./.env.example) to `.env` (git-ignored), populate PayPal Sandbox, Gemini, Groq, and Google OAuth credentials, then build and start:
-```bash
 npm run build
 npm start
 ```
-Open **[http://localhost:8787](http://localhost:8787)**.
 
-### 3. Model Context Protocol (MCP) Server (7 Tools)
-```bash
-node mcp-server/index.mjs
-```
-Exposes `aegispay_list_permits`, `aegispay_check_cashflow`, `aegispay_agent_pay`, `aegispay_scamshield_review`, `aegispay_paystream_create_plan`, `aegispay_paystream_issue_invoice`, and `aegispay_payrevive_recover`.
-
-### 4. Vercel Deployment
-Push to `main` or run `npx vercel --prod`. Full environment variable and OAuth setup instructions are in **[`MASTER_GUIDE.md`](./MASTER_GUIDE.md)**.
+Open **[http://localhost:8787](http://localhost:8787)**. For environment variables, Google OAuth redirect URIs, MCP server usage (`node mcp-server/index.mjs`), and Vercel deployment, see **[`MASTER_GUIDE.md`](./MASTER_GUIDE.md)**.
 
 ---
 

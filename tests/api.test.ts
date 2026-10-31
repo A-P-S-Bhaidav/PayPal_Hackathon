@@ -6,21 +6,25 @@ import fs from 'node:fs';
 import { createAegisServer } from '../server/index';
 import { redactSecrets } from '../server/security';
 import { AegisMultiTenantStore, verifyPasswordScrypt } from '../server/store';
+import { hmacSha256Hex } from '../shared/kernel';
 
 describe('AegisPay Full-Stack Zero-Trust HTTP API, Security, Multi-Tenant Storage & PayRevive Suite', () => {
   let server: Server;
+  let appInstance: ReturnType<typeof createAegisServer>;
   let baseUrl = '';
   let operatorToken = '';
   let authHeaders: Record<string, string> = {};
+  const TEST_HMAC_SECRET = 'test_kernel_hmac_secret_256bit_for_suite_2026_verified';
   const tempStoreFile = path.join(
     os.tmpdir(),
     `aegispay_api_test_${process.pid}_${Date.now()}.json`
   );
 
   beforeAll(async () => {
-    const app = createAegisServer({ customStoreFilePath: tempStoreFile });
+    process.env.AEGIS_KERNEL_SECRET = TEST_HMAC_SECRET;
+    appInstance = createAegisServer({ customStoreFilePath: tempStoreFile });
     await new Promise<void>((resolve) => {
-      server = app.listen(0, () => {
+      server = appInstance.listen(0, () => {
         const addr = server.address();
         if (addr && typeof addr === 'object') {
           baseUrl = `http://127.0.0.1:${addr.port}`;
@@ -38,6 +42,8 @@ describe('AegisPay Full-Stack Zero-Trust HTTP API, Security, Multi-Tenant Storag
       }),
     });
     expect(loginRes.status).toBe(200);
+    expect(loginRes.headers.get('set-cookie')).toContain('aegis_session=');
+    expect(loginRes.headers.get('set-cookie')).toContain('HttpOnly');
     const loginData = await loginRes.json();
     operatorToken = loginData.token;
     authHeaders = {
@@ -57,13 +63,16 @@ describe('AegisPay Full-Stack Zero-Trust HTTP API, Security, Multi-Tenant Storag
     }
   });
 
-  it('GET /api/health returns security headers, rate-limit headers, storage architecture, and zero raw secrets', async () => {
+  it('GET /api/health returns hardened CSP (no script unsafe-inline), security headers, rate-limit headers, and zero raw secrets', async () => {
     const res = await fetch(`${baseUrl}/api/health`);
     expect(res.status).toBe(200);
     expect(res.headers.get('x-frame-options')).toBe('DENY');
     expect(res.headers.get('x-content-type-options')).toBe('nosniff');
     expect(res.headers.get('strict-transport-security')).toContain('max-age=');
-    expect(res.headers.get('content-security-policy')).toContain("default-src 'self'");
+    const csp = res.headers.get('content-security-policy') || '';
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("script-src 'self' https://www.paypal.com");
+    expect(csp.split('script-src')[1]?.split(';')[0] || '').not.toContain('unsafe-inline');
     expect(res.headers.get('ratelimit-limit')).toBeDefined();
 
     const rawBody = await res.text();
@@ -73,9 +82,10 @@ describe('AegisPay Full-Stack Zero-Trust HTTP API, Security, Multi-Tenant Storag
 
     const data = JSON.parse(rawBody);
     expect(data.ok).toBe(true);
-    expect(data.version).toBe('3.0.0');
+    expect(data.version).toBe('3.1.0');
     expect(data.authRequired).toBe(true);
     expect(data.storage.passwordKdf).toContain('scrypt');
+    expect(data.storage.sessionTransport).toContain('HttpOnly');
   });
 
   it('enforces mandatory authentication (HTTP 401 AUTH_REQUIRED) on unauthenticated /api/state and protected mutations', async () => {
@@ -141,17 +151,19 @@ describe('AegisPay Full-Stack Zero-Trust HTTP API, Security, Multi-Tenant Storag
     const res = await fetch(`${baseUrl}/api/state`, { headers: authHeaders });
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.system.name).toBe('AegisPay OS');
-    expect(data.system.version).toBe('3.0.0');
+    expect(data.system.name).toBe('AegisPay');
+    expect(data.system.version).toBe('3.1.0');
     expect(data.operator.email).toBe('operator@aegispay.io');
+    expect(data.workspace.tutorialCompleted).toBe(false);
     expect(data.lupa.billingPermissions.length).toBeGreaterThanOrEqual(4);
     expect(data.lupa.zombieReport.totalZombieCount).toBeGreaterThanOrEqual(3);
     expect(data.paystream.plans.length).toBeGreaterThanOrEqual(1);
     expect(data.payrevive.presets.length).toBe(5);
-    expect(data.auditLogs.length).toBeGreaterThanOrEqual(4);
+    expect(data.payrevive.modelCard.heldOutRocAuc).toBeGreaterThan(0.8);
+    expect(data.auditLogs.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('POST /api/payrevive/recover and /benchmark execute XGBoost + TreeSHAP + Bandit + Compliance Gate + 500-Batch simulation', async () => {
+  it('POST /api/payrevive/recover, /confirm-settlement, and /benchmark execute trained Newton GBDT + TreeSHAP + LinUCB Bandit + Compliance Gate + 500-Batch simulation', async () => {
     const presetsRes = await fetch(`${baseUrl}/api/payrevive/presets`, { headers: authHeaders });
     expect(presetsRes.status).toBe(200);
     const presetsData = await presetsRes.json();
@@ -167,8 +179,23 @@ describe('AegisPay Full-Stack Zero-Trust HTTP API, Security, Multi-Tenant Storag
     expect(recoverData.decision.verdict).toBe('EXECUTE_RECOVERY');
     expect(recoverData.decision.selectedAction).toBe('PAYPAL_BACKUP_FUNDING_SWITCH');
     expect(recoverData.decision.diagnosis.additivityVerified).toBe(true);
+    expect(recoverData.decision.settlementConfirmed).toBe(false);
     expect(recoverData.paypalInvoice.invoiceId).toBeDefined();
     expect(recoverData.auditRow.pillar).toBe('PAYREVIVE');
+
+    // Explicit settlement confirmation updates LinUCB contextual bandit arm weights
+    const confirmRes = await fetch(`${baseUrl}/api/payrevive/confirm-settlement`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({
+        decisionId: recoverData.decision.decisionId,
+        settled: true,
+      }),
+    });
+    expect(confirmRes.status).toBe(200);
+    const confirmData = await confirmRes.json();
+    expect(confirmData.updated).toBe(true);
+    expect(confirmData.settled).toBe(true);
 
     const blockRes = await fetch(`${baseUrl}/api/payrevive/recover`, {
       method: 'POST',
@@ -202,7 +229,7 @@ describe('AegisPay Full-Stack Zero-Trust HTTP API, Security, Multi-Tenant Storag
     expect(benchData.report.netRecoveryLiftPercent).toBeGreaterThanOrEqual(45);
   });
 
-  it('persists multi-tenant user accounts with scrypt hashes and isolates per-operator tenant workspaces across reloads', async () => {
+  it('persists multi-tenant user accounts with scrypt hashes and strictly isolates PayPal orders, invoices, policies, and balances across tenants', async () => {
     const regBRes = await fetch(`${baseUrl}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -228,13 +255,20 @@ describe('AegisPay Full-Stack Zero-Trust HTTP API, Security, Multi-Tenant Storag
     });
     expect(updB.status).toBe(200);
 
-    // Operator A balance remains untouched (not 912300)
+    // Tenant B sees ZERO of Operator A's PayPal invoices or PayRevive decisions!
+    const stateBRes = await fetch(`${baseUrl}/api/state`, { headers: tenantBHeaders });
+    const stateBData = await stateBRes.json();
+    expect(stateBData.invoices.length).toBe(0);
+    expect(stateBData.payrevive.decisions.length).toBe(0);
+
+    // Operator A balance remains untouched (not 912300) and retains Operator A's invoices
     const stateARes = await fetch(`${baseUrl}/api/state`, { headers: authHeaders });
     const stateAData = await stateARes.json();
     expect(stateAData.lupa.currentCheckingBalanceCents).not.toBe(912300);
+    expect(stateAData.invoices.length).toBeGreaterThanOrEqual(1);
 
-    // Wait briefly for debounced flush and reload store from disk to prove persistence
-    await new Promise((r) => setTimeout(r, 180));
+    // Flush async store queue deterministically and reload store from disk to prove persistence
+    await (appInstance as unknown as { flushStoreAsync: () => Promise<void> }).flushStoreAsync();
     const reloadedStore = new AegisMultiTenantStore({
       rootDir: process.cwd(),
       customFilePath: tempStoreFile,
@@ -722,26 +756,144 @@ describe('AegisPay Full-Stack Zero-Trust HTTP API, Security, Multi-Tenant Storag
     expect(afterLogoutRes.status).toBe(401);
   });
 
-  it('GET /api/auth/google/url and POST /api/auth/google verify Google OAuth 2.0 flow and mint session', async () => {
+  it('enforces verified Google OAuth (blocks unverified email spoofing & OAuth CSRF state mismatch) and removed /api/auth/oauth backdoor', async () => {
     const urlRes = await fetch(`${baseUrl}/api/auth/google/url`);
     expect(urlRes.status).toBe(200);
     const urlData = await urlRes.json();
     expect(urlData.redirectUri).toContain('/api/auth/google/callback');
 
-    const googleAuthRes = await fetch(`${baseUrl}/api/auth/google`, {
+    // Unverified email-only payload MUST be rejected with 401
+    const spoofRes = await fetch(`${baseUrl}/api/auth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: 'aps.bhaidav@gmail.com',
-        fullName: 'A. P. S. Bhaidav',
-        organization: 'Google OAuth Verified',
+        email: 'spoofed-admin@aegispay.io',
+        fullName: 'Attacker',
       }),
     });
-    expect(googleAuthRes.status).toBe(200);
-    const googleAuthData = await googleAuthRes.json();
-    expect(googleAuthData.authenticated).toBe(true);
-    expect(googleAuthData.operator.authProvider).toBe('GOOGLE_OAUTH');
-    expect(googleAuthData.operator.email).toBe('aps.bhaidav@gmail.com');
+    expect(spoofRes.status).toBe(401);
+
+    // Removed legacy /api/auth/oauth endpoint MUST NOT mint a session
+    const legacyBackdoorRes = await fetch(`${baseUrl}/api/auth/oauth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider: 'PAYPAL', email: 'operator@aegispay.io' }),
+    });
+    expect(legacyBackdoorRes.status).toBe(401);
+
+    // OAuth callback without matching aegis_oauth_state cookie MUST redirect with oauth_state_mismatch
+    const cbRes = await fetch(`${baseUrl}/api/auth/google/callback?code=fake_code&state=forged_state`, {
+      redirect: 'manual',
+    });
+    expect([301, 302]).toContain(cbRes.status);
+    expect(cbRes.headers.get('location')).toContain('auth_error=oauth_state_mismatch');
+  });
+
+  it('enforces Demo Workspace RBAC (403 on /api/credentials), SSRF blocking (400 on metadata/loopback URLs), Cookie CSRF protection, and Onboarding Tour persistence', async () => {
+    const demoRes = await fetch(`${baseUrl}/api/auth/demo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(demoRes.status).toBe(200);
+    const setCookieHeader = demoRes.headers.get('set-cookie') || '';
+    expect(setCookieHeader).toContain('aegis_session=');
+    const sessionCookiePair = setCookieHeader.split(';')[0];
+
+    const demoData = await demoRes.json();
+    expect(demoData.operator.role).toBe('DEMO_OPERATOR');
+    const demoHeaders = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${demoData.token}`,
+    };
+
+    // DEMO_OPERATOR attempting to mutate global server credentials MUST receive 403 Forbidden
+    const rbacRes = await fetch(`${baseUrl}/api/credentials`, {
+      method: 'POST',
+      headers: demoHeaders,
+      body: JSON.stringify({ simulateGeminiRateLimit: true }),
+    });
+    expect(rbacRes.status).toBe(403);
+
+    // Cross-site POST using session cookie + untrusted Origin without X-Requested-With MUST receive 403 CSRF_VERIFICATION_FAILED
+    const csrfBlockedRes = await fetch(`${baseUrl}/api/workspace/tutorial`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: sessionCookiePair,
+        Origin: 'https://evil-attacker.example',
+      },
+      body: JSON.stringify({ completed: true }),
+    });
+    expect(csrfBlockedRes.status).toBe(403);
+    const csrfJson = await csrfBlockedRes.json();
+    expect(csrfJson.code).toBe('CSRF_VERIFICATION_FAILED');
+
+    // Same cookie with trusted X-Requested-With header succeeds cleanly
+    const tutorialOkRes = await fetch(`${baseUrl}/api/workspace/tutorial`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: sessionCookiePair,
+        'X-Requested-With': 'AegisPay-Client',
+      },
+      body: JSON.stringify({ completed: true }),
+    });
+    expect(tutorialOkRes.status).toBe(200);
+    const tutorialJson = await tutorialOkRes.json();
+    expect(tutorialJson.tutorialCompleted).toBe(true);
+
+    // PRINCIPAL_ARCHITECT attempting SSRF via AWS metadata or loopback zapierUrl MUST receive 400
+    for (const badUrl of [
+      'http://169.254.169.254/latest/meta-data/',
+      'https://127.0.0.1:8443/internal',
+      'https://localhost/admin',
+    ]) {
+      const ssrfRes = await fetch(`${baseUrl}/api/credentials`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ zapierUrl: badUrl }),
+      });
+      expect(ssrfRes.status).toBe(400);
+    }
+  });
+
+  it('rejects unsigned POST /api/paypal/webhook (401) and accepts constant-time HMAC-signed webhooks (200)', async () => {
+    const webhookBody = {
+      event_type: 'PAYMENT.CAPTURE.COMPLETED',
+      summary: 'Payment captured in sandbox verification',
+      resource: { id: 'CAP-VERIFIED-9001', status: 'COMPLETED' },
+    };
+
+    const unsignedRes = await fetch(`${baseUrl}/api/paypal/webhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(webhookBody),
+    });
+    expect(unsignedRes.status).toBe(401);
+
+    const forgedRes = await fetch(`${baseUrl}/api/paypal/webhook`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Aegis-Webhook-Signature': 'deadbeef0000',
+      },
+      body: JSON.stringify(webhookBody),
+    });
+    expect(forgedRes.status).toBe(401);
+
+    const validSig = hmacSha256Hex(TEST_HMAC_SECRET, webhookBody);
+    const signedRes = await fetch(`${baseUrl}/api/paypal/webhook`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Aegis-Webhook-Signature': validSig,
+      },
+      body: JSON.stringify(webhookBody),
+    });
+    expect(signedRes.status).toBe(200);
+    const signedData = await signedRes.json();
+    expect(signedData.verified).toBe(true);
+    expect(signedData.verificationMethod).toBe('KERNEL_HMAC_SHA256');
   });
 
   const stressSteps = Array.from({ length: 40 }, (_, idx) => idx + 1);
@@ -762,3 +914,4 @@ describe('AegisPay Full-Stack Zero-Trust HTTP API, Security, Multi-Tenant Storag
     }
   );
 });
+

@@ -1,10 +1,12 @@
 /**
  * Browser-Native WebMCP (Web Model Context Protocol) Tool Registration
- * Exposes client-side navigation and safety verification tools to Chromium WebMCP agents.
+ * Exposes client-side navigation and verification tools to Chromium WebMCP agents.
  */
 
+export type WorkspaceSectionId = 'overview' | 'protect' | 'merchant' | 'getpaid';
+
 export function registerAegisWebMcpTools(
-  onNavigateTab: (tab: string) => void,
+  onNavigateSection: (section: WorkspaceSectionId | 'diagnostics') => void,
   onTriggerFuzzer: () => Promise<unknown>
 ): () => void {
   const controller = new AbortController();
@@ -27,31 +29,23 @@ export function registerAegisWebMcpTools(
   try {
     ctx.registerTool(
       {
-        name: 'open-aegispay-module',
+        name: 'open-aegispay-section',
         description:
-          'Switch the active AegisPay workspace view to inspect a specific payment or AI module.',
+          'Switch the active AegisPay workspace view between Overview, Pay Safely, Recover & Retain, Get Paid, or the Verification Lab.',
         inputSchema: {
           type: 'object',
           properties: {
-            pillar: {
+            section: {
               type: 'string',
-              enum: [
-                'command',
-                'lupa',
-                'scamshield',
-                'dealforge',
-                'cliprefund',
-                'churnrescue',
-                'paystream',
-              ],
-              description: 'Target workspace identifier to display in the UI.',
+              enum: ['overview', 'protect', 'merchant', 'getpaid', 'diagnostics'],
+              description: 'Target workspace section to display.',
             },
           },
-          required: ['pillar'],
+          required: ['section'],
         },
-        async execute(args: { pillar: string }) {
-          onNavigateTab(args.pillar);
-          return { status: 'switched', activeModule: args.pillar };
+        async execute(args: { section: WorkspaceSectionId | 'diagnostics' }) {
+          onNavigateSection(args.section);
+          return { status: 'switched', activeSection: args.section };
         },
         annotations: { readOnlyHint: true },
       },
@@ -60,9 +54,8 @@ export function registerAegisWebMcpTools(
 
     ctx.registerTool(
       {
-        name: 'verify-kernel-safety-fuzzer',
-        description:
-          'Run the 1,000-case property-based deterministic safety fuzzer and update the UI proof table.',
+        name: 'verify-safety-invariants',
+        description: 'Run the 1,000-case property-based safety verifier in the Verification Lab.',
         inputSchema: {
           type: 'object',
           properties: {},

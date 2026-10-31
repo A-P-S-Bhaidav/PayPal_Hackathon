@@ -34,6 +34,7 @@ import {
 import {
   diagnosePaymentFailureXGBoost,
   evaluatePayReviveCompliance,
+  PAYREVIVE_MODEL_METADATA,
   PAYREVIVE_SAMPLE_EVENTS,
   PayReviveContextualBandit,
   runPayRevive500BatchBenchmark,
@@ -1005,6 +1006,31 @@ describe('AegisPay Deterministic Financial & Cryptographic Kernel (360+ Test Sui
       expect(optOutCheck.allowed).toBe(false);
     });
 
+    it('verifies trained Newton GBDT model card held-out metrics and Disjoint LinUCB state round-trip', () => {
+      expect(PAYREVIVE_MODEL_METADATA.numTrees).toBe(16);
+      expect(PAYREVIVE_MODEL_METADATA.heldOutRocAuc).toBeGreaterThan(0.8);
+      expect(PAYREVIVE_MODEL_METADATA.heldOutBrierScore).toBeLessThan(0.16);
+      expect(PAYREVIVE_MODEL_METADATA.artifactSha256).toHaveLength(64);
+
+      const banditA = new PayReviveContextualBandit();
+      const initialPulls = banditA.exportState().PAYDAY_SCHEDULED_SMART_RETRY.pulls;
+      const evt = PAYREVIVE_SAMPLE_EVENTS[0].event;
+      const before = banditA.evaluateAndDecide(evt);
+      for (let i = 0; i < 6; i++) {
+        banditA.updateOutcomeForEvent(evt, 'PAYDAY_SCHEDULED_SMART_RETRY', true);
+      }
+      const exported = banditA.exportState();
+
+      const banditB = new PayReviveContextualBandit();
+      banditB.importState(exported);
+      const after = banditB.evaluateAndDecide(evt);
+
+      expect(exported.PAYDAY_SCHEDULED_SMART_RETRY.pulls).toBe(initialPulls + 6);
+      expect(after.allArms.find((a) => a.actionId === 'PAYDAY_SCHEDULED_SMART_RETRY')?.uncertaintyRadius).toBeLessThan(
+        before.allArms.find((a) => a.actionId === 'PAYDAY_SCHEDULED_SMART_RETRY')!.uncertaintyRadius
+      );
+    });
+
     it('recovers ~50%+ more net revenue than hand-written static rules across 500 batch runs with 0 compliance violations', () => {
       const bench = runPayRevive500BatchBenchmark(500, 20, 20261028);
       expect(bench.batchesSimulated).toBe(500);
@@ -1017,3 +1043,4 @@ describe('AegisPay Deterministic Financial & Cryptographic Kernel (360+ Test Sui
     });
   });
 });
+

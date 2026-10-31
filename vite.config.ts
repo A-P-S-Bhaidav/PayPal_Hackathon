@@ -24,11 +24,20 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     chunkSizeWarningLimit: 1100,
+    modulePreload: {
+      resolveDependencies: (_filename, deps) =>
+        deps.filter((dep) => !dep.includes('ag-grid') && !dep.includes('DiagnosticsLab')),
+    },
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-ag-grid': ['ag-grid-community', 'ag-grid-react'],
-          'vendor-icons': ['lucide-react'],
+        manualChunks(id) {
+          if (id.includes('node_modules/ag-grid-community') || id.includes('node_modules/ag-grid-react')) {
+            return 'vendor-ag-grid';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons';
+          }
+          return undefined;
         },
       },
     },

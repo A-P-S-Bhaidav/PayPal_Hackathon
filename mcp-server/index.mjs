@@ -186,7 +186,7 @@ rl.on('line', async (line) => {
     sendJsonRpc(id, {
       protocolVersion: '2024-11-05',
       capabilities: { tools: {} },
-      serverInfo: { name: 'aegispay-paypal-mcp-server', version: '3.0.0' },
+      serverInfo: { name: 'aegispay-paypal-mcp-server', version: '3.1.0' },
     });
     return;
   }

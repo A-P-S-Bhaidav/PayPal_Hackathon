@@ -1771,8 +1771,13 @@ export interface StatelessSessionClaims {
   email: string;
   fullName: string;
   organization: string;
-  role: 'PRINCIPAL_ARCHITECT' | 'TREASURY_OPERATOR' | 'SECURITY_AUDITOR';
-  authProvider: 'EMAIL_PASSWORD' | 'PAYPAL_OAUTH' | 'GOOGLE_OAUTH' | 'GITHUB_OAUTH';
+  role: 'PRINCIPAL_ARCHITECT' | 'TREASURY_OPERATOR' | 'SECURITY_AUDITOR' | 'DEMO_OPERATOR';
+  authProvider:
+    | 'EMAIL_PASSWORD'
+    | 'PAYPAL_OAUTH'
+    | 'GOOGLE_OAUTH'
+    | 'GITHUB_OAUTH'
+    | 'DEMO_SANDBOX';
   paypalMerchantId: string;
   sessionTokenHash: string;
   authenticatedAtIso: string;

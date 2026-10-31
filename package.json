@@ -1,7 +1,7 @@
 {
   "name": "aegispay-paypal-ai-os",
-  "version": "2.0.0",
-  "description": "AegisPay OS: Deterministic Trust, Autonomous Settlement & Smart-Milestone Studio on PayPal and AI",
+  "version": "3.1.0",
+  "description": "AegisPay: Smart Payment Protection, Milestone Invoicing & Revenue Recovery on PayPal",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -14,6 +14,7 @@
     "start": "NODE_ENV=production tsx server/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "train:payrevive": "tsx scripts/train-payrevive-gbdt.ts",
     "benchmark:payrevive": "tsx scripts/benchmark-payrevive.ts",
     "mcp": "node mcp-server/index.mjs"
   },

@@ -2,7 +2,6 @@
 
 // server/index.ts
 import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
 import path2 from "node:path";
 import fs2 from "node:fs";
@@ -1282,6 +1281,835 @@ function runDeterministicSafetyFuzzer(iterations = 1e3, seed = 20261023) {
   };
 }
 
+// shared/payreviveModelArtifact.ts
+var PAYREVIVE_MODEL_METADATA = {
+  algorithm: "Exact Second-Order Newton GBDT (XGBoost Logistic Objective)",
+  trainSamples: 12e3,
+  heldOutTestSamples: 3e3,
+  numTrees: 16,
+  maxDepth: 3,
+  learningRate: 0.28,
+  lambdaL2: 1.5,
+  heldOutRocAuc: 0.8301,
+  heldOutBrierScore: 0.1403,
+  heldOutLogLoss: 0.4228,
+  artifactSha256: "c9e4f1e6517158f5328b85dfcb05606732cf8f0e1de7d193fcf6f75701375098"
+};
+var TRAINED_GBDT_BASE_LOG_ODDS = -1.0146;
+var TRAINED_PAYREVIVE_GBDT_TREES = [
+  {
+    "cover": 2343.38,
+    "featureIndex": 4,
+    "threshold": 1.5,
+    "left": {
+      "cover": 1290.42,
+      "featureIndex": 0,
+      "threshold": 0.5,
+      "left": {
+        "cover": 1113.89,
+        "featureIndex": 6,
+        "threshold": 0.5,
+        "left": {
+          "cover": 423.18,
+          "leafValue": -11e-4
+        },
+        "right": {
+          "cover": 690.71,
+          "leafValue": 0.3591
+        }
+      },
+      "right": {
+        "cover": 176.53,
+        "leafValue": -0.3752
+      }
+    },
+    "right": {
+      "cover": 1052.96,
+      "featureIndex": 4,
+      "threshold": 2.5,
+      "left": {
+        "cover": 640.33,
+        "featureIndex": 1,
+        "threshold": 0.5,
+        "left": {
+          "cover": 538.2,
+          "leafValue": -0.1278
+        },
+        "right": {
+          "cover": 102.13,
+          "leafValue": 0.2562
+        }
+      },
+      "right": {
+        "cover": 412.63,
+        "featureIndex": 1,
+        "threshold": 0.5,
+        "left": {
+          "cover": 351.31,
+          "leafValue": -0.345
+        },
+        "right": {
+          "cover": 61.32,
+          "leafValue": -0.2743
+        }
+      }
+    }
+  },
+  {
+    "cover": 2327.6,
+    "featureIndex": 1,
+    "threshold": 0.5,
+    "left": {
+      "cover": 1940.7,
+      "featureIndex": 0,
+      "threshold": 0.5,
+      "left": {
+        "cover": 1660.83,
+        "featureIndex": 4,
+        "threshold": 2.5,
+        "left": {
+          "cover": 1416.99,
+          "leafValue": 0.0352
+        },
+        "right": {
+          "cover": 243.85,
+          "leafValue": -0.2995
+        }
+      },
+      "right": {
+        "cover": 279.86,
+        "leafValue": -0.3513
+      }
+    },
+    "right": {
+      "cover": 386.9,
+      "featureIndex": 4,
+      "threshold": 1.5,
+      "left": {
+        "cover": 220.1,
+        "featureIndex": 5,
+        "threshold": 0.4505,
+        "left": {
+          "cover": 77.52,
+          "leafValue": 0.3403
+        },
+        "right": {
+          "cover": 142.59,
+          "leafValue": 0.5419
+        }
+      },
+      "right": {
+        "cover": 166.8,
+        "featureIndex": 4,
+        "threshold": 2.5,
+        "left": {
+          "cover": 113.61,
+          "leafValue": 0.1634
+        },
+        "right": {
+          "cover": 53.18,
+          "leafValue": -0.2347
+        }
+      }
+    }
+  },
+  {
+    "cover": 2277.69,
+    "featureIndex": 0,
+    "threshold": 0.5,
+    "left": {
+      "cover": 2053.22,
+      "featureIndex": 4,
+      "threshold": 0.5,
+      "left": {
+        "cover": 627.52,
+        "featureIndex": 6,
+        "threshold": 0.5,
+        "left": {
+          "cover": 217.94,
+          "leafValue": 0.0508
+        },
+        "right": {
+          "cover": 409.58,
+          "leafValue": 0.2673
+        }
+      },
+      "right": {
+        "cover": 1425.69,
+        "featureIndex": 4,
+        "threshold": 2.5,
+        "left": {
+          "cover": 1178.08,
+          "leafValue": 17e-4
+        },
+        "right": {
+          "cover": 247.61,
+          "leafValue": -0.2585
+        }
+      }
+    },
+    "right": {
+      "cover": 224.47,
+      "leafValue": -0.3278
+    }
+  },
+  {
+    "cover": 2216.78,
+    "featureIndex": 0,
+    "threshold": 0.5,
+    "left": {
+      "cover": 2039.47,
+      "featureIndex": 6,
+      "threshold": 0.5,
+      "left": {
+        "cover": 740.3,
+        "featureIndex": 1,
+        "threshold": 0.5,
+        "left": {
+          "cover": 590.94,
+          "leafValue": -0.159
+        },
+        "right": {
+          "cover": 149.36,
+          "leafValue": 0.1339
+        }
+      },
+      "right": {
+        "cover": 1299.17,
+        "featureIndex": 4,
+        "threshold": 2.5,
+        "left": {
+          "cover": 1170.44,
+          "leafValue": 0.1201
+        },
+        "right": {
+          "cover": 128.72,
+          "leafValue": -0.2068
+        }
+      }
+    },
+    "right": {
+      "cover": 177.31,
+      "leafValue": -0.3114
+    }
+  },
+  {
+    "cover": 2152.72,
+    "featureIndex": 0,
+    "threshold": 0.5,
+    "left": {
+      "cover": 2013.99,
+      "featureIndex": 5,
+      "threshold": 0.5325,
+      "left": {
+        "cover": 901.82,
+        "featureIndex": 1,
+        "threshold": 0.5,
+        "left": {
+          "cover": 717.91,
+          "leafValue": -0.1101
+        },
+        "right": {
+          "cover": 183.91,
+          "leafValue": 0.0626
+        }
+      },
+      "right": {
+        "cover": 1112.16,
+        "featureIndex": 4,
+        "threshold": 2.5,
+        "left": {
+          "cover": 1010.68,
+          "leafValue": 0.1129
+        },
+        "right": {
+          "cover": 101.49,
+          "leafValue": -0.1975
+        }
+      }
+    },
+    "right": {
+      "cover": 138.73,
+      "leafValue": -0.2991
+    }
+  },
+  {
+    "cover": 2109.37,
+    "featureIndex": 4,
+    "threshold": 0.5,
+    "left": {
+      "cover": 676.59,
+      "featureIndex": 0,
+      "threshold": 0.5,
+      "left": {
+        "cover": 647.51,
+        "featureIndex": 1,
+        "threshold": 0.5,
+        "left": {
+          "cover": 527.13,
+          "leafValue": 0.0779
+        },
+        "right": {
+          "cover": 120.38,
+          "leafValue": 0.2631
+        }
+      },
+      "right": {
+        "cover": 29.08,
+        "leafValue": -0.2754
+      }
+    },
+    "right": {
+      "cover": 1432.78,
+      "featureIndex": 6,
+      "threshold": 0.5,
+      "left": {
+        "cover": 514.18,
+        "featureIndex": 1,
+        "threshold": 0.5,
+        "left": {
+          "cover": 400.52,
+          "leafValue": -0.1914
+        },
+        "right": {
+          "cover": 113.66,
+          "leafValue": -0.0176
+        }
+      },
+      "right": {
+        "cover": 918.6,
+        "featureIndex": 3,
+        "threshold": 7.5,
+        "left": {
+          "cover": 490.43,
+          "leafValue": 0.073
+        },
+        "right": {
+          "cover": 428.18,
+          "leafValue": -0.0836
+        }
+      }
+    }
+  },
+  {
+    "cover": 2062.97,
+    "featureIndex": 0,
+    "threshold": 0.5,
+    "left": {
+      "cover": 1965.46,
+      "featureIndex": 3,
+      "threshold": 7.5,
+      "left": {
+        "cover": 1050.69,
+        "featureIndex": 5,
+        "threshold": 0.4695,
+        "left": {
+          "cover": 373.51,
+          "leafValue": -0.0304
+        },
+        "right": {
+          "cover": 677.18,
+          "leafValue": 0.1211
+        }
+      },
+      "right": {
+        "cover": 914.77,
+        "featureIndex": 4,
+        "threshold": 1.5,
+        "left": {
+          "cover": 596.55,
+          "leafValue": -0.0175
+        },
+        "right": {
+          "cover": 318.22,
+          "leafValue": -0.1375
+        }
+      }
+    },
+    "right": {
+      "cover": 97.51,
+      "leafValue": -0.2862
+    }
+  },
+  {
+    "cover": 2032.5,
+    "featureIndex": 4,
+    "threshold": 2.5,
+    "left": {
+      "cover": 1866.89,
+      "featureIndex": 1,
+      "threshold": 0.5,
+      "left": {
+        "cover": 1494.99,
+        "featureIndex": 6,
+        "threshold": 0.5,
+        "left": {
+          "cover": 487.98,
+          "leafValue": -0.1034
+        },
+        "right": {
+          "cover": 1007.01,
+          "leafValue": 0.0241
+        }
+      },
+      "right": {
+        "cover": 371.9,
+        "featureIndex": 5,
+        "threshold": 0.4465,
+        "left": {
+          "cover": 127.21,
+          "leafValue": 0.0439
+        },
+        "right": {
+          "cover": 244.69,
+          "leafValue": 0.174
+        }
+      }
+    },
+    "right": {
+      "cover": 165.61,
+      "featureIndex": 6,
+      "threshold": 0.5,
+      "left": {
+        "cover": 59.38,
+        "leafValue": -0.2368
+      },
+      "right": {
+        "cover": 106.23,
+        "featureIndex": 4,
+        "threshold": 3.5,
+        "left": {
+          "cover": 54.29,
+          "leafValue": -0.1254
+        },
+        "right": {
+          "cover": 51.94,
+          "leafValue": -0.2111
+        }
+      }
+    }
+  },
+  {
+    "cover": 1984.55,
+    "featureIndex": 0,
+    "threshold": 0.5,
+    "left": {
+      "cover": 1912.3,
+      "featureIndex": 5,
+      "threshold": 0.6285,
+      "left": {
+        "cover": 1055.92,
+        "featureIndex": 4,
+        "threshold": 0.5,
+        "left": {
+          "cover": 355.56,
+          "leafValue": 0.0332
+        },
+        "right": {
+          "cover": 700.36,
+          "leafValue": -0.0761
+        }
+      },
+      "right": {
+        "cover": 856.38,
+        "featureIndex": 3,
+        "threshold": 6.5,
+        "left": {
+          "cover": 415.69,
+          "leafValue": 0.1138
+        },
+        "right": {
+          "cover": 440.7,
+          "leafValue": 0.0126
+        }
+      }
+    },
+    "right": {
+      "cover": 72.25,
+      "leafValue": -0.2766
+    }
+  },
+  {
+    "cover": 1958.59,
+    "featureIndex": 0,
+    "threshold": 0.5,
+    "left": {
+      "cover": 1902.52,
+      "featureIndex": 4,
+      "threshold": 2.5,
+      "left": {
+        "cover": 1774.2,
+        "featureIndex": 3,
+        "threshold": 8.5,
+        "left": {
+          "cover": 1078.72,
+          "leafValue": 0.0529
+        },
+        "right": {
+          "cover": 695.48,
+          "leafValue": -0.0409
+        }
+      },
+      "right": {
+        "cover": 128.32,
+        "featureIndex": 6,
+        "threshold": 0.5,
+        "left": {
+          "cover": 44.93,
+          "leafValue": -0.2094
+        },
+        "right": {
+          "cover": 83.39,
+          "leafValue": -0.1289
+        }
+      }
+    },
+    "right": {
+      "cover": 56.07,
+      "leafValue": -0.2685
+    }
+  },
+  {
+    "cover": 1933.41,
+    "featureIndex": 6,
+    "threshold": 0.5,
+    "left": {
+      "cover": 638.76,
+      "featureIndex": 2,
+      "threshold": 0.5,
+      "left": {
+        "cover": 417.87,
+        "featureIndex": 4,
+        "threshold": 1.5,
+        "left": {
+          "cover": 266.74,
+          "leafValue": 0.0543
+        },
+        "right": {
+          "cover": 151.12,
+          "leafValue": -0.1031
+        }
+      },
+      "right": {
+        "cover": 220.9,
+        "featureIndex": 7,
+        "threshold": 20.5,
+        "left": {
+          "cover": 77.42,
+          "leafValue": -0.1053
+        },
+        "right": {
+          "cover": 143.47,
+          "leafValue": -0.2176
+        }
+      }
+    },
+    "right": {
+      "cover": 1294.65,
+      "featureIndex": 2,
+      "threshold": 0.5,
+      "left": {
+        "cover": 831.53,
+        "featureIndex": 1,
+        "threshold": 0.5,
+        "left": {
+          "cover": 592.35,
+          "leafValue": -0.0664
+        },
+        "right": {
+          "cover": 239.19,
+          "leafValue": 0.1137
+        }
+      },
+      "right": {
+        "cover": 463.11,
+        "featureIndex": 5,
+        "threshold": 0.3775,
+        "left": {
+          "cover": 112.12,
+          "leafValue": -84e-4
+        },
+        "right": {
+          "cover": 350.99,
+          "leafValue": 0.1344
+        }
+      }
+    }
+  },
+  {
+    "cover": 1903.7,
+    "featureIndex": 0,
+    "threshold": 0.5,
+    "left": {
+      "cover": 1862.1,
+      "featureIndex": 5,
+      "threshold": 0.7245,
+      "left": {
+        "cover": 1251.57,
+        "featureIndex": 3,
+        "threshold": 4.5,
+        "left": {
+          "cover": 419.93,
+          "leafValue": 0.035
+        },
+        "right": {
+          "cover": 831.64,
+          "leafValue": -0.0552
+        }
+      },
+      "right": {
+        "cover": 610.54,
+        "featureIndex": 4,
+        "threshold": 2.5,
+        "left": {
+          "cover": 574.58,
+          "leafValue": 0.07
+        },
+        "right": {
+          "cover": 35.95,
+          "leafValue": -0.1041
+        }
+      }
+    },
+    "right": {
+      "cover": 41.6,
+      "leafValue": -0.2582
+    }
+  },
+  {
+    "cover": 1886.68,
+    "featureIndex": 7,
+    "threshold": 119,
+    "left": {
+      "cover": 1262.47,
+      "featureIndex": 4,
+      "threshold": 0.5,
+      "left": {
+        "cover": 421.45,
+        "featureIndex": 5,
+        "threshold": 0.8855,
+        "left": {
+          "cover": 382.26,
+          "leafValue": 0.0649
+        },
+        "right": {
+          "cover": 39.2,
+          "leafValue": 0.2167
+        }
+      },
+      "right": {
+        "cover": 841.01,
+        "featureIndex": 6,
+        "threshold": 0.5,
+        "left": {
+          "cover": 269.16,
+          "leafValue": -0.0698
+        },
+        "right": {
+          "cover": 571.85,
+          "leafValue": 0.0274
+        }
+      }
+    },
+    "right": {
+      "cover": 624.21,
+      "featureIndex": 1,
+      "threshold": 0.5,
+      "left": {
+        "cover": 492.6,
+        "featureIndex": 2,
+        "threshold": 0.5,
+        "left": {
+          "cover": 275.31,
+          "leafValue": -0.1171
+        },
+        "right": {
+          "cover": 217.29,
+          "leafValue": -0.0325
+        }
+      },
+      "right": {
+        "cover": 131.61,
+        "featureIndex": 3,
+        "threshold": 8.5,
+        "left": {
+          "cover": 80.84,
+          "leafValue": 0.0652
+        },
+        "right": {
+          "cover": 50.77,
+          "leafValue": -0.026
+        }
+      }
+    }
+  },
+  {
+    "cover": 1868.86,
+    "featureIndex": 5,
+    "threshold": 0.4365,
+    "left": {
+      "cover": 579.22,
+      "featureIndex": 7,
+      "threshold": 39,
+      "left": {
+        "cover": 257.2,
+        "featureIndex": 6,
+        "threshold": 0.5,
+        "left": {
+          "cover": 78.87,
+          "leafValue": -0.0826
+        },
+        "right": {
+          "cover": 178.33,
+          "leafValue": 0.0271
+        }
+      },
+      "right": {
+        "cover": 322.03,
+        "featureIndex": 5,
+        "threshold": 0.2205,
+        "left": {
+          "cover": 48.18,
+          "leafValue": -0.1953
+        },
+        "right": {
+          "cover": 273.84,
+          "leafValue": -0.0683
+        }
+      }
+    },
+    "right": {
+      "cover": 1289.64,
+      "featureIndex": 0,
+      "threshold": 0.5,
+      "left": {
+        "cover": 1268.83,
+        "featureIndex": 4,
+        "threshold": 2.5,
+        "left": {
+          "cover": 1196.38,
+          "leafValue": 0.0333
+        },
+        "right": {
+          "cover": 72.45,
+          "leafValue": -0.1095
+        }
+      },
+      "right": {
+        "cover": 20.81,
+        "leafValue": -0.2415
+      }
+    }
+  },
+  {
+    "cover": 1852.11,
+    "featureIndex": 1,
+    "threshold": 0.5,
+    "left": {
+      "cover": 1473.89,
+      "featureIndex": 4,
+      "threshold": 0.5,
+      "left": {
+        "cover": 531.94,
+        "featureIndex": 3,
+        "threshold": 7.5,
+        "left": {
+          "cover": 282.95,
+          "leafValue": 0.065
+        },
+        "right": {
+          "cover": 248.99,
+          "leafValue": -0.0194
+        }
+      },
+      "right": {
+        "cover": 941.95,
+        "featureIndex": 7,
+        "threshold": 315,
+        "left": {
+          "cover": 843.2,
+          "leafValue": -0.0289
+        },
+        "right": {
+          "cover": 98.75,
+          "leafValue": -0.153
+        }
+      }
+    },
+    "right": {
+      "cover": 378.22,
+      "featureIndex": 4,
+      "threshold": 1.5,
+      "left": {
+        "cover": 230.52,
+        "featureIndex": 3,
+        "threshold": 4.5,
+        "left": {
+          "cover": 73.34,
+          "leafValue": 0.1614
+        },
+        "right": {
+          "cover": 157.17,
+          "leafValue": 0.0676
+        }
+      },
+      "right": {
+        "cover": 147.71,
+        "featureIndex": 5,
+        "threshold": 0.6965,
+        "left": {
+          "cover": 96.76,
+          "leafValue": -0.0614
+        },
+        "right": {
+          "cover": 50.95,
+          "leafValue": 0.1109
+        }
+      }
+    }
+  },
+  {
+    "cover": 1828.92,
+    "featureIndex": 0,
+    "threshold": 0.5,
+    "left": {
+      "cover": 1802.55,
+      "featureIndex": 6,
+      "threshold": 0.5,
+      "left": {
+        "cover": 575.13,
+        "featureIndex": 2,
+        "threshold": 0.5,
+        "left": {
+          "cover": 382.97,
+          "leafValue": 0.0123
+        },
+        "right": {
+          "cover": 192.17,
+          "leafValue": -0.145
+        }
+      },
+      "right": {
+        "cover": 1227.42,
+        "featureIndex": 2,
+        "threshold": 0.5,
+        "left": {
+          "cover": 766.71,
+          "leafValue": -63e-4
+        },
+        "right": {
+          "cover": 460.71,
+          "leafValue": 0.0698
+        }
+      }
+    },
+    "right": {
+      "cover": 26.36,
+      "leafValue": -0.2394
+    }
+  }
+];
+
 // shared/payrevive.ts
 var PAYREVIVE_FEATURE_META = [
   { key: "isHardDecline", label: "Hard Decline Flag (Fraud / Revoked)" },
@@ -1294,294 +2122,177 @@ var PAYREVIVE_FEATURE_META = [
   { key: "amountDollars", label: "Failed Payment Amount (USD)" }
 ];
 function extractPayReviveFeatures(e) {
-  const isHard = e.declineCode === "STOLEN_OR_FRAUD_CARD" || e.declineCode === "REVOKED_AUTHORIZATION" ? 1 : 0;
-  const isTimeout = e.declineCode === "ISSUER_TIMEOUT" || e.issuerLatencyMs >= 1800 ? 1 : 0;
-  const isInstErr = e.declineCode === "EXPIRED_CARD" || e.declineCode === "VELOCITY_EXCEEDED" ? 1 : 0;
-  const amountDollars = Math.max(0.01, e.amountCents / 100);
-  return {
-    values: [
-      isHard,
-      isTimeout,
-      isInstErr,
-      e.daysUntilPayday,
-      e.priorRetryCount30d,
-      e.historicalCaptureRate,
-      e.hasPayPalBackupFunding ? 1 : 0,
-      amountDollars
-    ],
-    displays: [
-      isHard ? e.declineCode : "None (Soft Decline)",
-      `${e.issuerLatencyMs}ms (${e.declineCode === "ISSUER_TIMEOUT" ? "Timeout" : "Normal"})`,
-      isInstErr ? e.declineCode : "Card Active",
-      `${e.daysUntilPayday}d`,
-      `${e.priorRetryCount30d} / 3 cap`,
-      `${Math.round(e.historicalCaptureRate * 100)}%`,
-      e.hasPayPalBackupFunding ? "Linked" : "None",
-      `$${amountDollars.toFixed(2)}`
-    ]
-  };
+  const isHardDecline = e.declineCode === "STOLEN_OR_FRAUD_CARD" || e.declineCode === "REVOKED_AUTHORIZATION" ? 1 : 0;
+  const isIssuerTimeout = e.declineCode === "ISSUER_TIMEOUT" || e.issuerLatencyMs >= 1800 ? 1 : 0;
+  const isInstrumentError = e.declineCode === "EXPIRED_CARD" || e.declineCode === "VELOCITY_EXCEEDED" ? 1 : 0;
+  const amountDollars = Number((e.amountCents / 100).toFixed(2));
+  const values = [
+    isHardDecline,
+    isIssuerTimeout,
+    isInstrumentError,
+    e.daysUntilPayday,
+    e.priorRetryCount30d,
+    e.historicalCaptureRate,
+    e.hasPayPalBackupFunding ? 1 : 0,
+    amountDollars
+  ];
+  const displays = [
+    isHardDecline ? `YES (${e.declineCode})` : "NO",
+    isIssuerTimeout ? `YES (${e.issuerLatencyMs}ms)` : `${e.issuerLatencyMs}ms`,
+    isInstrumentError ? `YES (${e.declineCode})` : "NO",
+    `${e.daysUntilPayday}d`,
+    `${e.priorRetryCount30d} retries`,
+    `${Math.round(e.historicalCaptureRate * 100)}%`,
+    e.hasPayPalBackupFunding ? "Available" : "None",
+    `$${amountDollars.toFixed(2)}`
+  ];
+  return { values, displays };
 }
-var GBDT_BASE_LOG_ODDS = -0.15;
-var PAYREVIVE_GBDT_TREES = [
-  // Tree 1: Hard decline detector (dominant negative log-odds)
-  {
-    cover: 1e3,
-    featureIndex: 0,
-    threshold: 0.5,
-    left: {
-      cover: 840,
-      featureIndex: 4,
-      threshold: 2.5,
-      left: { cover: 720, leafValue: 0.28 },
-      right: { cover: 120, leafValue: -0.95 }
-    },
-    right: { cover: 160, leafValue: -3.4 }
-  },
-  // Tree 2: Issuer timeout + historical reliability boost
-  {
-    cover: 1e3,
-    featureIndex: 1,
-    threshold: 0.5,
-    left: { cover: 780, leafValue: -0.08 },
-    right: {
-      cover: 220,
-      featureIndex: 5,
-      threshold: 0.55,
-      left: { cover: 50, leafValue: 0.35 },
-      right: { cover: 170, leafValue: 1.18 }
-    }
-  },
-  // Tree 3: Instrument error x PayPal Backup Funding interaction
-  {
-    cover: 1e3,
-    featureIndex: 2,
-    threshold: 0.5,
-    left: { cover: 740, leafValue: 0.06 },
-    right: {
-      cover: 260,
-      featureIndex: 6,
-      threshold: 0.5,
-      left: { cover: 105, leafValue: -0.52 },
-      right: { cover: 155, leafValue: 0.92 }
-    }
-  },
-  // Tree 4: Payday timing gap on liquidity declines
-  {
-    cover: 1e3,
-    featureIndex: 3,
-    threshold: 1.5,
-    left: { cover: 360, leafValue: 0.34 },
-    right: {
-      cover: 640,
-      featureIndex: 3,
-      threshold: 7.5,
-      left: { cover: 420, leafValue: 0.14 },
-      right: { cover: 220, leafValue: -0.36 }
-    }
-  },
-  // Tree 5: Historical capture rate loyalty signal
-  {
-    cover: 1e3,
-    featureIndex: 5,
-    threshold: 0.7,
-    left: {
-      cover: 390,
-      featureIndex: 5,
-      threshold: 0.35,
-      left: { cover: 130, leafValue: -0.78 },
-      right: { cover: 260, leafValue: -0.18 }
-    },
-    right: { cover: 610, leafValue: 0.56 }
-  },
-  // Tree 6: Prior retry fatigue curve
-  {
-    cover: 1e3,
-    featureIndex: 4,
-    threshold: 0.5,
-    left: { cover: 520, leafValue: 0.26 },
-    right: {
-      cover: 480,
-      featureIndex: 4,
-      threshold: 1.5,
-      left: { cover: 290, leafValue: -0.05 },
-      right: { cover: 190, leafValue: -0.68 }
-    }
-  },
-  // Tree 7: Backup PayPal Wallet availability across soft declines
-  {
-    cover: 1e3,
-    featureIndex: 6,
-    threshold: 0.5,
-    left: { cover: 460, leafValue: -0.22 },
-    right: {
-      cover: 540,
-      featureIndex: 0,
-      threshold: 0.5,
-      left: { cover: 460, leafValue: 0.44 },
-      right: { cover: 80, leafValue: -0.6 }
-    }
-  },
-  // Tree 8: High-ticket invoice pressure vs split potential
-  {
-    cover: 1e3,
-    featureIndex: 7,
-    threshold: 250,
-    left: {
-      cover: 680,
-      featureIndex: 7,
-      threshold: 4.5,
-      left: { cover: 90, leafValue: -0.25 },
-      right: { cover: 590, leafValue: 0.16 }
-    },
-    right: {
-      cover: 320,
-      featureIndex: 5,
-      threshold: 0.65,
-      left: { cover: 120, leafValue: -0.48 },
-      right: { cover: 200, leafValue: 0.22 }
-    }
-  },
-  // Tree 9: Liquidity crunch + backup wallet synergy
-  {
-    cover: 1e3,
-    featureIndex: 3,
-    threshold: 3.5,
-    left: { cover: 540, leafValue: 0.12 },
-    right: {
-      cover: 460,
-      featureIndex: 6,
-      threshold: 0.5,
-      left: { cover: 220, leafValue: -0.31 },
-      right: { cover: 240, leafValue: 0.24 }
-    }
-  },
-  // Tree 10: Timeout fast-recovery booster when retries are fresh
-  {
-    cover: 1e3,
-    featureIndex: 1,
-    threshold: 0.5,
-    left: { cover: 780, leafValue: -0.04 },
-    right: {
-      cover: 220,
-      featureIndex: 4,
-      threshold: 1.5,
-      left: { cover: 175, leafValue: 0.52 },
-      right: { cover: 45, leafValue: -0.15 }
-    }
-  },
-  // Tree 11: Hard decline reinforcement
-  {
-    cover: 1e3,
-    featureIndex: 0,
-    threshold: 0.5,
-    left: { cover: 840, leafValue: 0.11 },
-    right: { cover: 160, leafValue: -1.85 }
-  },
-  // Tree 12: High capture history + moderate amount boost
-  {
-    cover: 1e3,
-    featureIndex: 5,
-    threshold: 0.82,
-    left: { cover: 620, leafValue: -0.07 },
-    right: {
-      cover: 380,
-      featureIndex: 7,
-      threshold: 500,
-      left: { cover: 310, leafValue: 0.31 },
-      right: { cover: 70, leafValue: 0.05 }
-    }
-  }
-];
-function sigmoid(z) {
-  if (z >= 20) return 0.999999998;
-  if (z <= -20) return 2e-9;
-  return 1 / (1 + Math.exp(-z));
+function isLeaf(node) {
+  return node.leafValue !== void 0 || node.featureIndex === void 0 || node.threshold === void 0 || !node.left || !node.right;
 }
-function collectTreeFeatures(node, acc) {
-  if (node.featureIndex !== void 0 && node.left && node.right) {
-    acc.add(node.featureIndex);
-    collectTreeFeatures(node.left, acc);
-    collectTreeFeatures(node.right, acc);
-  }
-}
-function conditionalTreeExpectation(node, x, activeMask) {
-  if (node.leafValue !== void 0 || node.featureIndex === void 0 || !node.left || !node.right) {
+function predictSingleTree(node, x) {
+  if (isLeaf(node)) {
     return node.leafValue ?? 0;
   }
-  if (activeMask.has(node.featureIndex)) {
-    const branch = x[node.featureIndex] <= (node.threshold ?? 0) ? node.left : node.right;
-    return conditionalTreeExpectation(branch, x, activeMask);
-  }
-  const leftVal = conditionalTreeExpectation(node.left, x, activeMask);
-  const rightVal = conditionalTreeExpectation(node.right, x, activeMask);
-  return (node.left.cover * leftVal + node.right.cover * rightVal) / node.cover;
+  return x[node.featureIndex] < node.threshold ? predictSingleTree(node.left, x) : predictSingleTree(node.right, x);
 }
-var FACTORIAL = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
+function computeExpectedTreeValue(node) {
+  if (isLeaf(node)) {
+    return node.leafValue ?? 0;
+  }
+  const leftCover = node.left.cover;
+  const rightCover = node.right.cover;
+  const total = leftCover + rightCover;
+  return (leftCover * computeExpectedTreeValue(node.left) + rightCover * computeExpectedTreeValue(node.right)) / total;
+}
+function extendPath(path3, zeroFraction, oneFraction, featureIndex) {
+  const depth = path3.length;
+  const next = path3.map((p) => ({ ...p }));
+  next.push({
+    feature: featureIndex,
+    zeroFraction,
+    oneFraction,
+    pweight: depth === 0 ? 1 : 0
+  });
+  for (let i = depth - 1; i >= 0; i--) {
+    next[i + 1].pweight += oneFraction * next[i].pweight * ((i + 1) / (depth + 1));
+    next[i].pweight = zeroFraction * next[i].pweight * ((depth - i) / (depth + 1));
+  }
+  return next;
+}
+function unwindPath(path3, pathIndex) {
+  const depth = path3.length - 1;
+  const next = path3.map((p) => ({ ...p }));
+  const oneFraction = next[pathIndex].oneFraction;
+  const zeroFraction = next[pathIndex].zeroFraction;
+  let nextOnePortion = next[depth].pweight;
+  for (let i = depth - 1; i >= 0; i--) {
+    if (oneFraction !== 0) {
+      const tmp = next[i].pweight;
+      next[i].pweight = nextOnePortion * (depth + 1) / ((i + 1) * oneFraction);
+      nextOnePortion = tmp - next[i].pweight * zeroFraction * ((depth - i) / (depth + 1));
+    } else {
+      next[i].pweight = next[i].pweight * (depth + 1) / (zeroFraction * (depth - i));
+    }
+  }
+  for (let i = pathIndex; i < depth; i++) {
+    next[i].feature = next[i + 1].feature;
+    next[i].zeroFraction = next[i + 1].zeroFraction;
+    next[i].oneFraction = next[i + 1].oneFraction;
+  }
+  next.pop();
+  return next;
+}
+function unwoundPathSum(path3, pathIndex) {
+  const depth = path3.length - 1;
+  const oneFraction = path3[pathIndex].oneFraction;
+  const zeroFraction = path3[pathIndex].zeroFraction;
+  let nextOnePortion = path3[depth].pweight;
+  let total = 0;
+  for (let i = depth - 1; i >= 0; i--) {
+    if (oneFraction !== 0) {
+      const tmp = nextOnePortion * (depth + 1) / ((i + 1) * oneFraction);
+      total += tmp;
+      nextOnePortion = path3[i].pweight - tmp * zeroFraction * ((depth - i) / (depth + 1));
+    } else if (zeroFraction !== 0) {
+      total += path3[i].pweight / zeroFraction / ((depth - i) / (depth + 1));
+    }
+  }
+  return total;
+}
+function computeTreeShapForSingleTree(root, x, phiOut) {
+  function recurse(node, incomingPath, incomingZeroFrac, incomingOneFrac, incomingFeature) {
+    const path3 = extendPath(incomingPath, incomingZeroFrac, incomingOneFrac, incomingFeature);
+    if (isLeaf(node)) {
+      const leafVal = node.leafValue ?? 0;
+      for (let i = 1; i < path3.length; i++) {
+        const w = unwoundPathSum(path3, i);
+        const elem = path3[i];
+        phiOut[elem.feature] += w * (elem.oneFraction - elem.zeroFraction) * leafVal;
+      }
+      return;
+    }
+    const fIdx = node.featureIndex;
+    const goesLeft = x[fIdx] < node.threshold;
+    const hotChild = goesLeft ? node.left : node.right;
+    const coldChild = goesLeft ? node.right : node.left;
+    let incomingZero = 1;
+    let incomingOne = 1;
+    let workingPath = path3;
+    const existingIdx = workingPath.findIndex((p, idx) => idx > 0 && p.feature === fIdx);
+    if (existingIdx !== -1) {
+      incomingZero = workingPath[existingIdx].zeroFraction;
+      incomingOne = workingPath[existingIdx].oneFraction;
+      workingPath = unwindPath(workingPath, existingIdx);
+    }
+    const totalCover = node.left.cover + node.right.cover;
+    const hotCoverFrac = hotChild.cover / totalCover;
+    const coldCoverFrac = coldChild.cover / totalCover;
+    recurse(hotChild, workingPath, incomingZero * hotCoverFrac, incomingOne, fIdx);
+    recurse(coldChild, workingPath, incomingZero * coldCoverFrac, 0, fIdx);
+  }
+  recurse(root, [], 1, 1, -1);
+}
+function sigmoid(z) {
+  if (z >= 0) {
+    const ez2 = Math.exp(-z);
+    return 1 / (1 + ez2);
+  }
+  const ez = Math.exp(z);
+  return ez / (1 + ez);
+}
 function diagnosePaymentFailureXGBoost(event) {
-  const { values: x, displays } = extractPayReviveFeatures(event);
+  const { values, displays } = extractPayReviveFeatures(event);
   const numFeatures = PAYREVIVE_FEATURE_META.length;
   const shapValues = new Array(numFeatures).fill(0);
-  let expectedEnsembleBase = GBDT_BASE_LOG_ODDS;
-  let exactEnsembleMargin = GBDT_BASE_LOG_ODDS;
-  for (const tree of PAYREVIVE_GBDT_TREES) {
-    const featureSet = /* @__PURE__ */ new Set();
-    collectTreeFeatures(tree, featureSet);
-    const treeFeatures = Array.from(featureSet);
-    const m = treeFeatures.length;
-    const emptySet = /* @__PURE__ */ new Set();
-    const fullSet = new Set(treeFeatures);
-    expectedEnsembleBase += conditionalTreeExpectation(tree, x, emptySet);
-    exactEnsembleMargin += conditionalTreeExpectation(tree, x, fullSet);
-    if (m === 0) continue;
-    const coalitionValues = new Float64Array(1 << m);
-    for (let mask = 0; mask < 1 << m; mask++) {
-      const subset = /* @__PURE__ */ new Set();
-      for (let bit = 0; bit < m; bit++) {
-        if ((mask & 1 << bit) !== 0) {
-          subset.add(treeFeatures[bit]);
-        }
-      }
-      coalitionValues[mask] = conditionalTreeExpectation(tree, x, subset);
-    }
-    for (let bit = 0; bit < m; bit++) {
-      const featIdx = treeFeatures[bit];
-      let phi = 0;
-      for (let mask = 0; mask < 1 << m; mask++) {
-        if ((mask & 1 << bit) !== 0) continue;
-        let sSize = 0;
-        let tmp = mask;
-        while (tmp > 0) {
-          sSize += tmp & 1;
-          tmp >>= 1;
-        }
-        const weight = FACTORIAL[sSize] * FACTORIAL[m - sSize - 1] / FACTORIAL[m];
-        const withFeature = coalitionValues[mask | 1 << bit];
-        const withoutFeature = coalitionValues[mask];
-        phi += weight * (withFeature - withoutFeature);
-      }
-      shapValues[featIdx] += phi;
-    }
+  let expectedEnsembleBase = TRAINED_GBDT_BASE_LOG_ODDS;
+  let exactEnsembleMargin = TRAINED_GBDT_BASE_LOG_ODDS;
+  for (const tree of TRAINED_PAYREVIVE_GBDT_TREES) {
+    expectedEnsembleBase += computeExpectedTreeValue(tree);
+    exactEnsembleMargin += predictSingleTree(tree, values);
+    computeTreeShapForSingleTree(tree, values, shapValues);
   }
   const shapSum = shapValues.reduce((acc, v) => acc + v, 0);
   const additivityDelta = Math.abs(expectedEnsembleBase + shapSum - exactEnsembleMargin);
   const recoverabilityProbability = Number(sigmoid(exactEnsembleMargin).toFixed(4));
-  let predictedRootCause = "LIQUIDITY_PAYDAY_GAP";
-  let rootCauseSummary = "";
-  if (event.declineCode === "STOLEN_OR_FRAUD_CARD" || event.declineCode === "REVOKED_AUTHORIZATION") {
+  let predictedRootCause;
+  let rootCauseSummary;
+  if (event.declineCode === "STOLEN_OR_FRAUD_CARD" || event.declineCode === "REVOKED_AUTHORIZATION" || event.hasOpenPayPalDispute) {
     predictedRootCause = "COMPLIANCE_HARD_DECLINE";
-    rootCauseSummary = `Permanent compliance hard decline (${event.declineCode}); re-debit strictly prohibited.`;
+    rootCauseSummary = `Hard decline or active dispute (${event.declineCode}); recovery actions are prohibited.`;
   } else if (event.declineCode === "ISSUER_TIMEOUT" || event.issuerLatencyMs >= 1800) {
     predictedRootCause = "TRANSIENT_ISSUER_TIMEOUT";
-    rootCauseSummary = `Transient issuer gateway timeout (${event.issuerLatencyMs}ms); high immediate retry recoverability.`;
+    rootCauseSummary = `Temporary bank network timeout (${event.issuerLatencyMs}ms); immediate smart retry has high success odds.`;
   } else if (event.declineCode === "EXPIRED_CARD" || event.declineCode === "VELOCITY_EXCEEDED") {
     predictedRootCause = "DEGRADED_FUNDING_INSTRUMENT";
-    rootCauseSummary = `Primary card ${event.declineCode.toLowerCase().replace(/_/g, " ")}; standard card retry will fail unless switched to PayPal Backup Funding.`;
+    rootCauseSummary = `Customer's card is ${event.declineCode.toLowerCase().replace(/_/g, " ")}; switching to PayPal Backup Funding avoids card decline.`;
   } else if (event.priorRetryCount30d >= 3 || event.historicalCaptureRate < 0.35) {
     predictedRootCause = "LOW_INTENT_EXHAUSTED_RETRIES";
-    rootCauseSummary = `Exhausted retry window (${event.priorRetryCount30d} prior attempts) or chronically low capture rate.`;
+    rootCauseSummary = `Retry limit exhausted (${event.priorRetryCount30d} prior attempts) or low historical completion.`;
   } else {
     predictedRootCause = "LIQUIDITY_PAYDAY_GAP";
-    rootCauseSummary = `Temporary balance shortfall (${event.daysUntilPayday}d until predicted payday liquidity window).`;
+    rootCauseSummary = `Temporary balance shortfall (${event.daysUntilPayday} days before estimated payday).`;
   }
   const shapContributions = PAYREVIVE_FEATURE_META.map((meta, idx) => {
     const val = Number(shapValues[idx].toFixed(4));
@@ -1602,48 +2313,55 @@ function diagnosePaymentFailureXGBoost(event) {
     additivityVerified: additivityDelta < 1e-6,
     predictedRootCause,
     rootCauseSummary,
-    shapContributions
+    shapContributions,
+    modelMetadata: PAYREVIVE_MODEL_METADATA
   };
 }
 var RECOVERY_ACTION_CATALOG = [
   {
     actionId: "IMMEDIATE_JITTER_RETRY",
-    actionLabel: "Immediate Jittered PayPal Capture Retry",
+    actionLabel: "Immediate Jittered PayPal Order Retry",
+    customerActionTitle: "Retry Payment Automatically Now",
     paypalMechanism: "PAYPAL_ORDERS_V2_RETRY",
     requiresCustomerOutreach: false,
     actionCostCents: 18
   },
   {
     actionId: "PAYDAY_SCHEDULED_SMART_RETRY",
-    actionLabel: "Payday-Aligned Smart Capture Schedule",
+    actionLabel: "Payday-Aligned PayPal Smart Retry Hold",
+    customerActionTitle: "Schedule Retry for Customer Payday",
     paypalMechanism: "PAYPAL_ORDERS_V2_RETRY",
     requiresCustomerOutreach: false,
-    actionCostCents: 22
+    actionCostCents: 24
   },
   {
     actionId: "PAYPAL_BACKUP_FUNDING_SWITCH",
-    actionLabel: "PayPal Wallet / ACH Backup Funding Link",
+    actionLabel: "PayPal Backup Wallet / ACH Invoice Link",
+    customerActionTitle: "Send PayPal Backup Funding Link",
     paypalMechanism: "PAYPAL_INVOICING_V2_LINK",
     requiresCustomerOutreach: true,
     actionCostCents: 55
   },
   {
     actionId: "SPLIT_TWO_PART_INVOICE",
-    actionLabel: "50/50 Two-Part PayPal Installment Invoice",
+    actionLabel: "Split 50/50 Two-Part PayPal Recovery Invoice",
+    customerActionTitle: "Offer Two-Part Split Payment Link",
     paypalMechanism: "PAYPAL_INVOICING_V2_LINK",
     requiresCustomerOutreach: true,
-    actionCostCents: 125
+    actionCostCents: 85
   },
   {
     actionId: "FEE_WAIVER_GRACE_LINK",
-    actionLabel: "Late-Fee Waiver + 48h PayPal Grace Link",
+    actionLabel: "7-Day Grace Extension PayPal Invoice Link",
+    customerActionTitle: "Send 7-Day Grace Payment Link",
     paypalMechanism: "PAYPAL_INVOICING_V2_LINK",
     requiresCustomerOutreach: true,
-    actionCostCents: 240
+    actionCostCents: 65
   },
   {
     actionId: "ABANDON_NO_ACTION",
-    actionLabel: "Abstain (Do Not Retry \u2014 Protect Margin & Compliance)",
+    actionLabel: "Abstain \u2014 Do Not Retry or Contact",
+    customerActionTitle: "Do Not Retry (Save Retry Fees)",
     paypalMechanism: "NONE",
     requiresCustomerOutreach: false,
     actionCostCents: 0
@@ -1654,177 +2372,254 @@ function evaluatePayReviveCompliance(event, actionId) {
     return {
       allowed: true,
       ruleId: "COMP-SAFE-ABSTAIN",
-      reason: "Zero-action abstention is always compliant.",
+      reason: "Abstaining incurs zero network retries and zero customer outreach.",
       blockedFlags: []
     };
   }
+  const spec = RECOVERY_ACTION_CATALOG.find((a) => a.actionId === actionId);
   const blockedFlags = [];
   if (event.declineCode === "STOLEN_OR_FRAUD_CARD" || event.declineCode === "REVOKED_AUTHORIZATION") {
-    blockedFlags.push(`HARD_DECLINE_${event.declineCode}`);
+    blockedFlags.push(`CARD_NETWORK_HARD_DECLINE_${event.declineCode}`);
   }
   if (event.hasOpenPayPalDispute) {
     blockedFlags.push("ACTIVE_PAYPAL_DISPUTE_FREEZE");
   }
-  const spec = RECOVERY_ACTION_CATALOG.find((a) => a.actionId === actionId);
-  if (!spec.requiresCustomerOutreach && event.priorRetryCount30d >= 3) {
-    blockedFlags.push("MAX_3_AUTO_RETRIES_EXCEEDED_30D");
+  if (spec.paypalMechanism === "PAYPAL_ORDERS_V2_RETRY" && event.priorRetryCount30d >= 3) {
+    blockedFlags.push("MAX_3_RETRIES_30D_EXCEEDED");
   }
-  if (event.priorRetryCount30d >= 4) {
-    blockedFlags.push("GLOBAL_ATTEMPT_CAP_EXCEEDED");
+  if (spec.paypalMechanism === "PAYPAL_ORDERS_V2_RETRY" && event.declineCode === "EXPIRED_CARD") {
+    blockedFlags.push("CARD_NETWORK_EXPIRED_INSTRUMENT_RETRY_BAN");
   }
-  if (spec.requiresCustomerOutreach) {
-    if (event.customerOptedOutComms) {
-      blockedFlags.push("CUSTOMER_COMMUNICATION_OPT_OUT");
-    }
-    if (event.localCustomerHour >= 21 || event.localCustomerHour < 8) {
-      blockedFlags.push(`QUIET_HOURS_RESTRICTION_${event.localCustomerHour}H`);
-    }
+  if (spec.requiresCustomerOutreach && event.customerOptedOutComms) {
+    blockedFlags.push("TCPA_GDPR_COMMS_OPT_OUT");
+  }
+  if (spec.requiresCustomerOutreach && (event.localCustomerHour < 8 || event.localCustomerHour >= 21)) {
+    blockedFlags.push(`QUIET_HOURS_RESTRICTION_${event.localCustomerHour}H`);
+  }
+  if (actionId === "SPLIT_TWO_PART_INVOICE" && event.amountCents < 4e3) {
+    blockedFlags.push("SPLIT_INVOICE_MIN_AMOUNT_40_USD");
   }
   if (blockedFlags.length > 0) {
     return {
       allowed: false,
-      ruleId: `COMP-BLOCK-${blockedFlags[0]}`,
-      reason: `Refused by compliance gate: ${blockedFlags.join(", ")}`,
+      ruleId: blockedFlags[0],
+      reason: `Blocked by compliance rule(s): ${blockedFlags.join(", ")}`,
       blockedFlags
     };
   }
   return {
     allowed: true,
-    ruleId: "COMP-ALLOW-VERIFIED",
-    reason: "Passed card-network retry ceiling, mandate validity, dispute check, and TCPA/GDPR rules.",
+    ruleId: "COMP-ALL-CLEAR",
+    reason: "Permitted under card-network retry caps, PayPal dispute rules, and outreach hours.",
     blockedFlags: []
   };
 }
+var CONTEXT_DIM = 9;
+function createScaledIdentity(dim, scale) {
+  const mat = [];
+  for (let i = 0; i < dim; i++) {
+    const row = new Array(dim).fill(0);
+    row[i] = scale;
+    mat.push(row);
+  }
+  return mat;
+}
+function matVecMul(M, v) {
+  const out = new Array(M.length).fill(0);
+  for (let i = 0; i < M.length; i++) {
+    let s = 0;
+    for (let j = 0; j < v.length; j++) {
+      s += M[i][j] * v[j];
+    }
+    out[i] = s;
+  }
+  return out;
+}
+function dot(u, v) {
+  let s = 0;
+  for (let i = 0; i < u.length; i++) s += u[i] * v[i];
+  return s;
+}
+function shermanMorrisonUpdate(AInv, x) {
+  const z = matVecMul(AInv, x);
+  const denom = 1 + dot(x, z);
+  if (denom <= 1e-9) return;
+  for (let i = 0; i < AInv.length; i++) {
+    for (let j = 0; j < AInv.length; j++) {
+      AInv[i][j] -= z[i] * z[j] / denom;
+    }
+  }
+}
+function buildBanditContextVector(event, diagnosis) {
+  const isIssuerTimeout = event.declineCode === "ISSUER_TIMEOUT" || event.issuerLatencyMs >= 1800 ? 1 : 0;
+  const isInsufficientFunds = event.declineCode === "INSUFFICIENT_FUNDS" ? 1 : 0;
+  const isInstrumentError = event.declineCode === "EXPIRED_CARD" || event.declineCode === "VELOCITY_EXCEEDED" ? 1 : 0;
+  const paydaySoon = event.daysUntilPayday >= 1 && event.daysUntilPayday <= 10 ? 1 : 0;
+  const highTicket = event.amountCents >= 15e3 ? 1 : 0;
+  const backupWallet = event.hasPayPalBackupFunding ? 1 : 0;
+  const retryFatigue = Math.min(1, event.priorRetryCount30d / 3);
+  return [
+    1,
+    // bias
+    diagnosis.recoverabilityProbability,
+    // GBDT calibrated base score
+    isIssuerTimeout,
+    isInsufficientFunds,
+    isInstrumentError,
+    paydaySoon,
+    highTicket,
+    backupWallet,
+    retryFatigue
+  ];
+}
 var PayReviveContextualBandit = class {
-  posteriors = /* @__PURE__ */ new Map();
-  totalDecisions = 0;
-  constructor() {
-    this.seedCalibratedPriors();
+  arms = /* @__PURE__ */ new Map();
+  alphaExploration;
+  constructor(initialState, alphaExploration = 0.14) {
+    this.alphaExploration = alphaExploration;
+    if (initialState && Object.keys(initialState).length > 0) {
+      this.importState(initialState);
+    } else {
+      this.initializeWarmStartCohort();
+    }
   }
-  key(cause, actionId) {
-    return `${cause}::${actionId}`;
+  /**
+   * Initializes ridge matrices A_a = 2.0 * I_d and warms them with a small
+   * 180-event historical burn-in cohort using exact Sherman-Morrison updates
+   * (zero hardcoded inference multipliers).
+   */
+  initializeWarmStartCohort() {
+    const activeActions = [
+      "IMMEDIATE_JITTER_RETRY",
+      "PAYDAY_SCHEDULED_SMART_RETRY",
+      "PAYPAL_BACKUP_FUNDING_SWITCH",
+      "SPLIT_TWO_PART_INVOICE",
+      "FEE_WAIVER_GRACE_LINK"
+    ];
+    for (const act of activeActions) {
+      this.arms.set(act, {
+        AInv: createScaledIdentity(CONTEXT_DIM, 0.5),
+        // lambda = 2.0
+        b: new Array(CONTEXT_DIM).fill(0),
+        pulls: 0
+      });
+    }
+    const rng = mulberry32(10101);
+    const declineTypes = [
+      "INSUFFICIENT_FUNDS",
+      "ISSUER_TIMEOUT",
+      "EXPIRED_CARD",
+      "VELOCITY_EXCEEDED"
+    ];
+    for (let i = 0; i < 180; i++) {
+      const declineCode = declineTypes[i % declineTypes.length];
+      const e = {
+        eventId: `WARM-${i}`,
+        customerEmail: "warm@cohort.local",
+        merchantOrderRef: `W-${i}`,
+        amountCents: [2900, 8900, 18900, 29e3][Math.floor(rng() * 4)],
+        currency: "USD",
+        declineCode,
+        daysUntilPayday: Math.floor(rng() * 11),
+        priorRetryCount30d: Math.floor(rng() * 3),
+        historicalCaptureRate: 0.35 + rng() * 0.6,
+        hasPayPalBackupFunding: rng() < 0.6,
+        issuerLatencyMs: declineCode === "ISSUER_TIMEOUT" ? 2300 : 250,
+        accountTenureDays: 200,
+        customerOptedOutComms: false,
+        localCustomerHour: 13,
+        hasOpenPayPalDispute: false
+      };
+      const diag = diagnosePaymentFailureXGBoost(e);
+      const x = buildBanditContextVector(e, diag);
+      const act = activeActions[i % activeActions.length];
+      const p = simulateRealWorldEnvironmentOutcome(e, act, (rng() - 0.5) * 0.4);
+      const reward = rng() < p ? 1 : 0;
+      this.recordContextualOutcome(x, act, reward);
+    }
   }
-  seedCalibratedPriors() {
-    const priors = {
-      TRANSIENT_ISSUER_TIMEOUT: {
-        IMMEDIATE_JITTER_RETRY: [34, 8],
-        PAYDAY_SCHEDULED_SMART_RETRY: [18, 14],
-        PAYPAL_BACKUP_FUNDING_SWITCH: [16, 14],
-        SPLIT_TWO_PART_INVOICE: [10, 18],
-        FEE_WAIVER_GRACE_LINK: [9, 19],
-        ABANDON_NO_ACTION: [1, 99]
-      },
-      LIQUIDITY_PAYDAY_GAP: {
-        IMMEDIATE_JITTER_RETRY: [6, 30],
-        PAYDAY_SCHEDULED_SMART_RETRY: [31, 10],
-        PAYPAL_BACKUP_FUNDING_SWITCH: [19, 15],
-        SPLIT_TWO_PART_INVOICE: [27, 11],
-        FEE_WAIVER_GRACE_LINK: [15, 17],
-        ABANDON_NO_ACTION: [1, 99]
-      },
-      DEGRADED_FUNDING_INSTRUMENT: {
-        IMMEDIATE_JITTER_RETRY: [2, 38],
-        PAYDAY_SCHEDULED_SMART_RETRY: [3, 37],
-        PAYPAL_BACKUP_FUNDING_SWITCH: [33, 9],
-        SPLIT_TWO_PART_INVOICE: [11, 23],
-        FEE_WAIVER_GRACE_LINK: [14, 21],
-        ABANDON_NO_ACTION: [1, 99]
-      },
-      LOW_INTENT_EXHAUSTED_RETRIES: {
-        IMMEDIATE_JITTER_RETRY: [3, 35],
-        PAYDAY_SCHEDULED_SMART_RETRY: [5, 31],
-        PAYPAL_BACKUP_FUNDING_SWITCH: [9, 26],
-        SPLIT_TWO_PART_INVOICE: [10, 24],
-        FEE_WAIVER_GRACE_LINK: [13, 21],
-        ABANDON_NO_ACTION: [1, 99]
-      },
-      COMPLIANCE_HARD_DECLINE: {
-        IMMEDIATE_JITTER_RETRY: [1, 99],
-        PAYDAY_SCHEDULED_SMART_RETRY: [1, 99],
-        PAYPAL_BACKUP_FUNDING_SWITCH: [1, 99],
-        SPLIT_TWO_PART_INVOICE: [1, 99],
-        FEE_WAIVER_GRACE_LINK: [1, 99],
-        ABANDON_NO_ACTION: [1, 99]
-      }
-    };
-    for (const cause of Object.keys(priors)) {
-      for (const actionId of Object.keys(priors[cause])) {
-        const [alpha, beta] = priors[cause][actionId];
-        this.posteriors.set(this.key(cause, actionId), {
-          alpha,
-          beta,
-          pulls: alpha + beta
+  exportState() {
+    const out = {};
+    for (const [act, arm] of this.arms.entries()) {
+      out[act] = {
+        AInv: arm.AInv.map((row) => [...row]),
+        b: [...arm.b],
+        pulls: arm.pulls
+      };
+    }
+    return out;
+  }
+  importState(state) {
+    this.arms.clear();
+    for (const [act, arm] of Object.entries(state)) {
+      if (arm?.AInv && arm?.b) {
+        this.arms.set(act, {
+          AInv: arm.AInv.map((row) => [...row]),
+          b: [...arm.b],
+          pulls: Number(arm.pulls || 0)
         });
       }
     }
   }
-  estimateActionSuccessProbability(event, diagnosis, actionId) {
+  scoreArm(x, actionId) {
     if (actionId === "ABANDON_NO_ACTION") {
-      return { meanProb: 0, ucbProb: 0 };
+      return { meanProb: 0, ucbProb: 0, uncertainty: 0 };
     }
-    const post = this.posteriors.get(this.key(diagnosis.predictedRootCause, actionId)) || {
-      alpha: 2,
-      beta: 8,
-      pulls: 10
-    };
-    const armPriorMean = post.alpha / (post.alpha + post.beta);
-    let modifier = 1;
-    if (actionId === "PAYPAL_BACKUP_FUNDING_SWITCH") {
-      modifier *= event.hasPayPalBackupFunding ? 1.24 : 0.48;
+    const arm = this.arms.get(actionId);
+    if (!arm) {
+      return { meanProb: 0.1, ucbProb: 0.2, uncertainty: 0.1 };
     }
-    if (actionId === "SPLIT_TWO_PART_INVOICE") {
-      modifier *= event.amountCents >= 18e3 ? 1.22 : 0.72;
-    }
-    if (actionId === "PAYDAY_SCHEDULED_SMART_RETRY") {
-      modifier *= event.daysUntilPayday >= 1 && event.daysUntilPayday <= 10 ? 1.18 : 0.84;
-    }
-    if (actionId === "IMMEDIATE_JITTER_RETRY" && event.declineCode === "INSUFFICIENT_FUNDS") {
-      modifier *= event.daysUntilPayday === 0 ? 0.92 : 0.28;
-    }
-    const blended = Math.min(
-      0.96,
-      Math.max(5e-3, (0.42 * diagnosis.recoverabilityProbability + 0.58 * armPriorMean) * modifier)
-    );
-    const totalN = Math.max(10, this.totalDecisions + 50);
-    const bonus = Math.min(0.08, Math.sqrt(0.35 * Math.log(totalN) / Math.max(1, post.pulls)));
+    const theta = matVecMul(arm.AInv, arm.b);
+    const rawPred = dot(theta, x);
+    const AInvX = matVecMul(arm.AInv, x);
+    const varianceQuad = Math.max(0, dot(x, AInvX));
+    const uncertainty = this.alphaExploration * Math.sqrt(varianceQuad);
+    const meanProb = Number(Math.min(0.95, Math.max(5e-3, rawPred)).toFixed(4));
+    const ucbProb = Number(Math.min(0.98, Math.max(5e-3, meanProb + uncertainty)).toFixed(4));
     return {
-      meanProb: Number(blended.toFixed(4)),
-      ucbProb: Number(Math.min(0.98, blended + bonus).toFixed(4))
+      meanProb,
+      ucbProb,
+      uncertainty: Number(uncertainty.toFixed(4))
     };
   }
-  updateOutcome(cause, actionId, recovered) {
-    this.totalDecisions += 1;
+  recordContextualOutcome(x, actionId, reward) {
     if (actionId === "ABANDON_NO_ACTION") return;
-    const k = this.key(cause, actionId);
-    const entry = this.posteriors.get(k) || { alpha: 2, beta: 2, pulls: 4 };
-    entry.pulls += 1;
-    if (recovered) {
-      entry.alpha += 1;
-    } else {
-      entry.beta += 1;
+    const arm = this.arms.get(actionId);
+    if (!arm) return;
+    shermanMorrisonUpdate(arm.AInv, x);
+    for (let i = 0; i < CONTEXT_DIM; i++) {
+      arm.b[i] += reward * x[i];
     }
-    this.posteriors.set(k, entry);
+    arm.pulls += 1;
+  }
+  updateOutcomeForEvent(event, actionId, recovered) {
+    if (actionId === "ABANDON_NO_ACTION") return;
+    const diag = diagnosePaymentFailureXGBoost(event);
+    const x = buildBanditContextVector(event, diag);
+    this.recordContextualOutcome(x, actionId, recovered ? 1 : 0);
   }
   evaluateAndDecide(event) {
     const diagnosis = diagnosePaymentFailureXGBoost(event);
+    const x = buildBanditContextVector(event, diagnosis);
     const allArms = RECOVERY_ACTION_CATALOG.map((spec) => {
-      const { meanProb, ucbProb } = this.estimateActionSuccessProbability(
-        event,
-        diagnosis,
-        spec.actionId
-      );
-      const expectedGrossRecoveryCents = Math.round(meanProb * event.amountCents);
+      const { meanProb, ucbProb, uncertainty } = this.scoreArm(x, spec.actionId);
+      const isHardDecline = diagnosis.predictedRootCause === "COMPLIANCE_HARD_DECLINE";
+      const effectiveMean = isHardDecline ? 0 : meanProb;
+      const effectiveUcb = isHardDecline ? 0 : ucbProb;
+      const expectedGrossRecoveryCents = Math.round(effectiveMean * event.amountCents);
       const expectedNetGainCents = expectedGrossRecoveryCents - spec.actionCostCents;
-      const ucbScoreCents = Math.round(ucbProb * event.amountCents) - spec.actionCostCents;
+      const ucbScoreCents = Math.round(effectiveUcb * event.amountCents) - spec.actionCostCents;
       const compliance = evaluatePayReviveCompliance(event, spec.actionId);
       const eligibleAndWorthCost = spec.actionId !== "ABANDON_NO_ACTION" && compliance.allowed && expectedNetGainCents > 0;
       return {
         actionId: spec.actionId,
         actionLabel: spec.actionLabel,
+        customerActionTitle: spec.customerActionTitle,
         paypalMechanism: spec.paypalMechanism,
         requiresCustomerOutreach: spec.requiresCustomerOutreach,
         actionCostCents: spec.actionCostCents,
-        estimatedSuccessProbability: meanProb,
+        estimatedSuccessProbability: effectiveMean,
+        uncertaintyRadius: uncertainty,
         expectedGrossRecoveryCents,
         expectedNetGainCents,
         ucbScoreCents,
@@ -1840,6 +2635,7 @@ var PayReviveContextualBandit = class {
     let verdict = "ABSTAIN_NOT_WORTH_COST";
     let complianceBlockedTopChoice = false;
     let deterministicRationale = "";
+    let plainEnglishRecommendation = "";
     const rawTopArmObj = allArms.find((a) => a.actionId === banditRawTopAction);
     if (rawTopArmObj && !rawTopArmObj.compliance.allowed) {
       complianceBlockedTopChoice = true;
@@ -1847,21 +2643,24 @@ var PayReviveContextualBandit = class {
     if (compliantWorthwhileArms.length > 0) {
       selectedArmDetails = compliantWorthwhileArms[0];
       verdict = "EXECUTE_RECOVERY";
-      deterministicRationale = complianceBlockedTopChoice ? `Compliance Gate blocked ${banditRawTopAction} (${rawTopArmObj?.compliance.ruleId}); Bandit rerouted to compliant positive-EV arm ${selectedArmDetails.actionId} (Net EV +$${(selectedArmDetails.expectedNetGainCents / 100).toFixed(2)}).` : `Approved ${selectedArmDetails.actionId}: Diagnosis=${diagnosis.predictedRootCause}, Net EV +$${(selectedArmDetails.expectedNetGainCents / 100).toFixed(2)} exceeds $${(selectedArmDetails.actionCostCents / 100).toFixed(2)} action cost and passed all compliance checks.`;
+      deterministicRationale = complianceBlockedTopChoice ? `Compliance Gate blocked ${banditRawTopAction} (${rawTopArmObj?.compliance.ruleId}); LinUCB Bandit selected compliant arm ${selectedArmDetails.actionId} (Net EV +$${(selectedArmDetails.expectedNetGainCents / 100).toFixed(2)}).` : `Approved ${selectedArmDetails.actionId}: Diagnosis=${diagnosis.predictedRootCause}, Net EV +$${(selectedArmDetails.expectedNetGainCents / 100).toFixed(2)} exceeds $${(selectedArmDetails.actionCostCents / 100).toFixed(2)} cost and passed all compliance checks.`;
+      plainEnglishRecommendation = `${selectedArmDetails.customerActionTitle} \u2014 estimated net recovery is $${(selectedArmDetails.expectedNetGainCents / 100).toFixed(2)} after a $${(selectedArmDetails.actionCostCents / 100).toFixed(2)} processing cost.`;
     } else {
       const anyAllowedNonAbandon = allArms.some(
         (a) => a.actionId !== "ABANDON_NO_ACTION" && a.compliance.allowed
       );
-      if (!anyAllowedNonAbandon || complianceBlockedTopChoice) {
+      if (!anyAllowedNonAbandon || diagnosis.predictedRootCause === "COMPLIANCE_HARD_DECLINE") {
         verdict = "BLOCKED_BY_COMPLIANCE";
         const primaryBlockReason = rawTopArmObj && !rawTopArmObj.compliance.allowed ? rawTopArmObj.compliance.reason : allArms[0].compliance.reason;
         deterministicRationale = `Blocked by Compliance Gate: ${primaryBlockReason}. Zero recovery actions executed.`;
+        plainEnglishRecommendation = "Do not retry or contact this customer. Card-network safety and compliance rules prohibit recovery on this payment.";
       } else {
         verdict = "ABSTAIN_NOT_WORTH_COST";
         const bestNet = Math.max(
           ...allArms.filter((a) => a.actionId !== "ABANDON_NO_ACTION").map((a) => a.expectedNetGainCents)
         );
         deterministicRationale = `Abstained: Best candidate net expected value ($${(bestNet / 100).toFixed(2)}) does not justify action cost on $${(event.amountCents / 100).toFixed(2)} payment.`;
+        plainEnglishRecommendation = `Skip retry \u2014 the $${(event.amountCents / 100).toFixed(2)} payment is smaller than the expected retry fee, so skipping saves you money.`;
       }
     }
     const timestampIso = (/* @__PURE__ */ new Date()).toISOString();
@@ -1888,15 +2687,18 @@ var PayReviveContextualBandit = class {
       verdict,
       complianceBlockedTopChoice,
       auditHash,
-      deterministicRationale
+      deterministicRationale,
+      plainEnglishCause: diagnosis.rootCauseSummary,
+      plainEnglishRecommendation,
+      settlementConfirmed: false
     };
   }
 };
 var PAYREVIVE_SAMPLE_EVENTS = [
   {
     presetId: "PAYDAY_LIQUIDITY",
-    title: "SaaS Annual Renewal \u2014 Payday Liquidity Gap ($189.00)",
-    subtitle: "Soft insufficient funds 3 days before payday; strong 88% capture history",
+    title: "Annual Plan Renewal \u2014 Temporary Low Balance ($189.00)",
+    subtitle: "Insufficient funds 3 days before customer payday; strong payment history",
     event: {
       eventId: "EVT-SBX-901",
       customerEmail: "ops@northstar-analytics.io",
@@ -1917,8 +2719,8 @@ var PAYREVIVE_SAMPLE_EVENTS = [
   },
   {
     presetId: "EXPIRED_CARD_WALLET_SWITCH",
-    title: "Expired Primary Card with Linked PayPal ACH ($240.00)",
-    subtitle: "Standard card retries fail; Bandit switches to PayPal Backup Funding Link",
+    title: "Expired Card with Linked PayPal Balance ($240.00)",
+    subtitle: "Card is expired, so retrying the card fails \u2014 send a PayPal Backup Funding link",
     event: {
       eventId: "EVT-SBX-902",
       customerEmail: "treasury@aurora-design.co",
@@ -1939,8 +2741,8 @@ var PAYREVIVE_SAMPLE_EVENTS = [
   },
   {
     presetId: "ISSUER_GATEWAY_TIMEOUT",
-    title: "Issuer Gateway 2,640ms Timeout ($96.00)",
-    subtitle: "Transient network drop; Bandit selects low-cost $0.18 Immediate Jitter Retry",
+    title: "Bank Network Timeout ($96.00)",
+    subtitle: "Temporary bank connection drop; automatic immediate retry recovers cleanly",
     event: {
       eventId: "EVT-SBX-903",
       customerEmail: "billing@vectorcloud.dev",
@@ -1961,8 +2763,8 @@ var PAYREVIVE_SAMPLE_EVENTS = [
   },
   {
     presetId: "COMPLIANCE_HARD_DECLINE",
-    title: "Revoked Mandate / Stolen Card Hard Decline ($310.00)",
-    subtitle: "Compliance Gate deterministically blocks all retry and dunning actions",
+    title: "Flagged / Revoked Card ($310.00) \u2014 Must Block",
+    subtitle: "Safety & compliance rules automatically block all retries and emails",
     event: {
       eventId: "EVT-SBX-904",
       customerEmail: "flagged@cardholder-alert.net",
@@ -1983,21 +2785,21 @@ var PAYREVIVE_SAMPLE_EVENTS = [
   },
   {
     presetId: "NEGATIVE_EV_MICRO_PAYMENT",
-    title: "Micro-Usage Overage ($0.45) \u2014 Not Worth Retry Cost",
-    subtitle: "Expected recovery ($0.14) < $0.18 retry cost; Bandit abstains automatically",
+    title: "Tiny Usage Overage ($0.35) \u2014 Not Worth Retry Fee",
+    subtitle: "Expected recovery is less than the retry processing fee \u2014 skip automatically",
     event: {
       eventId: "EVT-SBX-905",
       customerEmail: "free-tier@sandbox-user.org",
       merchantOrderRef: "PP-MIC-00412",
-      amountCents: 45,
+      amountCents: 35,
       currency: "USD",
       declineCode: "INSUFFICIENT_FUNDS",
-      daysUntilPayday: 11,
+      daysUntilPayday: 13,
       priorRetryCount30d: 2,
-      historicalCaptureRate: 0.32,
+      historicalCaptureRate: 0.22,
       hasPayPalBackupFunding: false,
       issuerLatencyMs: 260,
-      accountTenureDays: 25,
+      accountTenureDays: 18,
       customerOptedOutComms: false,
       localCustomerHour: 15,
       hasOpenPayPalDispute: false
@@ -2014,49 +2816,59 @@ function mulberry32(seed) {
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 }
-function latentTrueRecoveryProbability(event, actionId) {
+function simulateRealWorldEnvironmentOutcome(event, actionId, unobservedCustomerShock) {
   if (actionId === "ABANDON_NO_ACTION") return 0;
   if (event.declineCode === "STOLEN_OR_FRAUD_CARD" || event.declineCode === "REVOKED_AUTHORIZATION" || event.hasOpenPayPalDispute) {
     return 0;
   }
-  const loyalty = 0.55 + 0.45 * event.historicalCaptureRate;
+  const baseAffinity = Math.max(
+    0.2,
+    Math.min(1.15, 0.52 + 0.48 * event.historicalCaptureRate + unobservedCustomerShock)
+  );
+  const fatiguePenalty = Math.max(0.25, 1 - 0.22 * event.priorRetryCount30d);
   switch (event.declineCode) {
     case "ISSUER_TIMEOUT": {
-      if (actionId === "IMMEDIATE_JITTER_RETRY") return Math.min(0.92, 0.84 * loyalty);
-      if (actionId === "PAYDAY_SCHEDULED_SMART_RETRY") return 0.58 * loyalty;
-      if (actionId === "PAYPAL_BACKUP_FUNDING_SWITCH") return 0.54 * loyalty;
-      return 0.42 * loyalty;
+      if (actionId === "IMMEDIATE_JITTER_RETRY")
+        return Math.min(0.93, 0.85 * baseAffinity * fatiguePenalty);
+      if (actionId === "PAYDAY_SCHEDULED_SMART_RETRY") return 0.56 * baseAffinity * fatiguePenalty;
+      if (actionId === "PAYPAL_BACKUP_FUNDING_SWITCH") return 0.52 * baseAffinity * fatiguePenalty;
+      return 0.38 * baseAffinity * fatiguePenalty;
     }
     case "INSUFFICIENT_FUNDS": {
       if (actionId === "IMMEDIATE_JITTER_RETRY") {
-        return event.daysUntilPayday === 0 ? 0.56 * loyalty : 0.14 * loyalty;
+        return (event.daysUntilPayday === 0 ? 0.58 : 0.13) * baseAffinity * fatiguePenalty;
       }
       if (actionId === "PAYDAY_SCHEDULED_SMART_RETRY") {
-        return event.amountCents > 32e3 ? 0.46 * loyalty : 0.78 * loyalty;
+        const ticketDrag = event.amountCents >= 22e3 ? 0.48 : 0.82;
+        return Math.min(0.92, ticketDrag * baseAffinity * fatiguePenalty);
       }
       if (actionId === "SPLIT_TWO_PART_INVOICE") {
-        return event.amountCents >= 18e3 ? 0.81 * loyalty : 0.49 * loyalty;
+        const highTicketFit = event.amountCents >= 16e3 ? 0.84 : 0.46;
+        return Math.min(0.91, highTicketFit * baseAffinity * fatiguePenalty);
       }
       if (actionId === "PAYPAL_BACKUP_FUNDING_SWITCH") {
-        return event.hasPayPalBackupFunding ? 0.71 * loyalty : 0.22 * loyalty;
+        return (event.hasPayPalBackupFunding ? 0.76 : 0.19) * baseAffinity * fatiguePenalty;
       }
       if (actionId === "FEE_WAIVER_GRACE_LINK") {
-        return 0.44 * loyalty;
+        return 0.41 * baseAffinity * fatiguePenalty;
       }
       return 0;
     }
     case "EXPIRED_CARD":
     case "VELOCITY_EXCEEDED": {
       if (actionId === "IMMEDIATE_JITTER_RETRY" || actionId === "PAYDAY_SCHEDULED_SMART_RETRY") {
-        return event.declineCode === "EXPIRED_CARD" ? 0.03 : 0.16 * loyalty;
+        return event.declineCode === "EXPIRED_CARD" ? 0 : 0.15 * baseAffinity * fatiguePenalty;
       }
       if (actionId === "PAYPAL_BACKUP_FUNDING_SWITCH") {
-        return event.hasPayPalBackupFunding ? 0.85 * loyalty : 0.42 * loyalty;
+        return Math.min(
+          0.92,
+          (event.hasPayPalBackupFunding ? 0.86 : 0.39) * baseAffinity * fatiguePenalty
+        );
       }
       if (actionId === "FEE_WAIVER_GRACE_LINK") {
-        return 0.36 * loyalty;
+        return 0.34 * baseAffinity * fatiguePenalty;
       }
-      return 0.25 * loyalty;
+      return 0.24 * baseAffinity * fatiguePenalty;
     }
     default:
       return 0;
@@ -2066,19 +2878,20 @@ function selectHandWrittenRuleAction(event) {
   if (event.declineCode === "STOLEN_OR_FRAUD_CARD" || event.declineCode === "REVOKED_AUTHORIZATION" || event.hasOpenPayPalDispute || event.priorRetryCount30d >= 3) {
     return "ABANDON_NO_ACTION";
   }
+  const commsAllowed = !event.customerOptedOutComms && event.localCustomerHour >= 8 && event.localCustomerHour < 21;
   if (event.declineCode === "ISSUER_TIMEOUT") {
     return "IMMEDIATE_JITTER_RETRY";
   }
-  const commsAllowed = !event.customerOptedOutComms && event.localCustomerHour >= 8 && event.localCustomerHour < 21;
+  if (event.declineCode === "EXPIRED_CARD") {
+    if (!commsAllowed) return "ABANDON_NO_ACTION";
+    return event.hasPayPalBackupFunding ? "PAYPAL_BACKUP_FUNDING_SWITCH" : "FEE_WAIVER_GRACE_LINK";
+  }
   if (event.declineCode === "INSUFFICIENT_FUNDS") {
-    if (event.priorRetryCount30d <= 1) return "IMMEDIATE_JITTER_RETRY";
+    if (event.priorRetryCount30d === 0) return "IMMEDIATE_JITTER_RETRY";
     return commsAllowed ? "FEE_WAIVER_GRACE_LINK" : "IMMEDIATE_JITTER_RETRY";
   }
-  if (event.declineCode === "EXPIRED_CARD") {
-    return commsAllowed ? "PAYPAL_BACKUP_FUNDING_SWITCH" : "IMMEDIATE_JITTER_RETRY";
-  }
   if (event.declineCode === "VELOCITY_EXCEEDED") {
-    if (event.priorRetryCount30d === 0) return "IMMEDIATE_JITTER_RETRY";
+    if (commsAllowed && event.hasPayPalBackupFunding) return "PAYPAL_BACKUP_FUNDING_SWITCH";
     return commsAllowed ? "FEE_WAIVER_GRACE_LINK" : "IMMEDIATE_JITTER_RETRY";
   }
   return "ABANDON_NO_ACTION";
@@ -2110,15 +2923,16 @@ function runPayRevive500BatchBenchmark(batches = 500, batchSize = 20, seed = 202
   let ruleComplianceViolations = 0;
   const curveCheckpoints = [];
   const declinePool = [
-    { code: "INSUFFICIENT_FUNDS", weight: 0.38 },
+    { code: "INSUFFICIENT_FUNDS", weight: 0.4 },
     { code: "EXPIRED_CARD", weight: 0.21 },
-    { code: "ISSUER_TIMEOUT", weight: 0.16 },
-    { code: "VELOCITY_EXCEEDED", weight: 0.11 },
+    { code: "ISSUER_TIMEOUT", weight: 0.15 },
+    { code: "VELOCITY_EXCEEDED", weight: 0.1 },
     { code: "STOLEN_OR_FRAUD_CARD", weight: 0.08 },
     { code: "REVOKED_AUTHORIZATION", weight: 0.06 }
   ];
-  const amountBuckets = [65, 190, 2900, 4900, 8900, 14900, 22900, 38900];
+  const amountBuckets = [35, 140, 2900, 4900, 8900, 15900, 23900, 38900];
   for (let b = 1; b <= batches; b++) {
+    const seasonalDrift = Math.sin(b / batches * Math.PI * 2) * 0.06;
     for (let i = 0; i < batchSize; i++) {
       const rDecline = rng();
       let accW = 0;
@@ -2131,14 +2945,17 @@ function runPayRevive500BatchBenchmark(batches = 500, batchSize = 20, seed = 202
         }
       }
       const amountCents = amountBuckets[Math.floor(rng() * amountBuckets.length)];
-      const daysUntilPayday = Math.floor(rng() * 12);
+      const daysUntilPayday = Math.floor(rng() * 13);
       const priorRetryCount30d = rng() < 0.16 ? 3 : Math.floor(rng() * 3);
-      const historicalCaptureRate = Number((0.25 + rng() * 0.72).toFixed(2));
+      const historicalCaptureRate = Number(
+        Math.max(0.1, Math.min(0.98, 0.25 + rng() * 0.72 + seasonalDrift)).toFixed(2)
+      );
       const hasPayPalBackupFunding = rng() < 0.64;
       const issuerLatencyMs = declineCode === "ISSUER_TIMEOUT" ? 1900 + Math.floor(rng() * 1800) : 140 + Math.floor(rng() * 450);
       const customerOptedOutComms = rng() < 0.14;
       const localCustomerHour = Math.floor(rng() * 24);
       const hasOpenPayPalDispute = rng() < 0.05;
+      const unobservedShock = (rng() - 0.5) * 0.36;
       const event = {
         eventId: `SIM-${b}-${i}`,
         customerEmail: `subscriber-${b}-${i}@sandbox.io`,
@@ -2173,9 +2990,9 @@ function runPayRevive500BatchBenchmark(batches = 500, batchSize = 20, seed = 202
       } else {
         prExecuted += 1;
         prCost += decision.selectedArmDetails.actionCostCents;
-        const pTrue = latentTrueRecoveryProbability(event, prAction);
+        const pTrue = simulateRealWorldEnvironmentOutcome(event, prAction, unobservedShock);
         const recovered = rng() < pTrue;
-        bandit.updateOutcome(decision.diagnosis.predictedRootCause, prAction, recovered);
+        bandit.updateOutcomeForEvent(event, prAction, recovered);
         if (recovered) {
           prSuccesses += 1;
           prGross += event.amountCents;
@@ -2190,7 +3007,7 @@ function runPayRevive500BatchBenchmark(batches = 500, batchSize = 20, seed = 202
         const ruleSpec = RECOVERY_ACTION_CATALOG.find((a) => a.actionId === ruleAction);
         ruleExecuted += 1;
         ruleCost += ruleSpec.actionCostCents;
-        const pRuleTrue = latentTrueRecoveryProbability(event, ruleAction);
+        const pRuleTrue = simulateRealWorldEnvironmentOutcome(event, ruleAction, unobservedShock);
         if (rng() < pRuleTrue) {
           ruleSuccesses += 1;
           ruleGross += event.amountCents;
@@ -2219,6 +3036,7 @@ function runPayRevive500BatchBenchmark(batches = 500, batchSize = 20, seed = 202
       batches,
       batchSize,
       seed,
+      modelSha256: PAYREVIVE_MODEL_METADATA.artifactSha256,
       prNet,
       ruleNet,
       netRecoveryLiftPercent,
@@ -2231,6 +3049,7 @@ function runPayRevive500BatchBenchmark(batches = 500, batchSize = 20, seed = 202
     totalFailedPaymentsEvaluated,
     seed,
     durationMs,
+    modelMetadata: PAYREVIVE_MODEL_METADATA,
     payRevive: {
       grossRecoveredCents: prGross,
       actionCostSpentCents: prCost,
@@ -2290,20 +3109,21 @@ var PayPalSandboxGateway = class {
     this.cachedAccessToken = null;
     this.tokenExpiresAtMs = 0;
   }
-  getStatus() {
+  getStatus(tenantId) {
     const hasLive = Boolean(this.config.clientId?.trim() && this.config.clientSecret?.trim());
     return {
       hasLiveSandboxCredentials: hasLive,
       publicClientId: hasLive ? this.config.clientId.trim() : "",
       clientIdPreview: hasLive ? `${this.config.clientId.trim().slice(0, 12)}...` : "Not Set (Signed Sandbox Mode)",
       appId: this.cachedAppId || (hasLive ? "PayPal REST Sandbox App" : "Signed Local Kernel"),
+      webhookVerificationConfigured: Boolean(this.config.webhookId?.trim()),
       environment: this.config.environment,
       activeMode: hasLive ? "LIVE_PAYPAL_SANDBOX_API" : "CRYPTOGRAPHIC_SANDBOX_EMULATOR",
-      totalOrdersTracked: this.orders.size,
-      totalInvoicesTracked: this.invoices.size,
-      totalVaultTokens: this.vaultTokens.length,
-      totalSubscriptionsTracked: this.subscriptions.length,
-      totalWebhooksVerified: this.webhookStream.filter((w) => w.verified).length
+      totalOrdersTracked: this.getOrders(tenantId).length,
+      totalInvoicesTracked: this.getInvoices(tenantId).length,
+      totalVaultTokens: this.getVaultTokens(tenantId).length,
+      totalSubscriptionsTracked: this.getSubscriptions(tenantId).length,
+      totalWebhooksVerified: this.getWebhookStream(tenantId).filter((w) => w.verified).length
     };
   }
   getBaseUrl() {
@@ -2341,6 +3161,7 @@ var PayPalSandboxGateway = class {
     }
   }
   async createOrder(params) {
+    const ownerTenantId = params.ownerTenantId || "TNT-GLOBAL";
     const currency = (params.currency || "USD").toUpperCase();
     const valueStr = (params.amountCents / 100).toFixed(2);
     const { token, live } = await this.getAccessToken();
@@ -2385,16 +3206,20 @@ var PayPalSandboxGateway = class {
           const approveLink = data.links?.find((l) => l.rel === "payer-action" || l.rel === "approve")?.href || `https://www.sandbox.paypal.com/checkoutnow?token=${data.id}`;
           const record2 = {
             orderId: data.id,
+            ownerTenantId,
             intent: params.intent,
             status: params.autoExecuteInSandbox ? params.intent === "CAPTURE" ? "COMPLETED" : "AUTHORIZED" : "CREATED",
+            paypalServerStatus: data.status || "PAYER_ACTION_REQUIRED",
+            settlementStage: "LIVE_PAYER_APPROVAL_READY",
             amountCents: params.amountCents,
             refundedCents: 0,
             currency,
             merchantName: params.merchantName,
             description: params.description,
             customHash: params.customHash,
-            captureId: params.intent === "CAPTURE" && params.autoExecuteInSandbox ? `CAP-${data.id}` : void 0,
-            authorizationId: params.intent === "AUTHORIZE" ? `AUTH-${data.id}` : void 0,
+            captureId: params.intent === "CAPTURE" && params.autoExecuteInSandbox ? `SIMCAP-${data.id}` : void 0,
+            liveCaptureVerified: false,
+            authorizationId: params.intent === "AUTHORIZE" ? `SIMAUTH-${data.id}` : void 0,
             approvalUrl: approveLink,
             buyerCheckoutReady: true,
             mode: "LIVE_PAYPAL_SANDBOX_API",
@@ -2404,15 +3229,16 @@ var PayPalSandboxGateway = class {
           };
           this.orders.set(record2.orderId, record2);
           this.emitSignedWebhook({
-            eventType: params.intent === "CAPTURE" ? "PAYMENT.CAPTURE.COMPLETED" : "PAYMENT.AUTHORIZATION.CREATED",
-            summary: `PayPal Sandbox Live Order ${record2.orderId} (${params.intent}) for $${valueStr} ${currency}`,
+            ownerTenantId,
+            eventType: params.intent === "AUTHORIZE" ? "PAYMENT.AUTHORIZATION.CREATED" : "CHECKOUT.ORDER.CREATED",
+            summary: `PayPal Sandbox Order ${record2.orderId} created (${record2.paypalServerStatus}) for $${valueStr} ${currency}`,
             resource: {
-              id: record2.captureId || record2.authorizationId || record2.orderId,
+              id: record2.orderId,
               order_id: record2.orderId,
+              paypal_server_status: record2.paypalServerStatus,
               amount: { currency_code: currency, value: valueStr },
               custom_id: params.customHash,
-              approval_url: approveLink,
-              status: record2.status
+              approval_url: approveLink
             },
             pillar: params.pillar
           });
@@ -2422,19 +3248,23 @@ var PayPalSandboxGateway = class {
       }
     }
     const digest = sha256Hex({
+      ownerTenantId,
       idempotencyKey: params.idempotencyKey,
       amountCents: params.amountCents,
       customHash: params.customHash,
       nowIso
     }).slice(0, 13).toUpperCase();
     const orderId = `PAYPAL-SBX-${digest}`;
-    const captureId = params.intent === "CAPTURE" ? `CAP-${digest}` : void 0;
-    const authorizationId = params.intent === "AUTHORIZE" ? `AUTH-${digest}` : void 0;
+    const captureId = params.intent === "CAPTURE" ? `SIMCAP-${digest}` : void 0;
+    const authorizationId = params.intent === "AUTHORIZE" ? `SIMAUTH-${digest}` : void 0;
     const status = params.autoExecuteInSandbox !== false ? params.intent === "CAPTURE" ? "COMPLETED" : "AUTHORIZED" : "CREATED";
     const record = {
       orderId,
+      ownerTenantId,
       intent: params.intent,
       status,
+      paypalServerStatus: status,
+      settlementStage: "SANDBOX_POLICY_SIMULATED",
       amountCents: params.amountCents,
       refundedCents: 0,
       currency,
@@ -2442,6 +3272,7 @@ var PayPalSandboxGateway = class {
       description: params.description,
       customHash: params.customHash,
       captureId,
+      liveCaptureVerified: false,
       authorizationId,
       approvalUrl: `https://www.sandbox.paypal.com/checkoutnow?token=${orderId}`,
       buyerCheckoutReady: false,
@@ -2464,8 +3295,9 @@ var PayPalSandboxGateway = class {
     };
     this.orders.set(orderId, record);
     this.emitSignedWebhook({
+      ownerTenantId,
       eventType: params.intent === "CAPTURE" ? "PAYMENT.CAPTURE.COMPLETED" : "PAYMENT.AUTHORIZATION.CREATED",
-      summary: `PayPal Order ${orderId} (${params.intent}) -> ${status} for $${valueStr} ${currency}`,
+      summary: `Sandbox Order ${orderId} (${params.intent}) -> ${status} for $${valueStr} ${currency}`,
       resource: {
         id: captureId || authorizationId || orderId,
         order_id: orderId,
@@ -2480,29 +3312,39 @@ var PayPalSandboxGateway = class {
   /**
    * Captures a buyer-approved PayPal Order v2 (e.g. from PayPal JS SDK Buttons onApprove).
    */
-  async captureLiveOrder(orderId, pillar = "SCAMSHIELD") {
+  async captureLiveOrder(orderId, pillar = "SCAMSHIELD", ownerTenantId = "TNT-GLOBAL") {
     const { token, live } = await this.getAccessToken();
     const existing = this.orders.get(orderId);
+    if (existing && existing.ownerTenantId !== "TNT-GLOBAL" && existing.ownerTenantId !== ownerTenantId) {
+      throw new Error("Cross-tenant access denied for this PayPal order.");
+    }
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
     if (live && !orderId.startsWith("PAYPAL-SBX-")) {
       try {
-        const res = await fetch(`${this.getBaseUrl()}/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            "PayPal-Request-Id": `capture-${orderId}`
+        const res = await fetch(
+          `${this.getBaseUrl()}/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              "PayPal-Request-Id": `capture-${orderId}`
+            }
           }
-        });
+        );
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
           const realCapId = data?.purchase_units?.[0]?.payments?.captures?.[0]?.id || `CAP-${orderId}`;
           if (existing) {
             existing.status = "COMPLETED";
+            existing.paypalServerStatus = String(data.status || "COMPLETED");
+            existing.settlementStage = "LIVE_BUYER_CAPTURED";
             existing.captureId = realCapId;
+            existing.liveCaptureVerified = true;
             existing.updatedAtIso = nowIso;
           }
           this.emitSignedWebhook({
+            ownerTenantId: existing?.ownerTenantId || ownerTenantId,
             eventType: "PAYMENT.CAPTURE.COMPLETED",
             summary: `PayPal Buyer-Approved Capture ${realCapId} completed on Order ${orderId}`,
             resource: { id: realCapId, order_id: orderId, status: data.status || "COMPLETED" },
@@ -2512,7 +3354,7 @@ var PayPalSandboxGateway = class {
             captured: true,
             orderId,
             captureId: realCapId,
-            status: data.status || "COMPLETED",
+            status: String(data.status || "COMPLETED"),
             mode: "LIVE_PAYPAL_SANDBOX_API",
             raw: data
           };
@@ -2520,9 +3362,10 @@ var PayPalSandboxGateway = class {
       } catch {
       }
     }
-    const fallbackCapId = existing?.captureId || `CAP-${orderId.replace("PAYPAL-SBX-", "")}`;
+    const fallbackCapId = existing?.captureId || `SIMCAP-${orderId.replace("PAYPAL-SBX-", "")}`;
     if (existing) {
       existing.status = "COMPLETED";
+      existing.settlementStage = "SANDBOX_POLICY_SIMULATED";
       existing.captureId = fallbackCapId;
       existing.updatedAtIso = nowIso;
     }
@@ -2531,26 +3374,30 @@ var PayPalSandboxGateway = class {
       orderId,
       captureId: fallbackCapId,
       status: "COMPLETED",
-      mode: live ? "LIVE_PAYPAL_SANDBOX_API" : "CRYPTOGRAPHIC_SANDBOX_EMULATOR"
+      mode: "CRYPTOGRAPHIC_SANDBOX_EMULATOR"
     };
   }
   /**
    * Creates and sends a REAL PayPal Sandbox Invoice via Invoicing v2 (/v2/invoicing/invoices).
    */
   async createLiveInvoice(params) {
+    const ownerTenantId = params.ownerTenantId || "TNT-GLOBAL";
     const currency = (params.currency || "USD").toUpperCase();
     const valueStr = (params.amountCents / 100).toFixed(2);
     const { token, live } = await this.getAccessToken();
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
     if (live) {
       try {
-        const numRes = await fetch(`${this.getBaseUrl()}/v2/invoicing/generate-next-invoice-number`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
+        const numRes = await fetch(
+          `${this.getBaseUrl()}/v2/invoicing/generate-next-invoice-number`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
           }
-        });
+        );
         const numJson = await numRes.json().catch(() => ({}));
         const invoiceNumber = numJson.invoice_number || `AEGIS-${Date.now().toString().slice(-6)}`;
         const createRes = await fetch(`${this.getBaseUrl()}/v2/invoicing/invoices`, {
@@ -2564,7 +3411,7 @@ var PayPalSandboxGateway = class {
             detail: {
               invoice_number: invoiceNumber,
               currency_code: currency,
-              note: `${params.note} | SHA-256: ${params.contractOrPlanHash.slice(0, 24)}`.slice(0, 380),
+              note: `${params.note} | Ref: ${params.contractOrPlanHash.slice(0, 20)}`.slice(0, 380),
               payment_term: { term_type: "NET_10" }
             },
             primary_recipients: [
@@ -2607,6 +3454,7 @@ var PayPalSandboxGateway = class {
           const urls2 = formatPayPalSandboxInvoiceUrls(invoiceId2);
           const record2 = {
             invoiceId: invoiceId2,
+            ownerTenantId,
             invoiceNumber,
             status,
             amountCents: params.amountCents,
@@ -2623,6 +3471,7 @@ var PayPalSandboxGateway = class {
           };
           this.invoices.set(invoiceId2, record2);
           this.emitSignedWebhook({
+            ownerTenantId,
             eventType: "INVOICING.INVOICE.CREATED",
             summary: `PayPal Sandbox Live Invoice ${invoiceId2} (${status}) for $${valueStr} ${currency}`,
             resource: {
@@ -2639,11 +3488,12 @@ var PayPalSandboxGateway = class {
       } catch {
       }
     }
-    const digest = sha256Hex({ hash: params.contractOrPlanHash, nowIso }).slice(0, 16).toUpperCase();
+    const digest = sha256Hex({ ownerTenantId, hash: params.contractOrPlanHash, nowIso }).slice(0, 16).toUpperCase();
     const invoiceId = `INV2-${digest.slice(0, 4)}-${digest.slice(4, 8)}-${digest.slice(8, 12)}-${digest.slice(12, 16)}`;
     const urls = formatPayPalSandboxInvoiceUrls(invoiceId);
     const record = {
       invoiceId,
+      ownerTenantId,
       invoiceNumber: `AEGIS-${digest.slice(0, 6)}`,
       status: "SENT",
       amountCents: params.amountCents,
@@ -2661,18 +3511,18 @@ var PayPalSandboxGateway = class {
     this.invoices.set(invoiceId, record);
     return record;
   }
-  /**
-   * Verifies a PayPal Sandbox Invoice ID directly via GET /v2/invoicing/invoices/{id}.
-   */
-  async lookupLiveInvoice(invoiceId) {
+  async lookupLiveInvoice(invoiceId, ownerTenantId) {
     const cleanId = invoiceId.trim().toUpperCase();
     const local = this.invoices.get(cleanId);
     const { token, live } = await this.getAccessToken();
     if (live) {
       try {
-        const res = await fetch(`${this.getBaseUrl()}/v2/invoicing/invoices/${encodeURIComponent(cleanId)}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await fetch(
+          `${this.getBaseUrl()}/v2/invoicing/invoices/${encodeURIComponent(cleanId)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
         if (res.ok) {
           const data = await res.json();
           return {
@@ -2688,7 +3538,7 @@ var PayPalSandboxGateway = class {
       } catch {
       }
     }
-    if (local) {
+    if (local && (!ownerTenantId || local.ownerTenantId === ownerTenantId || local.ownerTenantId === "TNT-GLOBAL")) {
       return {
         found: true,
         invoiceId: local.invoiceId,
@@ -2699,13 +3549,14 @@ var PayPalSandboxGateway = class {
         mode: "LOCAL_LEDGER"
       };
     }
-    return { found: false, invoiceId: cleanId, mode: live ? "LIVE_PAYPAL_SANDBOX_API" : "LOCAL_LEDGER" };
+    return {
+      found: false,
+      invoiceId: cleanId,
+      mode: live ? "LIVE_PAYPAL_SANDBOX_API" : "LOCAL_LEDGER"
+    };
   }
-  /**
-   * Creates a REAL PayPal Vault v3 Setup Token (POST /v3/vault/setup-tokens)
-   * representing a buyer-approved payment permission delegated to an AI agent.
-   */
   async createVaultSetupToken(params) {
+    const ownerTenantId = params.ownerTenantId || "TNT-GLOBAL";
     const currency = (params.currency || "USD").toUpperCase();
     const { token, live } = await this.getAccessToken();
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
@@ -2721,7 +3572,10 @@ var PayPalSandboxGateway = class {
           body: JSON.stringify({
             payment_source: {
               paypal: {
-                description: `AegisPay Agent Permit: ${params.agentName} (Cap $${(params.maxSingleCents / 100).toFixed(2)})`.slice(0, 120),
+                description: `AegisPay Spending Limit: ${params.agentName} (Cap $${(params.maxSingleCents / 100).toFixed(2)})`.slice(
+                  0,
+                  120
+                ),
                 usage_type: "MERCHANT",
                 customer_type: "CONSUMER",
                 permit_multiple_payment_tokens: true,
@@ -2738,6 +3592,7 @@ var PayPalSandboxGateway = class {
           const approvalUrl = data.links?.find((l) => l.rel === "approve")?.href || `https://www.sandbox.paypal.com/agreements/approve?approval_session_id=${data.id}`;
           const record2 = {
             setupTokenId: data.id,
+            ownerTenantId,
             agentName: params.agentName,
             maxSingleCents: params.maxSingleCents,
             currency,
@@ -2748,6 +3603,7 @@ var PayPalSandboxGateway = class {
           };
           this.vaultTokens.unshift(record2);
           this.emitSignedWebhook({
+            ownerTenantId,
             eventType: "VAULT.SETUP-TOKEN.CREATED",
             summary: `PayPal Vault v3 Setup Token ${data.id} minted for ${params.agentName}`,
             resource: { id: data.id, status: record2.status, approval_url: approvalUrl },
@@ -2758,9 +3614,10 @@ var PayPalSandboxGateway = class {
       } catch {
       }
     }
-    const fallbackId = `VLT-${sha256Hex({ agent: params.agentName, nowIso }).slice(0, 12).toUpperCase()}`;
+    const fallbackId = `VLT-${sha256Hex({ ownerTenantId, agent: params.agentName, nowIso }).slice(0, 12).toUpperCase()}`;
     const record = {
       setupTokenId: fallbackId,
+      ownerTenantId,
       agentName: params.agentName,
       maxSingleCents: params.maxSingleCents,
       currency,
@@ -2772,10 +3629,8 @@ var PayPalSandboxGateway = class {
     this.vaultTokens.unshift(record);
     return record;
   }
-  /**
-   * Creates a REAL PayPal Catalog Product + Billing Plan + Subscription (/v1/billing/subscriptions).
-   */
   async createLiveSubscription(params) {
+    const ownerTenantId = params.ownerTenantId || "TNT-GLOBAL";
     const currency = (params.currency || "USD").toUpperCase();
     const valueStr = (params.monthlyPriceCents / 100).toFixed(2);
     const { token, live } = await this.getAccessToken();
@@ -2846,6 +3701,7 @@ var PayPalSandboxGateway = class {
               const approvalUrl = sub.links?.find((l) => l.rel === "approve")?.href || `https://www.sandbox.paypal.com/webapps/billing/subscriptions?ba_token=${sub.id}`;
               const record2 = {
                 subscriptionId: sub.id,
+                ownerTenantId,
                 planId: plan.id,
                 productId: prod.id,
                 planName: params.planName,
@@ -2858,6 +3714,7 @@ var PayPalSandboxGateway = class {
               };
               this.subscriptions.unshift(record2);
               this.emitSignedWebhook({
+                ownerTenantId,
                 eventType: "BILLING.SUBSCRIPTION.CREATED",
                 summary: `PayPal Sandbox Live Subscription ${sub.id} ($${valueStr}/mo) created`,
                 resource: { id: sub.id, plan_id: plan.id, approval_url: approvalUrl },
@@ -2870,9 +3727,10 @@ var PayPalSandboxGateway = class {
       } catch {
       }
     }
-    const digest = sha256Hex({ planName: params.planName, nowIso }).slice(0, 10).toUpperCase();
+    const digest = sha256Hex({ ownerTenantId, planName: params.planName, nowIso }).slice(0, 10).toUpperCase();
     const record = {
       subscriptionId: `I-${digest}`,
+      ownerTenantId,
       planId: `P-${digest}`,
       productId: `PROD-${digest}`,
       planName: params.planName,
@@ -2887,23 +3745,30 @@ var PayPalSandboxGateway = class {
     return record;
   }
   async resolveHeldAuthorization(params) {
+    const ownerTenantId = params.ownerTenantId || "TNT-GLOBAL";
     let existing = this.orders.get(params.orderId);
+    if (existing && existing.ownerTenantId !== "TNT-GLOBAL" && existing.ownerTenantId !== ownerTenantId) {
+      throw new Error("Cross-tenant access denied for this held PayPal order.");
+    }
     if (!existing && params.fallbackAmountCents && params.fallbackAmountCents > 0) {
       const nowIso2 = (/* @__PURE__ */ new Date()).toISOString();
       existing = {
         orderId: params.orderId,
+        ownerTenantId,
         intent: "AUTHORIZE",
         status: "AUTHORIZED",
+        paypalServerStatus: "AUTHORIZED",
+        settlementStage: "SANDBOX_POLICY_SIMULATED",
         amountCents: params.fallbackAmountCents,
         refundedCents: 0,
         currency: "USD",
         merchantName: params.fallbackMerchantName || "Verified Merchant",
-        description: "Stateless Held Authorization",
+        description: "Held Authorization",
         customHash: sha256Hex({ orderId: params.orderId }),
-        authorizationId: `AUTH-${params.orderId.replace("PAYPAL-SBX-", "")}`,
+        authorizationId: `SIMAUTH-${params.orderId.replace("PAYPAL-SBX-", "")}`,
         approvalUrl: `https://www.sandbox.paypal.com/checkoutnow?token=${params.orderId}`,
         buyerCheckoutReady: true,
-        mode: this.getStatus().activeMode,
+        mode: this.getStatus(ownerTenantId).activeMode,
         createdAtIso: nowIso2,
         updatedAtIso: nowIso2
       };
@@ -2913,16 +3778,19 @@ var PayPalSandboxGateway = class {
       throw new Error(`Order ${params.orderId} not found in PayPal gateway`);
     }
     if (existing.status !== "AUTHORIZED" && existing.status !== "CREATED") {
-      throw new Error(`Order ${params.orderId} is in state ${existing.status} and cannot be ${params.action}D`);
+      throw new Error(
+        `Order ${params.orderId} is in state ${existing.status} and cannot be ${params.action}D`
+      );
     }
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
     if (params.action === "CAPTURE") {
       existing.status = "COMPLETED";
-      existing.captureId = existing.captureId || `CAP-${existing.orderId.replace("PAYPAL-SBX-", "")}`;
+      existing.captureId = existing.captureId || `SIMCAP-${existing.orderId.replace("PAYPAL-SBX-", "")}`;
       existing.updatedAtIso = nowIso;
       this.emitSignedWebhook({
+        ownerTenantId: existing.ownerTenantId,
         eventType: "PAYMENT.CAPTURE.COMPLETED",
-        summary: `Human Operator approved & captured held Authorization ${existing.authorizationId} ($${(existing.amountCents / 100).toFixed(2)})`,
+        summary: `Account Owner approved & captured held Authorization ${existing.authorizationId} ($${(existing.amountCents / 100).toFixed(2)})`,
         resource: {
           id: existing.captureId,
           order_id: existing.orderId,
@@ -2936,8 +3804,9 @@ var PayPalSandboxGateway = class {
       existing.status = "VOIDED";
       existing.updatedAtIso = nowIso;
       this.emitSignedWebhook({
+        ownerTenantId: existing.ownerTenantId,
         eventType: "PAYMENT.AUTHORIZATION.VOIDED",
-        summary: `Human Operator rejected & voided held Authorization ${existing.authorizationId} ($${(existing.amountCents / 100).toFixed(2)})`,
+        summary: `Account Owner rejected & voided held Authorization ${existing.authorizationId} ($${(existing.amountCents / 100).toFixed(2)})`,
         resource: {
           id: existing.authorizationId,
           order_id: existing.orderId,
@@ -2949,30 +3818,43 @@ var PayPalSandboxGateway = class {
     }
     return existing;
   }
+  /**
+   * Issues a partial refund. Strictly reports `LIVE_PAYPAL_SANDBOX_API` ONLY when
+   * PayPal's live `/v2/payments/captures/{id}/refund` endpoint returns HTTP 2xx on a real
+   * buyer-captured payment. Otherwise honestly reports `CRYPTOGRAPHIC_SANDBOX_EMULATOR`.
+   */
   async issuePartialRefund(params) {
+    const ownerTenantId = params.ownerTenantId || "TNT-GLOBAL";
     const { token, live } = await this.getAccessToken();
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
     const existing = this.orders.get(params.orderId);
+    if (existing && existing.ownerTenantId !== "TNT-GLOBAL" && existing.ownerTenantId !== ownerTenantId) {
+      throw new Error("Cross-tenant access denied for this PayPal order refund.");
+    }
     const currency = existing?.currency || "USD";
     const valueStr = (params.refundCents / 100).toFixed(2);
-    if (live && !params.captureId.startsWith("CAP-")) {
+    const isRealBuyerCapture = Boolean(existing?.liveCaptureVerified) || !params.captureId.startsWith("CAP-") && !params.captureId.startsWith("SIMCAP-");
+    if (live && isRealBuyerCapture) {
       try {
-        const res = await fetch(`${this.getBaseUrl()}/v2/payments/captures/${params.captureId}/refund`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            "PayPal-Request-Id": params.calculationHash.slice(0, 36)
-          },
-          body: JSON.stringify({
-            amount: {
-              value: valueStr,
-              currency_code: currency
+        const res = await fetch(
+          `${this.getBaseUrl()}/v2/payments/captures/${encodeURIComponent(params.captureId)}/refund`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              "PayPal-Request-Id": params.calculationHash.slice(0, 36)
             },
-            invoice_id: `CLIP-${params.calculationHash.slice(0, 12)}`,
-            note_to_payer: params.reasonNote.slice(0, 250)
-          })
-        });
+            body: JSON.stringify({
+              amount: {
+                value: valueStr,
+                currency_code: currency
+              },
+              invoice_id: `CLIP-${params.calculationHash.slice(0, 12)}`,
+              note_to_payer: params.reasonNote.slice(0, 250)
+            })
+          }
+        );
         if (res.ok) {
           const data = await res.json();
           if (existing) {
@@ -2981,6 +3863,7 @@ var PayPalSandboxGateway = class {
             existing.updatedAtIso = nowIso;
           }
           this.emitSignedWebhook({
+            ownerTenantId,
             eventType: "PAYMENT.CAPTURE.REFUNDED",
             summary: `PayPal Live Partial Refund ${data.id} for $${valueStr} ${currency} on Capture ${params.captureId}`,
             resource: {
@@ -3000,6 +3883,7 @@ var PayPalSandboxGateway = class {
             currency,
             status: "COMPLETED",
             mode: "LIVE_PAYPAL_SANDBOX_API",
+            settlementNote: "Executed live via PayPal Payments v2 /captures/{id}/refund on a buyer-captured Sandbox order.",
             createdAtIso: nowIso
           };
         }
@@ -3013,8 +3897,9 @@ var PayPalSandboxGateway = class {
       existing.updatedAtIso = nowIso;
     }
     this.emitSignedWebhook({
+      ownerTenantId,
       eventType: "PAYMENT.CAPTURE.REFUNDED",
-      summary: `PayPal Partial Refund ${refundId} for $${valueStr} ${currency} (Keep-The-Item Resolution)`,
+      summary: `Sandbox Partial Refund ${refundId} for $${valueStr} ${currency} (Keep-The-Item Resolution)`,
       resource: {
         id: refundId,
         capture_id: params.captureId,
@@ -3032,9 +3917,126 @@ var PayPalSandboxGateway = class {
       refundCents: params.refundCents,
       currency,
       status: "COMPLETED",
-      mode: live ? "LIVE_PAYPAL_SANDBOX_API" : "CRYPTOGRAPHIC_SANDBOX_EMULATOR",
+      mode: "CRYPTOGRAPHIC_SANDBOX_EMULATOR",
+      settlementNote: "Recorded in deterministic sandbox ledger (complete PayPal Checkout buyer approval first to trigger live REST /captures/{id}/refund).",
       createdAtIso: nowIso
     };
+  }
+  /**
+   * Verifies incoming external webhooks via PayPal's `/v1/notifications/verify-webhook-signature`
+   * API (when PayPal headers + webhookId are present) or via constant-time HMAC-SHA256
+   * (`x-aegis-webhook-signature`). Rejects all unsigned/forged requests!
+   */
+  async verifyAndIngestExternalWebhook(params) {
+    const headerStr = (name) => {
+      const val = params.headers[name.toLowerCase()];
+      return Array.isArray(val) ? val[0] || "" : String(val || "");
+    };
+    const transmissionId = headerStr("paypal-transmission-id");
+    const transmissionTime = headerStr("paypal-transmission-time");
+    const transmissionSig = headerStr("paypal-transmission-sig");
+    const certUrl = headerStr("paypal-cert-url");
+    const authAlgo = headerStr("paypal-auth-algo");
+    if (transmissionId && transmissionTime && transmissionSig && certUrl && authAlgo && this.config.webhookId?.trim()) {
+      const { token, live } = await this.getAccessToken();
+      if (live) {
+        try {
+          const verifyRes = await fetch(
+            `${this.getBaseUrl()}/v1/notifications/verify-webhook-signature`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                auth_algo: authAlgo,
+                cert_url: certUrl,
+                transmission_id: transmissionId,
+                transmission_sig: transmissionSig,
+                transmission_time: transmissionTime,
+                webhook_id: this.config.webhookId.trim(),
+                webhook_event: params.body
+              })
+            }
+          );
+          if (verifyRes.ok) {
+            const verifyJson = await verifyRes.json();
+            if (verifyJson.verification_status === "SUCCESS") {
+              const ev = this.recordVerifiedWebhook({
+                ownerTenantId: "TNT-GLOBAL",
+                eventType: params.body.event_type || "PAYMENT.CAPTURE.COMPLETED",
+                summary: String(
+                  params.body.summary || `Verified PayPal Webhook: ${params.body.event_type}`
+                ),
+                resource: params.body.resource || params.body,
+                transmissionId,
+                transmissionSig,
+                verificationMethod: "PAYPAL_VERIFY_WEBHOOK_API",
+                pillar: "SCAMSHIELD"
+              });
+              return { verified: true, reason: "Verified via PayPal REST verify-webhook-signature.", event: ev };
+            }
+          }
+        } catch {
+          return {
+            verified: false,
+            reason: "PayPal verify-webhook-signature call failed."
+          };
+        }
+      }
+      return {
+        verified: false,
+        reason: "PayPal webhook signature verification rejected."
+      };
+    }
+    const customHmac = headerStr("x-aegis-webhook-signature");
+    if (customHmac) {
+      const expected = hmacSha256Hex(this.kernelSecret, params.body);
+      const a = Buffer.from(customHmac, "utf8");
+      const b = Buffer.from(expected, "utf8");
+      if (a.length === b.length && crypto2.timingSafeEqual(a, b)) {
+        const ev = this.recordVerifiedWebhook({
+          ownerTenantId: String(params.body.ownerTenantId || "TNT-GLOBAL"),
+          eventType: params.body.event_type || "PAYMENT.CAPTURE.COMPLETED",
+          summary: String(params.body.summary || `Signed Webhook: ${params.body.event_type}`),
+          resource: params.body.resource || params.body,
+          transmissionId: transmissionId || `tx_${crypto2.randomBytes(6).toString("hex")}`,
+          transmissionSig: customHmac,
+          verificationMethod: "KERNEL_HMAC_SHA256",
+          pillar: "SCAMSHIELD"
+        });
+        return { verified: true, reason: "Verified via constant-time HMAC-SHA256.", event: ev };
+      }
+      return { verified: false, reason: "Invalid x-aegis-webhook-signature HMAC." };
+    }
+    return {
+      verified: false,
+      reason: "Missing cryptographic webhook signature headers (PayPal-Transmission-Sig or X-Aegis-Webhook-Signature)."
+    };
+  }
+  recordVerifiedWebhook(params) {
+    const id = `WH-${crypto2.randomBytes(6).toString("hex").toUpperCase()}`;
+    const create_time = (/* @__PURE__ */ new Date()).toISOString();
+    const event = {
+      id,
+      ownerTenantId: params.ownerTenantId,
+      event_type: params.eventType,
+      resource_type: "checkout-order",
+      summary: params.summary,
+      resource: params.resource,
+      create_time,
+      transmission_id: params.transmissionId,
+      transmission_sig: params.transmissionSig,
+      verified: true,
+      verificationMethod: params.verificationMethod,
+      pillar: params.pillar
+    };
+    this.webhookStream.unshift(event);
+    if (this.webhookStream.length > 250) {
+      this.webhookStream.pop();
+    }
+    return event;
   }
   emitSignedWebhook(params) {
     const id = `WH-${crypto2.randomBytes(6).toString("hex").toUpperCase()}`;
@@ -3050,6 +4052,7 @@ var PayPalSandboxGateway = class {
     const transmission_sig = hmacSha256Hex(this.kernelSecret, payloadToSign);
     const event = {
       id,
+      ownerTenantId: params.ownerTenantId || "TNT-GLOBAL",
       event_type: params.eventType,
       resource_type: "checkout-order",
       summary: params.summary,
@@ -3058,10 +4061,11 @@ var PayPalSandboxGateway = class {
       transmission_id,
       transmission_sig,
       verified: true,
+      verificationMethod: "KERNEL_HMAC_SHA256",
       pillar: params.pillar
     };
     this.webhookStream.unshift(event);
-    if (this.webhookStream.length > 100) {
+    if (this.webhookStream.length > 250) {
       this.webhookStream.pop();
     }
     return event;
@@ -3074,31 +4078,47 @@ var PayPalSandboxGateway = class {
       create_time: event.create_time,
       resource: event.resource
     });
+    const a = Buffer.from(event.transmission_sig || "", "utf8");
+    const b = Buffer.from(expectedSig, "utf8");
     return {
-      verified: expectedSig === event.transmission_sig,
+      verified: a.length === b.length && crypto2.timingSafeEqual(a, b),
       expectedSig
     };
   }
-  getOrders() {
-    return Array.from(this.orders.values());
+  getOrders(tenantId) {
+    const all = Array.from(this.orders.values());
+    if (!tenantId) return all;
+    return all.filter((o) => o.ownerTenantId === tenantId);
   }
-  getOrder(orderId) {
-    return this.orders.get(orderId);
+  getOrder(orderId, tenantId) {
+    const o = this.orders.get(orderId);
+    if (!o) return void 0;
+    if (tenantId && o.ownerTenantId !== tenantId && o.ownerTenantId !== "TNT-GLOBAL") {
+      return void 0;
+    }
+    return o;
   }
-  getInvoices() {
-    return Array.from(this.invoices.values());
+  getInvoices(tenantId) {
+    const all = Array.from(this.invoices.values());
+    if (!tenantId) return all;
+    return all.filter((inv) => inv.ownerTenantId === tenantId);
   }
-  getVaultTokens() {
-    return this.vaultTokens;
+  getVaultTokens(tenantId) {
+    if (!tenantId) return this.vaultTokens;
+    return this.vaultTokens.filter((v) => v.ownerTenantId === tenantId);
   }
-  getSubscriptions() {
-    return this.subscriptions;
+  getSubscriptions(tenantId) {
+    if (!tenantId) return this.subscriptions;
+    return this.subscriptions.filter((s) => s.ownerTenantId === tenantId);
   }
   seedInitialOrder(order) {
     this.orders.set(order.orderId, order);
   }
-  getWebhookStream() {
-    return this.webhookStream;
+  getWebhookStream(tenantId) {
+    if (!tenantId) return this.webhookStream;
+    return this.webhookStream.filter(
+      (w) => w.ownerTenantId === tenantId || w.ownerTenantId === "TNT-GLOBAL"
+    );
   }
 };
 
@@ -3882,8 +4902,20 @@ function parseCookies(cookieHeader) {
   }
   return out;
 }
+function appendSetCookie(res, cookieStr) {
+  const existing = res.getHeader("Set-Cookie");
+  if (!existing) {
+    res.setHeader("Set-Cookie", [cookieStr]);
+  } else if (Array.isArray(existing)) {
+    res.setHeader("Set-Cookie", [...existing.map(String), cookieStr]);
+  } else {
+    res.setHeader("Set-Cookie", [String(existing), cookieStr]);
+  }
+}
+function isHttpsRequest(req) {
+  return process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL) || req.secure || req.headers["x-forwarded-proto"] === "https";
+}
 function setSessionCookie(req, res, token) {
-  const isSecure = process.env.NODE_ENV === "production" || req.secure || req.headers["x-forwarded-proto"] === "https";
   const parts = [
     `aegis_session=${encodeURIComponent(token)}`,
     "Path=/",
@@ -3891,16 +4923,175 @@ function setSessionCookie(req, res, token) {
     "SameSite=Strict",
     "Max-Age=43200"
   ];
-  if (isSecure) {
+  if (isHttpsRequest(req)) {
     parts.push("Secure");
   }
-  res.setHeader("Set-Cookie", parts.join("; "));
+  appendSetCookie(res, parts.join("; "));
 }
 function clearSessionCookie(res) {
-  res.setHeader(
-    "Set-Cookie",
+  appendSetCookie(
+    res,
     "aegis_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
   );
+}
+function issueOAuthStateCookie(req, res, secret) {
+  const ts = Date.now();
+  const nonce = crypto3.randomBytes(16).toString("hex");
+  const sig = hmacSha256Hex(secret, { ts, nonce, purpose: "GOOGLE_OAUTH_CSRF_STATE" }).slice(
+    0,
+    32
+  );
+  const stateValue = `${ts}.${nonce}.${sig}`;
+  const parts = [
+    `aegis_oauth_state=${encodeURIComponent(stateValue)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    "Max-Age=600"
+  ];
+  if (isHttpsRequest(req)) {
+    parts.push("Secure");
+  }
+  appendSetCookie(res, parts.join("; "));
+  return stateValue;
+}
+function verifyOAuthStateCookie(req, res, queryState, secret) {
+  appendSetCookie(
+    res,
+    "aegis_oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+  );
+  if (!queryState) return false;
+  const cookies = parseCookies(req.headers.cookie);
+  const cookieState = cookies.aegis_oauth_state || "";
+  if (!cookieState || cookieState.length !== queryState.length) return false;
+  const bufA = Buffer.from(cookieState, "utf8");
+  const bufB = Buffer.from(queryState, "utf8");
+  if (!crypto3.timingSafeEqual(bufA, bufB)) return false;
+  const parts = queryState.split(".");
+  if (parts.length !== 3) return false;
+  const ts = Number(parts[0]);
+  const nonce = parts[1];
+  const sig = parts[2];
+  if (!Number.isFinite(ts) || Date.now() - ts > 10 * 6e4 || Date.now() - ts < -3e4) {
+    return false;
+  }
+  const expectedSig = hmacSha256Hex(secret, {
+    ts,
+    nonce,
+    purpose: "GOOGLE_OAUTH_CSRF_STATE"
+  }).slice(0, 32);
+  if (sig.length !== expectedSig.length) return false;
+  return crypto3.timingSafeEqual(Buffer.from(sig, "utf8"), Buffer.from(expectedSig, "utf8"));
+}
+function getAllowedOrigins() {
+  const allowed = /* @__PURE__ */ new Set([
+    "http://localhost:8787",
+    "http://127.0.0.1:8787",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:4173",
+    "https://aegispay-orpin.vercel.app"
+  ]);
+  const extra = process.env.ALLOWED_ORIGINS || process.env.ALLOWED_ORIGIN || "";
+  for (const item of extra.split(",")) {
+    const trimmed = item.trim();
+    if (trimmed) allowed.add(trimmed);
+  }
+  return allowed;
+}
+function isOriginPermitted(origin) {
+  if (!origin) return true;
+  if (origin.startsWith("chrome-extension://")) return true;
+  const allowed = getAllowedOrigins();
+  if (allowed.has(origin)) return true;
+  if (/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) return true;
+  return false;
+}
+var strictCorsMiddleware = (req, res, next) => {
+  const origin = typeof req.headers.origin === "string" ? req.headers.origin : void 0;
+  res.setHeader("Vary", "Origin");
+  if (origin && isOriginPermitted(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-Requested-With, PayPal-Transmission-Id, PayPal-Transmission-Time, PayPal-Transmission-Sig, PayPal-Cert-Url, PayPal-Auth-Algo, X-Aegis-Webhook-Signature"
+    );
+  }
+  if (req.method === "OPTIONS") {
+    if (origin && !isOriginPermitted(origin)) {
+      res.status(403).json({ error: "Origin not permitted by AegisPay CORS policy." });
+      return;
+    }
+    res.status(204).end();
+    return;
+  }
+  next();
+};
+var csrfProtectionMiddleware = (req, res, next) => {
+  if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") {
+    next();
+    return;
+  }
+  if (req.path === "/api/paypal/webhook") {
+    next();
+    return;
+  }
+  const hasBearer = String(req.headers.authorization || "").startsWith("Bearer ");
+  if (hasBearer) {
+    next();
+    return;
+  }
+  const cookies = parseCookies(req.headers.cookie);
+  if (!cookies.aegis_session) {
+    next();
+    return;
+  }
+  const customHeader = String(req.headers["x-requested-with"] || "");
+  const origin = typeof req.headers.origin === "string" ? req.headers.origin : "";
+  if (customHeader === "AegisPay-Client" || origin && isOriginPermitted(origin)) {
+    next();
+    return;
+  }
+  res.status(403).json({
+    code: "CSRF_VERIFICATION_FAILED",
+    error: "Cross-site request blocked: missing trusted Origin or X-Requested-With header."
+  });
+};
+function validateSafeExternalUrl(rawUrl, options) {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return { valid: true, normalizedUrl: "" };
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return { valid: false, normalizedUrl: "", reason: "Invalid URL syntax." };
+  }
+  const requireHttps = options?.requireHttps ?? true;
+  if (requireHttps && parsed.protocol !== "https:") {
+    return {
+      valid: false,
+      normalizedUrl: "",
+      reason: "External webhook URLs must use HTTPS."
+    };
+  }
+  if (!requireHttps && parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return {
+      valid: false,
+      normalizedUrl: "",
+      reason: "External proof URLs must use HTTP or HTTPS."
+    };
+  }
+  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || host === "0.0.0.0" || host === "::1" || host.startsWith("127.") || host.startsWith("10.") || host.startsWith("192.168.") || host.startsWith("169.254.") || host.startsWith("fc00:") || host.startsWith("fd00:") || host.startsWith("fe80:") || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) {
+    return {
+      valid: false,
+      normalizedUrl: "",
+      reason: "Private, loopback, or cloud metadata hostnames are blocked (SSRF protection)."
+    };
+  }
+  return { valid: true, normalizedUrl: parsed.toString() };
 }
 function sanitizeValue(val, depth = 0) {
   if (depth > 8) return void 0;
@@ -3944,14 +5135,15 @@ var securityHeadersMiddleware = (req, res, next) => {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://www.paypal.com https://www.sandbox.paypal.com https://www.paypalobjects.com https://accounts.google.com",
+      "script-src 'self' https://www.paypal.com https://www.sandbox.paypal.com https://www.paypalobjects.com https://accounts.google.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://*.paypal.com https://*.paypalobjects.com https://*.googleusercontent.com",
       "connect-src 'self' https://*.paypal.com https://*.sandbox.paypal.com https://accounts.google.com",
       "frame-src 'self' https://*.paypal.com https://*.sandbox.paypal.com https://accounts.google.com",
       "object-src 'none'",
-      "base-uri 'self'"
+      "base-uri 'self'",
+      "form-action 'self'"
     ].join("; ")
   );
   next();
@@ -3980,8 +5172,9 @@ var SlidingWindowRateLimiter = class {
     if (authUser) {
       return `usr:${authUser}`;
     }
-    const forwarded = req.headers["x-forwarded-for"];
-    const rawIp = (typeof forwarded === "string" ? forwarded.split(",")[0].trim() : "") || req.ip || req.socket?.remoteAddress || "127.0.0.1";
+    const trustForwarded = Boolean(process.env.VERCEL) || process.env.TRUST_PROXY === "1";
+    const forwarded = trustForwarded ? req.headers["x-forwarded-for"] : void 0;
+    const rawIp = (typeof forwarded === "string" ? forwarded.split(",")[0].trim() : "") || req.socket?.remoteAddress || req.ip || "127.0.0.1";
     return `ip:${rawIp.slice(0, 64)}`;
   }
   evictIfNeeded(now) {
@@ -3991,58 +5184,51 @@ var SlidingWindowRateLimiter = class {
       if (rec.lastSeenMs < cutoff) {
         this.buckets.delete(k);
       }
-      if (this.buckets.size < this.options.maxTrackedBuckets * 0.85) break;
+      if (this.buckets.size < this.options.maxTrackedBuckets * 0.8) break;
     }
-    while (this.buckets.size >= this.options.maxTrackedBuckets) {
+    if (this.buckets.size >= this.options.maxTrackedBuckets) {
       const oldestKey = this.buckets.keys().next().value;
-      if (!oldestKey) break;
-      this.buckets.delete(oldestKey);
+      if (oldestKey) this.buckets.delete(oldestKey);
     }
   }
   middleware() {
     return (req, res, next) => {
       const now = Date.now();
-      const windowStart = now - this.options.windowMs;
       const key = this.resolveClientKey(req);
-      let bucket = this.buckets.get(key);
-      if (bucket) {
-        this.buckets.delete(key);
-        bucket.timestamps = bucket.timestamps.filter((t) => t > windowStart);
-        bucket.lastSeenMs = now;
-      } else {
+      let rec = this.buckets.get(key);
+      if (!rec) {
         this.evictIfNeeded(now);
-        bucket = { timestamps: [], lastSeenMs: now };
+        rec = { timestamps: [], lastSeenMs: now };
+        this.buckets.set(key, rec);
+      } else {
+        this.buckets.delete(key);
+        this.buckets.set(key, rec);
       }
-      const windowSec = Math.ceil(this.options.windowMs / 1e3);
-      res.setHeader(
-        "RateLimit-Policy",
-        `${this.options.maxRequests};w=${windowSec};tier=${this.options.tierName}`
-      );
+      const cutoff = now - this.options.windowMs;
+      while (rec.timestamps.length > 0 && rec.timestamps[0] <= cutoff) {
+        rec.timestamps.shift();
+      }
+      rec.lastSeenMs = now;
+      const remaining = Math.max(0, this.options.maxRequests - rec.timestamps.length);
+      const resetSec = rec.timestamps.length > 0 ? Math.max(1, Math.ceil((rec.timestamps[0] + this.options.windowMs - now) / 1e3)) : Math.ceil(this.options.windowMs / 1e3);
       res.setHeader("RateLimit-Limit", String(this.options.maxRequests));
-      if (bucket.timestamps.length >= this.options.maxRequests) {
-        this.buckets.set(key, bucket);
+      res.setHeader("RateLimit-Policy", `${this.options.maxRequests};w=${Math.ceil(this.options.windowMs / 1e3)}`);
+      if (rec.timestamps.length >= this.options.maxRequests) {
         this.totalBlocked += 1;
-        const oldestInWindow = bucket.timestamps[0] || now;
-        const retryAfterSec = Math.max(
-          1,
-          Math.ceil((oldestInWindow + this.options.windowMs - now) / 1e3)
-        );
         res.setHeader("RateLimit-Remaining", "0");
-        res.setHeader("RateLimit-Reset", String(retryAfterSec));
-        res.setHeader("Retry-After", String(retryAfterSec));
+        res.setHeader("RateLimit-Reset", String(resetSec));
+        res.setHeader("Retry-After", String(resetSec));
         res.status(429).json({
-          error: `Rate limit exceeded for ${this.options.tierName} tier. Please retry in ${retryAfterSec}s.`,
           code: "RATE_LIMIT_EXCEEDED",
           tier: this.options.tierName,
-          retryAfterSeconds: retryAfterSec
+          retryAfterSeconds: resetSec,
+          error: `Rate limit exceeded for ${this.options.tierName} tier. Please retry in ${resetSec}s.`
         });
         return;
       }
-      bucket.timestamps.push(now);
-      this.buckets.set(key, bucket);
-      const remaining = Math.max(0, this.options.maxRequests - bucket.timestamps.length);
-      res.setHeader("RateLimit-Remaining", String(remaining));
-      res.setHeader("RateLimit-Reset", String(windowSec));
+      rec.timestamps.push(now);
+      res.setHeader("RateLimit-Remaining", String(Math.max(0, remaining - 1)));
+      res.setHeader("RateLimit-Reset", String(resetSec));
       next();
     };
   }
@@ -4080,56 +5266,56 @@ function verifyPasswordScrypt(rawPassword, stored) {
 }
 function createDefaultTenantWorkspace(tenantId, ownerEmail) {
   const initialPayStreamPlan = computePennyExactMilestonePlan({
-    projectTitle: "AI Commerce Checkout & Security Architecture",
-    clientEmail: "client-treasury@enterprise-demo.io",
+    projectTitle: "Web Platform Redesign & Checkout Launch",
+    clientEmail: "client-billing@acme-studio.io",
     currency: "USD",
     totalBudgetCents: 1e4,
     proposals: [
       {
-        title: "Milestone 1: Architecture & Threat Model Specification",
+        title: "Milestone 1: Product Scope & Wireframes",
         weightPct: 34,
         dueInDays: 5,
         acceptanceCriteria: [
-          "Deliver OpenAPI 3.1 contract",
-          "Sequence diagrams and deterministic threat matrix"
+          "Approved page layouts",
+          "Checkout user flow signed off"
         ]
       },
       {
-        title: "Milestone 2: PayPal Sandbox Orders v2 & Invoicing v2 Integration",
+        title: "Milestone 2: PayPal Checkout & Invoicing Integration",
         weightPct: 33,
         dueInDays: 10,
         acceptanceCriteria: [
-          "Implement server-side OAuth2",
-          "Orders v2 and Invoicing v2 endpoints verified"
+          "Live PayPal checkout working",
+          "Automated customer receipts verified"
         ]
       },
       {
-        title: "Milestone 3: Production Security Verification & Test Suite",
+        title: "Milestone 3: Final QA & Production Launch",
         weightPct: 33,
         dueInDays: 15,
         acceptanceCriteria: [
-          "Pass Vitest deterministic invariant suite",
-          "Webhook verification and audit hash proof"
+          "End-to-end automated verification passing",
+          "Production handoff documentation complete"
         ]
       }
     ],
     collaborators: [
       {
-        collaboratorName: "Lead Systems Architect",
+        collaboratorName: "Lead Developer",
         paypalEmail: "lead-dev@studio.io",
-        role: "Backend & Security",
+        role: "Engineering",
         sharePct: 50
       },
       {
-        collaboratorName: "Principal Product Designer",
+        collaboratorName: "Product Designer",
         paypalEmail: "design@studio.io",
-        role: "Spatial UI & Frontend",
+        role: "Design",
         sharePct: 30
       },
       {
-        collaboratorName: "Security & QA Engineer",
-        paypalEmail: "qa-sec@studio.io",
-        role: "Verification & Audit",
+        collaboratorName: "QA Specialist",
+        paypalEmail: "qa@studio.io",
+        role: "Verification",
         sharePct: 20
       }
     ]
@@ -4177,7 +5363,7 @@ function createDefaultTenantWorkspace(tenantId, ownerEmail) {
       },
       {
         agreementId: "BA-66109821-HEALTHY",
-        merchantName: "GitHub Copilot Enterprise",
+        merchantName: "GitHub Copilot Business",
         merchantId: "merch_github",
         category: "SAAS",
         monthlyCapCents: 4500,
@@ -4191,7 +5377,7 @@ function createDefaultTenantWorkspace(tenantId, ownerEmail) {
     cashflowCommitments: [
       {
         id: "cf_rent",
-        name: "Monthly Apartment Lease",
+        name: "Monthly Office / Apartment Lease",
         amountCents: 185e3,
         dueInDays: 5,
         category: "RENT_MORTGAGE",
@@ -4199,7 +5385,7 @@ function createDefaultTenantWorkspace(tenantId, ownerEmail) {
       },
       {
         id: "cf_loan",
-        name: "Auto Loan & Insurance Autopay",
+        name: "Equipment & Insurance Autopay",
         amountCents: 46e3,
         dueInDays: 8,
         category: "LOAN",
@@ -4207,7 +5393,7 @@ function createDefaultTenantWorkspace(tenantId, ownerEmail) {
       },
       {
         id: "cf_paypal_subs",
-        name: "Active PayPal SaaS & Utility Autopays",
+        name: "Active PayPal Software Subscriptions",
         amountCents: 18500,
         dueInDays: 12,
         category: "PAYPAL_AUTOPAY",
@@ -4215,7 +5401,7 @@ function createDefaultTenantWorkspace(tenantId, ownerEmail) {
       },
       {
         id: "cf_savings",
-        name: "Emergency & Index Savings Target",
+        name: "Monthly Reserve Target",
         amountCents: 5e4,
         dueInDays: 15,
         category: "SAVINGS_GOAL",
@@ -4228,7 +5414,7 @@ function createDefaultTenantWorkspace(tenantId, ownerEmail) {
       {
         permitId: "PRM-CLAUDE-CODE-01",
         agentId: "agent_claude_code_v1",
-        agentName: "Claude Code Dev-Infra Agent",
+        agentName: "Workspace Procurement Assistant",
         parentAgreementId: "BA-PAYPAL-VAULT-01",
         maxSingleTransactionCents: 7500,
         dailyLimitCents: 15e3,
@@ -4242,7 +5428,7 @@ function createDefaultTenantWorkspace(tenantId, ownerEmail) {
       {
         permitId: "PRM-PROCUREMENT-02",
         agentId: "agent_procurement_v2",
-        agentName: "Procurement & Restock Agent",
+        agentName: "Office Restock Assistant",
         parentAgreementId: "BA-PAYPAL-VAULT-02",
         maxSingleTransactionCents: 25e3,
         dailyLimitCents: 4e4,
@@ -4260,58 +5446,63 @@ function createDefaultTenantWorkspace(tenantId, ownerEmail) {
         id: "AUD-1001",
         timestampIso: new Date(Date.now() - 36e5 * 3.2).toISOString(),
         pillar: "LUPAPERMIT",
-        actor: "Zombie Autopay Scanner",
-        eventTitle: "Flagged 3 Dormant/Over-Provisioned PayPal Billing Agreements",
+        actor: "Autopay Protection",
+        eventTitle: "Flagged 3 Inactive or Over-Capped PayPal Autopay Agreements",
         verdict: "HOLD",
         amountCents: 71e3,
         savedOrProtectedCents: 7899,
         paypalRef: "BA-94827104-ZOMBIE1",
-        sha256Hash: sha256Hex({ id: "AUD-1001", ba: "BA-94827104-ZOMBIE1" }),
-        deterministicRule: "Dormant >365d + Price Creep >15% + Cap >2.5x Mean Charge"
+        sha256Hash: sha256Hex({ id: "AUD-1001", tenantId }),
+        deterministicRule: "Inactive >365d + Price Increase >15% + Cap >2.5x Average Charge"
       },
       {
         id: "AUD-1002",
         timestampIso: new Date(Date.now() - 36e5 * 2.4).toISOString(),
         pillar: "SCAMSHIELD",
-        actor: "Pre-Payment Firewall",
-        eventTitle: "Blocked Prompt-Injected Urgent Wire / Friends-and-Family Scam",
+        actor: "Invoice Protection",
+        eventTitle: "Blocked Suspicious Friends-and-Family Payment Request ($490.00)",
         verdict: "BLOCK",
         amountCents: 49e3,
         savedOrProtectedCents: 49e3,
         paypalRef: "BLOCKED-PRE-ORDER",
-        sha256Hash: sha256Hex({ id: "AUD-1002", blocked: true }),
-        deterministicRule: "Rule R1 (PROMPT_INJECTION_OVERRIDE) + Rule R2 (FRIENDS_AND_FAMILY)"
+        sha256Hash: sha256Hex({ id: "AUD-1002", tenantId }),
+        deterministicRule: "Buyer-Protection Bypass + Coercive Urgency Blocked"
       },
       {
         id: "AUD-1003",
         timestampIso: new Date(Date.now() - 36e5 * 1.4).toISOString(),
         pillar: "DEALFORGE",
-        actor: "Buyer vs Seller Agents",
-        eventTitle: "B2B Security Audit Contract Settled ($950 -> $680, 35% PayPal Deposit)",
+        actor: "Smart Deal Builder",
+        eventTitle: "Vendor Agreement Reached ($950 -> $680, 35% PayPal Deposit)",
         verdict: "SETTLED",
         amountCents: 23800,
         savedOrProtectedCents: 27e3,
         paypalRef: "PAYPAL-SBX-DEAL680",
-        sha256Hash: sha256Hex({ id: "AUD-1003", contract: "ctr_68000" }),
-        deterministicRule: "Price <= $800 Buyer Ceiling & >= $580 Seller Floor; SHA-256 Locked"
+        sha256Hash: sha256Hex({ id: "AUD-1003", tenantId }),
+        deterministicRule: "Within Buyer Budget & Vendor Minimum; Terms Locked"
       },
       {
         id: "AUD-1004",
         timestampIso: new Date(Date.now() - 36e5 * 0.6).toISOString(),
         pillar: "PAYREVIVE",
-        actor: "PayRevive XGBoost + Bandit",
-        eventTitle: "Recovered Failed $240.00 Renewal via PayPal Backup Funding Link",
+        actor: "PayRevive Recovery",
+        eventTitle: "Sent PayPal Backup Funding Link for Expired Card Renewal ($240.00)",
         verdict: "SETTLED",
         amountCents: 24e3,
-        savedOrProtectedCents: 23945,
+        savedOrProtectedCents: 19245,
         paypalRef: "PAYPAL-SBX-PRV240",
-        sha256Hash: sha256Hex({ id: "AUD-1004", action: "PAYPAL_BACKUP_FUNDING_SWITCH" }),
-        deterministicRule: "TreeSHAP Additivity Verified + Net EV +$192.45 > $0.55 Cost + Compliant"
+        sha256Hash: sha256Hex({ id: "AUD-1004", tenantId }),
+        deterministicRule: "Positive Expected Net Value & All Compliance Checks Passed"
       }
     ],
     signedContracts: [],
     payreviveDecisions: [],
+    payreviveBanditState: {},
     lastPayReviveBenchmark: null,
+    merchantPolicy: JSON.parse(JSON.stringify(DEFAULT_MERCHANT_REFUND_POLICY)),
+    claimedVisionImageHashes: [],
+    refundedCentsByCapture: {},
+    tutorialCompleted: false,
     updatedAtIso: (/* @__PURE__ */ new Date()).toISOString()
   };
 }
@@ -4320,11 +5511,14 @@ var AegisMultiTenantStore = class {
   storageMode;
   maxHotTenants;
   maxAuditLogsPerTenant;
+  vaultKernelSecret = "";
   usersByEmail = /* @__PURE__ */ new Map();
   revokedTokenHashes = /* @__PURE__ */ new Set();
   hotTenants = /* @__PURE__ */ new Map();
   persistedTenantsSnapshot = {};
   flushTimer = null;
+  activeWritePromise = null;
+  writePendingAgain = false;
   constructor(opts) {
     this.maxHotTenants = opts.maxHotTenants || 2e3;
     this.maxAuditLogsPerTenant = opts.maxAuditLogsPerTenant || 250;
@@ -4337,44 +5531,75 @@ var AegisMultiTenantStore = class {
       this.storageMode = "ISOLATED_TEST_VAULT";
     } else if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
       this.storeFilePath = path.join(os.tmpdir(), "aegispay_store.json");
-      this.storageMode = "SERVERLESS_EPHEMERAL_WITH_HMAC_CONTINUITY";
+      this.storageMode = "SERVERLESS_STATELESS_HMAC_WITH_TMP_CACHE";
     } else {
       const dataDir = path.join(opts.rootDir, "data");
       fs.mkdirSync(dataDir, { recursive: true, mode: 448 });
       this.storeFilePath = path.join(dataDir, "aegispay_store.json");
       this.storageMode = "LOCAL_ENCRYPTED_FS_VAULT";
     }
-    this.loadFromDisk();
-    this.ensureDefaultDemoOperator();
+    this.loadFromDiskSyncOnBoot();
+    if (!this.vaultKernelSecret) {
+      this.vaultKernelSecret = crypto4.randomBytes(32).toString("hex");
+      this.scheduleFlush();
+    }
+    this.ensureDefaultSandboxAccounts();
   }
-  ensureDefaultDemoOperator() {
-    const defaultEmail = "operator@aegispay.io";
-    if (!this.usersByEmail.has(defaultEmail)) {
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      this.usersByEmail.set(defaultEmail, {
+  /**
+   * Returns a cryptographic kernel secret without ever falling back to a hardcoded string:
+   * uses AEGIS_KERNEL_SECRET if provided, otherwise uses the 32-byte random secret persisted in the 0o600 vault.
+   */
+  resolveKernelSecret() {
+    const fromEnv = (process.env.AEGIS_KERNEL_SECRET || "").trim();
+    if (fromEnv.length >= 24) {
+      return fromEnv;
+    }
+    return this.vaultKernelSecret;
+  }
+  ensureDefaultSandboxAccounts() {
+    const allowSandboxSeed = process.env.ALLOW_DEMO_SANDBOX !== "false";
+    if (!allowSandboxSeed) return;
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const demoSalt = sha256Hex("aegis-sandbox-seed-salt-v3").slice(0, 32);
+    const defaultOperator = "operator@aegispay.io";
+    if (!this.usersByEmail.has(defaultOperator)) {
+      this.usersByEmail.set(defaultOperator, {
         id: "OP-AEGIS-001",
-        email: defaultEmail,
-        fullName: "A. P. S. Bhaidav",
-        organization: "AegisPay Institutional Treasury",
+        email: defaultOperator,
+        fullName: "Sandbox Workspace Owner",
+        organization: "AegisPay Sandbox Account",
         role: "PRINCIPAL_ARCHITECT",
-        // Deterministic salt for seed account so startup is fast & reproducible; new users get random 16B salt
-        passwordScrypt: hashPasswordScrypt(
-          "AegisPay2026!",
-          sha256Hex("aegis-default-operator-salt-v2").slice(0, 32)
-        ),
+        passwordScrypt: hashPasswordScrypt("AegisPay2026!", demoSalt),
         paypalMerchantId: "SBX-MERCH-AEGIS-01",
         createdAtIso: now,
         lastLoginAtIso: now
       });
-      this.scheduleFlush();
     }
+    const guestDemo = "demo@aegispay.io";
+    if (!this.usersByEmail.has(guestDemo)) {
+      this.usersByEmail.set(guestDemo, {
+        id: "OP-DEMO-GUEST",
+        email: guestDemo,
+        fullName: "Interactive Tour Guest",
+        organization: "PayPal Sandbox Demo",
+        role: "DEMO_OPERATOR",
+        passwordScrypt: hashPasswordScrypt(crypto4.randomBytes(24).toString("hex")),
+        paypalMerchantId: "SBX-DEMO-GUEST-01",
+        createdAtIso: now,
+        lastLoginAtIso: now
+      });
+    }
+    this.scheduleFlush();
   }
-  loadFromDisk() {
+  loadFromDiskSyncOnBoot() {
     try {
       if (!fs.existsSync(this.storeFilePath)) return;
       const raw = fs.readFileSync(this.storeFilePath, "utf8");
       if (!raw.trim()) return;
       const parsed = JSON.parse(raw);
+      if (typeof parsed.generatedKernelSecret === "string" && parsed.generatedKernelSecret.length >= 32) {
+        this.vaultKernelSecret = parsed.generatedKernelSecret;
+      }
       if (Array.isArray(parsed.users)) {
         for (const u of parsed.users) {
           if (u?.email && u?.passwordScrypt) {
@@ -4393,35 +5618,56 @@ var AegisMultiTenantStore = class {
     } catch {
     }
   }
-  flushSync() {
+  buildVaultPayload() {
+    for (const [tid, ws] of this.hotTenants.entries()) {
+      this.persistedTenantsSnapshot[tid] = ws;
+    }
+    return {
+      schemaVersion: 3,
+      savedAtIso: (/* @__PURE__ */ new Date()).toISOString(),
+      generatedKernelSecret: this.vaultKernelSecret,
+      users: Array.from(this.usersByEmail.values()),
+      revokedTokenHashes: Array.from(this.revokedTokenHashes).slice(-2e3),
+      tenants: this.persistedTenantsSnapshot
+    };
+  }
+  /**
+   * Non-blocking async atomic write-ahead flush using fs.promises.
+   * Coalesces concurrent mutations so the Node event loop is never blocked.
+   */
+  async flushAsync() {
     if (this.flushTimer) {
       clearTimeout(this.flushTimer);
       this.flushTimer = null;
     }
-    try {
-      for (const [tid, ws] of this.hotTenants.entries()) {
-        this.persistedTenantsSnapshot[tid] = ws;
-      }
-      const dir = path.dirname(this.storeFilePath);
-      fs.mkdirSync(dir, { recursive: true, mode: 448 });
-      const payload = {
-        schemaVersion: 2,
-        savedAtIso: (/* @__PURE__ */ new Date()).toISOString(),
-        users: Array.from(this.usersByEmail.values()),
-        revokedTokenHashes: Array.from(this.revokedTokenHashes).slice(-2e3),
-        tenants: this.persistedTenantsSnapshot
-      };
-      const tmpPath = `${this.storeFilePath}.${process.pid}.tmp`;
-      fs.writeFileSync(tmpPath, JSON.stringify(payload), { encoding: "utf8", mode: 384 });
-      fs.renameSync(tmpPath, this.storeFilePath);
-    } catch {
+    if (this.activeWritePromise) {
+      this.writePendingAgain = true;
+      return this.activeWritePromise;
     }
+    this.activeWritePromise = (async () => {
+      do {
+        this.writePendingAgain = false;
+        try {
+          const dir = path.dirname(this.storeFilePath);
+          await fs.promises.mkdir(dir, { recursive: true, mode: 448 });
+          const serialized = JSON.stringify(this.buildVaultPayload());
+          const tmpPath = `${this.storeFilePath}.${process.pid}.${crypto4.randomBytes(4).toString("hex")}.tmp`;
+          await fs.promises.writeFile(tmpPath, serialized, { encoding: "utf8", mode: 384 });
+          await fs.promises.rename(tmpPath, this.storeFilePath);
+        } catch {
+        }
+      } while (this.writePendingAgain);
+    })().finally(() => {
+      this.activeWritePromise = null;
+    });
+    return this.activeWritePromise;
   }
   scheduleFlush() {
     if (this.flushTimer) return;
     this.flushTimer = setTimeout(() => {
-      this.flushSync();
-    }, 120);
+      this.flushTimer = null;
+      void this.flushAsync();
+    }, 80);
     if (typeof this.flushTimer.unref === "function") {
       this.flushTimer.unref();
     }
@@ -4429,14 +5675,14 @@ var AegisMultiTenantStore = class {
   getUserByEmail(email) {
     return this.usersByEmail.get(email.trim().toLowerCase());
   }
-  createUser(params) {
+  async createUser(params) {
     const normalizedEmail = params.email.trim().toLowerCase();
     const now = (/* @__PURE__ */ new Date()).toISOString();
     const record = {
       id: `OP-${sha256Hex(normalizedEmail).slice(0, 8).toUpperCase()}`,
       email: normalizedEmail,
-      fullName: params.fullName.trim() || "Treasury Operator",
-      organization: params.organization.trim() || "PayPal Sandbox Workspace",
+      fullName: params.fullName.trim() || "Workspace Operator",
+      organization: params.organization.trim() || "PayPal Workspace",
       role: params.role || "TREASURY_OPERATOR",
       passwordScrypt: hashPasswordScrypt(params.rawPassword),
       paypalMerchantId: `SBX-MERCH-${sha256Hex(normalizedEmail).slice(0, 6).toUpperCase()}`,
@@ -4444,7 +5690,7 @@ var AegisMultiTenantStore = class {
       lastLoginAtIso: now
     };
     this.usersByEmail.set(normalizedEmail, record);
-    this.flushSync();
+    await this.flushAsync();
     return record;
   }
   upsertOAuthUser(params) {
@@ -4488,10 +5734,15 @@ var AegisMultiTenantStore = class {
       return existingHot;
     }
     const fromDisk = this.persistedTenantsSnapshot[cleanId];
+    const defaults = createDefaultTenantWorkspace(cleanId, ownerEmail);
     const ws = fromDisk ? {
-      ...createDefaultTenantWorkspace(cleanId, ownerEmail),
-      ...fromDisk
-    } : createDefaultTenantWorkspace(cleanId, ownerEmail);
+      ...defaults,
+      ...fromDisk,
+      merchantPolicy: fromDisk.merchantPolicy || defaults.merchantPolicy,
+      claimedVisionImageHashes: Array.isArray(fromDisk.claimedVisionImageHashes) ? fromDisk.claimedVisionImageHashes : [],
+      refundedCentsByCapture: fromDisk.refundedCentsByCapture || {},
+      payreviveBanditState: fromDisk.payreviveBanditState || {}
+    } : defaults;
     if (this.hotTenants.size >= this.maxHotTenants) {
       const oldestTenantId = this.hotTenants.keys().next().value;
       if (oldestTenantId) {
@@ -4528,13 +5779,13 @@ var AegisMultiTenantStore = class {
     this.scheduleFlush();
   }
   getStorageArchitectureSummary(activeTenantId) {
-    const displayPath = this.storageMode === "LOCAL_ENCRYPTED_FS_VAULT" ? "data/aegispay_store.json (0o600 Atomic Write-Ahead Vault, Git-Ignored)" : this.storageMode === "SERVERLESS_EPHEMERAL_WITH_HMAC_CONTINUITY" ? "/tmp/aegispay_store.json + Stateless HMAC-SHA256 Session Continuity" : "Isolated Ephemeral Test Vault";
+    const displayPath = this.storageMode === "LOCAL_ENCRYPTED_FS_VAULT" ? "data/aegispay_store.json (0o600 Async Atomic Write-Ahead Vault, Git-Ignored)" : this.storageMode === "SERVERLESS_STATELESS_HMAC_WITH_TMP_CACHE" ? "Stateless HMAC-SHA256 Identity + Per-Instance /tmp Ephemeral Cache (External KV Hook Ready)" : "Isolated Ephemeral Test Vault";
     return {
       mode: this.storageMode,
       vaultLocation: displayPath,
       passwordKdf: "crypto.scryptSync (N=16384, r=8, p=1, 64B key + 16B random salt)",
-      sessionTransport: "HttpOnly SameSite=Strict Cookie + Signed HMAC-SHA256 Bearer Token",
-      tenantIsolation: "Strict Per-Operator Workspace Partitioning",
+      sessionTransport: "HttpOnly SameSite=Strict Cookie (Zero localStorage Token Storage)",
+      tenantIsolation: "Strict Per-Tenant Partitioning (Orders, Invoices, Permits, Bandit, Policy)",
       activeTenantId: activeTenantId || "UNAUTHENTICATED",
       registeredUsersCount: this.usersByEmail.size,
       hotTenantsInLru: this.hotTenants.size,
@@ -4555,28 +5806,30 @@ function createAegisServer(options = {}) {
   const app2 = express();
   app2.disable("x-powered-by");
   app2.use(securityHeadersMiddleware);
-  app2.use(cors({ origin: true, credentials: true }));
+  app2.use(strictCorsMiddleware);
   app2.use(express.json({ limit: "4mb" }));
   app2.use(sanitizePayloadMiddleware);
-  const kernelSecret = process.env.AEGIS_KERNEL_SECRET || "aegispay-deterministic-kernel-hmac-v1-2026";
+  app2.use(csrfProtectionMiddleware);
   const store = new AegisMultiTenantStore({
     rootDir: ROOT_DIR,
     customFilePath: options.customStoreFilePath
   });
+  const kernelSecret = store.resolveKernelSecret();
+  app2.flushStoreAsync = () => store.flushAsync();
   const authLimiter = new SlidingWindowRateLimiter({
     tierName: "AUTH",
     windowMs: 6e4,
-    maxRequests: options.authMaxRequestsPerMinute ?? 35
+    maxRequests: options.authMaxRequestsPerMinute ?? 40
   });
   const mutationLimiter = new SlidingWindowRateLimiter({
     tierName: "MUTATION",
     windowMs: 6e4,
-    maxRequests: options.mutationMaxRequestsPerMinute ?? 140
+    maxRequests: options.mutationMaxRequestsPerMinute ?? 160
   });
   const readLimiter = new SlidingWindowRateLimiter({
     tierName: "READ",
     windowMs: 6e4,
-    maxRequests: options.readMaxRequestsPerMinute ?? 260
+    maxRequests: options.readMaxRequestsPerMinute ?? 280
   });
   const paypalGateway = new PayPalSandboxGateway(
     {
@@ -4594,19 +5847,42 @@ function createAegisServer(options = {}) {
     process.env.GROQ_TEXT_MODEL || "openai/gpt-oss-120b",
     process.env.GROQ_VISION_MODEL || "qwen/qwen3.8-27b"
   );
-  const payreviveBandit = new PayReviveContextualBandit();
-  let zapierWebhookUrl = process.env.ZAPIER_WEBHOOK_URL || "";
-  let googleClientId = process.env.GOOGLE_CLIENT_ID || "";
-  let googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
-  const scamVault = new ScamShieldTokenVault(kernelSecret);
-  const atomicLedger = new AtomicExecutionLedger();
-  const claimedVisionImageHashes = /* @__PURE__ */ new Set();
-  const refundedCentsByCapture = /* @__PURE__ */ new Map();
-  const activeMerchantPolicy = JSON.parse(
-    JSON.stringify(DEFAULT_MERCHANT_REFUND_POLICY)
-  );
-  let lastIssuedScamToken = null;
-  const zapierDispatchLog = [];
+  let zapierWebhookUrl = "";
+  if (process.env.ZAPIER_WEBHOOK_URL) {
+    const check = validateSafeExternalUrl(process.env.ZAPIER_WEBHOOK_URL, { requireHttps: true });
+    if (check.valid && check.normalizedUrl) {
+      zapierWebhookUrl = check.normalizedUrl;
+    }
+  }
+  let googleClientId = (process.env.GOOGLE_CLIENT_ID || "").trim();
+  let googleClientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
+  const scamVaultsByTenant = /* @__PURE__ */ new Map();
+  const lastIssuedScamTokenByTenant = /* @__PURE__ */ new Map();
+  const atomicLedgersByTenant = /* @__PURE__ */ new Map();
+  const zapierDispatchLogByTenant = /* @__PURE__ */ new Map();
+  function getTenantScamVault(tenantId) {
+    let vault = scamVaultsByTenant.get(tenantId);
+    if (!vault) {
+      vault = new ScamShieldTokenVault(`${kernelSecret}:${tenantId}`);
+      scamVaultsByTenant.set(tenantId, vault);
+    }
+    return vault;
+  }
+  function getTenantAtomicLedger(tenantId) {
+    let ledger = atomicLedgersByTenant.get(tenantId);
+    if (!ledger) {
+      ledger = new AtomicExecutionLedger();
+      atomicLedgersByTenant.set(tenantId, ledger);
+    }
+    return ledger;
+  }
+  function getTenantBandit(ws) {
+    const bandit = new PayReviveContextualBandit();
+    if (ws.payreviveBanditState) {
+      bandit.importState(ws.payreviveBanditState);
+    }
+    return bandit;
+  }
   let cachedFxRates = {
     rates: { USD: 1, EUR: 0.92, GBP: 0.79, INR: 85.4 },
     fetchedAtMs: 0,
@@ -4676,7 +5952,7 @@ function createAegisServer(options = {}) {
       res.status(401).json({
         authenticated: false,
         code: "AUTH_REQUIRED",
-        error: "Authentication is mandatory. Sign in via Google OAuth or Email to access AegisPay OS."
+        error: "Authentication is mandatory. Sign in with Google or Email to access your workspace."
       });
       return;
     }
@@ -4692,7 +5968,7 @@ function createAegisServer(options = {}) {
   function getWorkspace(req) {
     const authed = req;
     if (authed.tenantWorkspace) return authed.tenantWorkspace;
-    return store.getTenantWorkspace("OP-AEGIS-001", "operator@aegispay.io");
+    throw new Error("Unauthenticated workspace access blocked.");
   }
   function appendAudit(req, entry) {
     return store.appendTenantAuditLog(getWorkspace(req), entry);
@@ -4723,19 +5999,21 @@ function createAegisServer(options = {}) {
   }
   app2.get("/api/health", readLimiter.middleware(), (req, res) => {
     const resolved = resolveSessionOperator(req);
-    const ppStatus = paypalGateway.getStatus();
+    const tenantId = resolved ? store.getTenantWorkspace(resolved.operator.id, resolved.operator.email).tenantId : void 0;
+    const ppStatus = paypalGateway.getStatus(tenantId);
     const aiStatus = geminiEngine.getStatus();
     res.json({
       ok: true,
-      name: "AegisPay OS",
-      version: "3.0.0",
+      name: "AegisPay",
+      version: "3.1.0",
       authRequired: true,
       authenticated: Boolean(resolved),
+      demoSandboxEnabled: process.env.ALLOW_DEMO_SANDBOX !== "false",
       paypalSandboxActive: ppStatus.hasLiveSandboxCredentials,
       paypalMode: ppStatus.activeMode,
       aiPrimaryReady: aiStatus.hasLiveGeminiKey,
       aiFailoverReady: aiStatus.hasLiveGroqKey,
-      googleOAuthConfigured: Boolean(googleClientId),
+      googleOAuthConfigured: Boolean(googleClientId && googleClientSecret),
       security: {
         headersEnforced: [
           "Content-Security-Policy",
@@ -4745,6 +6023,8 @@ function createAegisServer(options = {}) {
           "Referrer-Policy",
           "Permissions-Policy"
         ],
+        csrfProtection: "ORIGIN_AND_CUSTOM_HEADER_ENFORCED",
+        corsPolicy: "STRICT_ORIGIN_ALLOWLIST",
         secretLeakGuard: "ACTIVE_REDACTION_AND_SERVER_ONLY_ENV",
         rateLimits: {
           auth: authLimiter.getStats(),
@@ -4755,25 +6035,25 @@ function createAegisServer(options = {}) {
       storage: store.getStorageArchitectureSummary(resolved?.operator.id)
     });
   });
-  app2.post("/api/auth/register", authLimiter.middleware(), (req, res) => {
+  app2.post("/api/auth/register", authLimiter.middleware(), async (req, res) => {
     const { email, password, fullName, organization } = req.body || {};
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const rawPass = String(password || "");
-    const cleanName = String(fullName || "").trim() || "Treasury Operator";
-    const cleanOrg = String(organization || "").trim() || "PayPal Sandbox Workspace";
+    const cleanName = String(fullName || "").trim() || "Account Owner";
+    const cleanOrg = String(organization || "").trim() || "Business Workspace";
     if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       res.status(400).json({ error: "Valid email address is required." });
       return;
     }
     if (rawPass.length < 8) {
-      res.status(400).json({ error: "Password must be at least 8 characters for scrypt security." });
+      res.status(400).json({ error: "Password must be at least 8 characters." });
       return;
     }
     if (store.getUserByEmail(normalizedEmail)) {
       res.status(409).json({ error: "An account with this email already exists. Please sign in." });
       return;
     }
-    const created = store.createUser({
+    const created = await store.createUser({
       email: normalizedEmail,
       rawPassword: rawPass,
       fullName: cleanName,
@@ -4786,13 +6066,13 @@ function createAegisServer(options = {}) {
     store.appendTenantAuditLog(ws, {
       pillar: "AUTH",
       actor: operator.fullName,
-      eventTitle: `Operator Registered (${operator.email})`,
+      eventTitle: `Account Created (${operator.email})`,
       verdict: "ALLOW",
       amountCents: 0,
       savedOrProtectedCents: 0,
       paypalRef: operator.paypalMerchantId,
       sha256Hash: operator.sessionTokenHash,
-      deterministicRule: "scrypt (N=16384, r=8, p=1) + Per-User Salt + HttpOnly HMAC Session"
+      deterministicRule: "scrypt (N=16384, r=8, p=1) + Per-User Salt + HttpOnly Session Cookie"
     });
     res.status(201).json({
       authenticated: true,
@@ -4818,13 +6098,13 @@ function createAegisServer(options = {}) {
     store.appendTenantAuditLog(ws, {
       pillar: "AUTH",
       actor: operator.fullName,
-      eventTitle: `Operator Signed In (${operator.email})`,
+      eventTitle: `Signed In (${operator.email})`,
       verdict: "ALLOW",
       amountCents: 0,
       savedOrProtectedCents: 0,
       paypalRef: operator.paypalMerchantId,
       sha256Hash: operator.sessionTokenHash,
-      deterministicRule: "Constant-Time scrypt Verification + Stateless HMAC Session"
+      deterministicRule: "Constant-Time scrypt Verification + HttpOnly Session Cookie"
     });
     res.json({
       authenticated: true,
@@ -4833,116 +6113,122 @@ function createAegisServer(options = {}) {
       storage: store.getStorageArchitectureSummary(operator.id)
     });
   });
-  app2.post("/api/auth/oauth", authLimiter.middleware(), (req, res) => {
-    const { provider, emailHint, nameHint } = req.body || {};
-    const validProviders = [
-      "PAYPAL_OAUTH",
-      "GOOGLE_OAUTH",
-      "GITHUB_OAUTH"
-    ];
-    const selectedProvider = validProviders.includes(
-      provider
-    ) ? provider : "GOOGLE_OAUTH";
-    const resolvedEmail = String(emailHint || "aps.bhaidav@gmail.com").trim().toLowerCase();
-    const resolvedName = String(nameHint || "A. P. S. Bhaidav").trim();
-    const upserted = store.upsertOAuthUser({
-      email: resolvedEmail,
-      fullName: resolvedName,
-      organization: selectedProvider === "GOOGLE_OAUTH" ? "Google Workspace Verified" : "Enterprise OAuth Workspace",
-      role: "PRINCIPAL_ARCHITECT",
-      paypalMerchantId: `SBX-OAUTH-${sha256Hex(resolvedEmail).slice(0, 6).toUpperCase()}`
-    });
-    const { token, operator } = issueOperatorSession(upserted, selectedProvider);
+  app2.post("/api/auth/demo", authLimiter.middleware(), (req, res) => {
+    if (process.env.ALLOW_DEMO_SANDBOX === "false") {
+      res.status(403).json({ error: "Interactive demo sandbox is disabled in this environment." });
+      return;
+    }
+    const demoAccount = store.getUserByEmail("demo@aegispay.io");
+    if (!demoAccount) {
+      res.status(500).json({ error: "Demo sandbox account unavailable." });
+      return;
+    }
+    const { token, operator } = issueOperatorSession(demoAccount, "DEMO_SANDBOX");
     setSessionCookie(req, res, token);
     const ws = store.getTenantWorkspace(operator.id, operator.email);
     store.appendTenantAuditLog(ws, {
       pillar: "AUTH",
       actor: operator.fullName,
-      eventTitle: `OAuth 2.0 Session Verified via ${selectedProvider} (${operator.email})`,
+      eventTitle: "Launched Isolated Interactive Sandbox Tour",
       verdict: "ALLOW",
       amountCents: 0,
       savedOrProtectedCents: 0,
       paypalRef: operator.paypalMerchantId,
       sha256Hash: operator.sessionTokenHash,
-      deterministicRule: "OAuth 2.0 PKCE + Tenant-Isolated Session Binding"
+      deterministicRule: "Isolated DEMO_OPERATOR Tenant Sandbox + HttpOnly Session Cookie"
     });
     res.json({
       authenticated: true,
       token,
-      operator
+      operator,
+      storage: store.getStorageArchitectureSummary(operator.id)
     });
   });
   app2.get("/api/auth/google/url", authLimiter.middleware(), (req, res) => {
-    const protocol = req.headers["x-forwarded-proto"] || req.protocol || "http";
+    const isSecure = req.secure || req.headers["x-forwarded-proto"] === "https" || process.env.NODE_ENV === "production";
+    const protocol = isSecure ? "https" : "http";
     const host = req.headers.host || "localhost:8787";
     const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${protocol}://${host}/api/auth/google/callback`;
-    const state = sha256Hex({ ts: Date.now(), secret: kernelSecret }).slice(0, 24);
-    if (!googleClientId) {
+    if (!googleClientId || !googleClientSecret) {
       res.json({
         liveGoogleOAuthConfigured: false,
         redirectUri,
-        state,
-        message: "GOOGLE_CLIENT_ID not set; using interactive Google Account Chooser."
+        message: "Google OAuth credentials are not configured on this server. Sign in with Email or launch the Interactive Demo Workspace."
       });
       return;
     }
+    const state = issueOAuthStateCookie(req, res, kernelSecret);
     const params = new URLSearchParams({
       client_id: googleClientId,
       redirect_uri: redirectUri,
       response_type: "code",
       scope: "openid email profile",
-      access_type: "offline",
+      access_type: "online",
       prompt: "select_account",
       state
     });
     res.json({
       liveGoogleOAuthConfigured: true,
       authUrl: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`,
-      redirectUri,
-      state
+      redirectUri
     });
   });
   app2.get("/api/auth/google/callback", authLimiter.middleware(), async (req, res) => {
     try {
       const code = String(req.query.code || "");
-      const protocol = req.headers["x-forwarded-proto"] || req.protocol || "http";
+      const state = String(req.query.state || "");
+      if (!verifyOAuthStateCookie(req, res, state, kernelSecret)) {
+        res.redirect("/?auth_error=oauth_state_mismatch");
+        return;
+      }
+      if (!code || !googleClientId || !googleClientSecret) {
+        res.redirect("/?auth_error=oauth_missing_code");
+        return;
+      }
+      const isSecure = req.secure || req.headers["x-forwarded-proto"] === "https" || process.env.NODE_ENV === "production";
+      const protocol = isSecure ? "https" : "http";
       const host = req.headers.host || "localhost:8787";
       const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${protocol}://${host}/api/auth/google/callback`;
-      let email = "aps.bhaidav@gmail.com";
-      let fullName = "A. P. S. Bhaidav";
-      let org = "Google OAuth Verified Account";
-      if (code && googleClientId && googleClientSecret) {
-        const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            code,
-            client_id: googleClientId,
-            client_secret: googleClientSecret,
-            redirect_uri: redirectUri,
-            grant_type: "authorization_code"
-          }).toString()
-        });
-        if (tokenRes.ok) {
-          const tokenData = await tokenRes.json();
-          if (tokenData.access_token) {
-            const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-              headers: { Authorization: `Bearer ${tokenData.access_token}` }
-            });
-            if (userRes.ok) {
-              const profile = await userRes.json();
-              email = profile.email || email;
-              fullName = profile.name || fullName;
-              org = profile.hd || "Google Account Verified";
-            }
-          }
-        }
+      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code,
+          client_id: googleClientId,
+          client_secret: googleClientSecret,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code"
+        }).toString()
+      });
+      if (!tokenRes.ok) {
+        res.redirect("/?auth_error=oauth_token_exchange_failed");
+        return;
       }
+      const tokenData = await tokenRes.json();
+      if (!tokenData.access_token) {
+        res.redirect("/?auth_error=oauth_no_access_token");
+        return;
+      }
+      const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` }
+      });
+      if (!userRes.ok) {
+        res.redirect("/?auth_error=oauth_userinfo_failed");
+        return;
+      }
+      const profile = await userRes.json();
+      if (!profile.email || profile.email_verified === false) {
+        res.redirect("/?auth_error=oauth_email_unverified");
+        return;
+      }
+      const email = profile.email.trim().toLowerCase();
+      const fullName = (profile.name || email.split("@")[0]).trim();
+      const org = (profile.hd || "Google Verified Workspace").trim();
       const upserted = store.upsertOAuthUser({
         email,
         fullName,
         organization: org,
-        role: "PRINCIPAL_ARCHITECT",
+        role: "TREASURY_OPERATOR",
         paypalMerchantId: `SBX-GOOGLE-${sha256Hex(email).slice(0, 6).toUpperCase()}`
       });
       const { token, operator } = issueOperatorSession(upserted, "GOOGLE_OAUTH");
@@ -4951,65 +6237,78 @@ function createAegisServer(options = {}) {
       store.appendTenantAuditLog(ws, {
         pillar: "AUTH",
         actor: operator.fullName,
-        eventTitle: `Google OAuth 2.0 Callback Verified (${operator.email})`,
+        eventTitle: `Signed In with Google (${operator.email})`,
         verdict: "ALLOW",
         amountCents: 0,
         savedOrProtectedCents: 0,
         paypalRef: operator.paypalMerchantId,
         sha256Hash: operator.sessionTokenHash,
-        deterministicRule: "Google OAuth 2.0 Code Exchange + OpenID UserInfo Verified"
+        deterministicRule: "Google OAuth 2.0 State Cookie + Code Exchange + Verified Email"
       });
-      res.redirect(`/?google_session=${encodeURIComponent(token)}`);
+      res.redirect("/?auth_ready=1");
     } catch {
       res.redirect("/?auth_error=google_callback_failed");
     }
   });
   app2.post("/api/auth/google", authLimiter.middleware(), async (req, res) => {
-    const { idToken, email, fullName, organization } = req.body || {};
-    let resolvedEmail = String(email || "aps.bhaidav@gmail.com").trim().toLowerCase();
-    let resolvedName = String(fullName || "A. P. S. Bhaidav").trim();
-    let resolvedOrg = String(organization || "Google Workspace").trim();
-    if (typeof idToken === "string" && idToken.split(".").length === 3) {
-      try {
-        const verifyRes = await fetch(
-          `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
-        );
-        if (verifyRes.ok) {
-          const payload = await verifyRes.json();
-          resolvedEmail = payload.email || resolvedEmail;
-          resolvedName = payload.name || resolvedName;
-          resolvedOrg = payload.hd || "Google Identity Services Verified";
-        }
-      } catch {
-      }
+    const { idToken } = req.body || {};
+    if (typeof idToken !== "string" || idToken.split(".").length !== 3) {
+      res.status(401).json({
+        error: "A cryptographically signed Google ID token is required. Unverified email assertions are rejected."
+      });
+      return;
     }
-    const upserted = store.upsertOAuthUser({
-      email: resolvedEmail,
-      fullName: resolvedName,
-      organization: resolvedOrg,
-      role: "PRINCIPAL_ARCHITECT",
-      paypalMerchantId: `SBX-GOOGLE-${sha256Hex(resolvedEmail).slice(0, 6).toUpperCase()}`
-    });
-    const { token, operator } = issueOperatorSession(upserted, "GOOGLE_OAUTH");
-    setSessionCookie(req, res, token);
-    const ws = store.getTenantWorkspace(operator.id, operator.email);
-    store.appendTenantAuditLog(ws, {
-      pillar: "AUTH",
-      actor: operator.fullName,
-      eventTitle: `Authenticated via Google OAuth 2.0 (${operator.email})`,
-      verdict: "ALLOW",
-      amountCents: 0,
-      savedOrProtectedCents: 0,
-      paypalRef: operator.paypalMerchantId,
-      sha256Hash: operator.sessionTokenHash,
-      deterministicRule: "Google Identity Token + Tenant-Isolated Session"
-    });
-    res.json({
-      authenticated: true,
-      token,
-      operator,
-      storage: store.getStorageArchitectureSummary(operator.id)
-    });
+    try {
+      const verifyRes = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+      );
+      if (!verifyRes.ok) {
+        res.status(401).json({ error: "Google ID token verification failed." });
+        return;
+      }
+      const payload = await verifyRes.json();
+      if (googleClientId && payload.aud !== googleClientId) {
+        res.status(401).json({ error: "Google ID token audience mismatch." });
+        return;
+      }
+      const isVerified = payload.email_verified === true || payload.email_verified === "true";
+      if (!payload.email || !isVerified) {
+        res.status(401).json({ error: "Google account email is not verified." });
+        return;
+      }
+      const resolvedEmail = payload.email.trim().toLowerCase();
+      const resolvedName = (payload.name || resolvedEmail.split("@")[0]).trim();
+      const resolvedOrg = (payload.hd || "Google Identity Verified").trim();
+      const upserted = store.upsertOAuthUser({
+        email: resolvedEmail,
+        fullName: resolvedName,
+        organization: resolvedOrg,
+        role: "TREASURY_OPERATOR",
+        paypalMerchantId: `SBX-GOOGLE-${sha256Hex(resolvedEmail).slice(0, 6).toUpperCase()}`
+      });
+      const { token, operator } = issueOperatorSession(upserted, "GOOGLE_OAUTH");
+      setSessionCookie(req, res, token);
+      const ws = store.getTenantWorkspace(operator.id, operator.email);
+      store.appendTenantAuditLog(ws, {
+        pillar: "AUTH",
+        actor: operator.fullName,
+        eventTitle: `Authenticated via Google Identity Token (${operator.email})`,
+        verdict: "ALLOW",
+        amountCents: 0,
+        savedOrProtectedCents: 0,
+        paypalRef: operator.paypalMerchantId,
+        sha256Hash: operator.sessionTokenHash,
+        deterministicRule: "Google ID Token Audience + Email Verification Enforced"
+      });
+      res.json({
+        authenticated: true,
+        token,
+        operator,
+        storage: store.getStorageArchitectureSummary(operator.id)
+      });
+    } catch {
+      res.status(401).json({ error: "Unable to verify Google ID token." });
+    }
   });
   app2.get("/api/auth/me", readLimiter.middleware(), (req, res) => {
     const resolved = resolveSessionOperator(req);
@@ -5031,15 +6330,25 @@ function createAegisServer(options = {}) {
     clearSessionCookie(res);
     res.json({ loggedOut: true });
   });
-  app2.post("/api/paypal/webhook", mutationLimiter.middleware(), (req, res) => {
-    const body = req.body || {};
-    const event = paypalGateway.emitSignedWebhook({
-      eventType: body.event_type || "PAYMENT.CAPTURE.COMPLETED",
-      summary: body.summary || `External PayPal Webhook: ${body.event_type || "EVENT"}`,
-      resource: body.resource || body,
-      pillar: "SCAMSHIELD"
+  app2.post("/api/paypal/webhook", mutationLimiter.middleware(), async (req, res) => {
+    const verification = await paypalGateway.verifyAndIngestExternalWebhook({
+      headers: req.headers,
+      body: req.body && typeof req.body === "object" ? req.body : {}
     });
-    res.json({ received: true, verified: event.verified, eventId: event.id });
+    if (!verification.verified || !verification.event) {
+      res.status(401).json({
+        received: false,
+        verified: false,
+        error: verification.reason
+      });
+      return;
+    }
+    res.json({
+      received: true,
+      verified: true,
+      verificationMethod: verification.event.verificationMethod,
+      eventId: verification.event.id
+    });
   });
   app2.use("/api", (req, res, next) => {
     if (req.method === "GET") {
@@ -5057,6 +6366,11 @@ function createAegisServer(options = {}) {
   app2.get("/api/state", (req, res) => {
     const authed = req;
     const ws = getWorkspace(req);
+    const tenantOrders = paypalGateway.getOrders(ws.tenantId);
+    const tenantInvoices = paypalGateway.getInvoices(ws.tenantId);
+    const tenantVaultTokens = paypalGateway.getVaultTokens(ws.tenantId);
+    const tenantSubscriptions = paypalGateway.getSubscriptions(ws.tenantId);
+    const tenantWebhooks = paypalGateway.getWebhookStream(ws.tenantId);
     const zombieReport = auditPayPalPermissions(ws.billingPermissions);
     const defaultAffordability = evaluateCashflowAffordability({
       itemTitle: "Pro Studio 4K OLED Reference Monitor",
@@ -5068,15 +6382,15 @@ function createAegisServer(options = {}) {
     const totalProtectedCents = ws.auditLogs.reduce((acc, r) => acc + r.savedOrProtectedCents, 0);
     res.json({
       system: {
-        name: "AegisPay OS",
-        version: "3.0.0",
-        tagline: "AI Proposes. Deterministic Code Decides. PayPal Moves the Money.",
-        paypal: paypalGateway.getStatus(),
+        name: "AegisPay",
+        version: "3.1.0",
+        tagline: "Safer Payments, Automated Revenue Recovery, and Milestone Billing on PayPal.",
+        paypal: paypalGateway.getStatus(ws.tenantId),
         gemini: geminiEngine.getStatus(),
         zapierConfigured: Boolean(zapierWebhookUrl),
         googleOAuth: {
-          configured: Boolean(googleClientId),
-          clientIdPreview: googleClientId ? `${googleClientId.slice(0, 14)}...` : "Interactive Google OAuth Sandbox"
+          configured: Boolean(googleClientId && googleClientSecret),
+          clientIdPreview: googleClientId ? `${googleClientId.slice(0, 14)}...` : "Not Configured"
         },
         security: {
           rateLimits: {
@@ -5088,14 +6402,18 @@ function createAegisServer(options = {}) {
         }
       },
       operator: authed.operator || null,
+      workspace: {
+        tenantId: ws.tenantId,
+        tutorialCompleted: Boolean(ws.tutorialCompleted)
+      },
       kpis: {
         totalProtectedCents,
         zombieAnnualExposureCents: zombieReport.totalAnnualExposureCents,
         recoverableMonthlyCents: zombieReport.recoverableMonthlyCents,
         activeAgentPermits: ws.agentPermits.filter((p) => p.active).length,
-        heldOrdersPendingApproval: paypalGateway.getOrders().filter((o) => o.status === "AUTHORIZED").length,
+        heldOrdersPendingApproval: tenantOrders.filter((o) => o.status === "AUTHORIZED").length,
         totalAuditRecords: ws.auditLogs.length,
-        livePayPalInvoicesCount: paypalGateway.getInvoices().length,
+        livePayPalInvoicesCount: tenantInvoices.length,
         activeMilestonePlansCount: ws.milestonePlans.length,
         payreviveDecisionsCount: ws.payreviveDecisions.length
       },
@@ -5107,34 +6425,49 @@ function createAegisServer(options = {}) {
         minimumSafetyBufferCents: ws.minimumSafetyBufferCents,
         defaultAffordability,
         agentPermits: ws.agentPermits,
-        vaultTokens: paypalGateway.getVaultTokens(),
-        subscriptions: paypalGateway.getSubscriptions()
+        vaultTokens: tenantVaultTokens,
+        subscriptions: tenantSubscriptions
       },
       cliprefund: {
-        merchantPolicy: activeMerchantPolicy
+        merchantPolicy: ws.merchantPolicy || DEFAULT_MERCHANT_REFUND_POLICY
       },
       paystream: {
         plans: ws.milestonePlans,
-        invoices: paypalGateway.getInvoices()
+        invoices: tenantInvoices
       },
       payrevive: {
+        modelCard: PAYREVIVE_MODEL_METADATA,
         presets: PAYREVIVE_SAMPLE_EVENTS,
         actionCatalog: RECOVERY_ACTION_CATALOG,
         decisions: ws.payreviveDecisions,
         lastBenchmark: ws.lastPayReviveBenchmark
       },
-      orders: paypalGateway.getOrders(),
-      invoices: paypalGateway.getInvoices(),
-      webhooks: paypalGateway.getWebhookStream(),
+      orders: tenantOrders,
+      invoices: tenantInvoices,
+      webhooks: tenantWebhooks,
       auditLogs: ws.auditLogs,
       signedContracts: ws.signedContracts,
-      zapierDispatchLog
+      zapierDispatchLog: zapierDispatchLogByTenant.get(ws.tenantId) || []
     });
   });
+  app2.post("/api/workspace/tutorial", (req, res) => {
+    const ws = getWorkspace(req);
+    ws.tutorialCompleted = Boolean(req.body?.completed ?? true);
+    store.scheduleFlush();
+    res.json({ tutorialCompleted: ws.tutorialCompleted });
+  });
   app2.post("/api/credentials", async (req, res) => {
+    const authed = req;
+    if (authed.operator?.role !== "PRINCIPAL_ARCHITECT") {
+      res.status(403).json({
+        error: "Forbidden: Updating server-level gateway credentials requires PRINCIPAL_ARCHITECT privileges."
+      });
+      return;
+    }
     const {
       paypalClientId,
       paypalClientSecret,
+      paypalWebhookId,
       paypalEnvironment,
       geminiApiKey,
       groqApiKey,
@@ -5143,10 +6476,21 @@ function createAegisServer(options = {}) {
       googleOAuthClientId,
       googleOAuthClientSecret
     } = req.body || {};
-    if (typeof paypalClientId === "string" || typeof paypalClientSecret === "string") {
+    if (typeof zapierUrl === "string" && zapierUrl.trim()) {
+      const check = validateSafeExternalUrl(zapierUrl, { requireHttps: true });
+      if (!check.valid || !check.normalizedUrl) {
+        res.status(400).json({ error: `Invalid zapierUrl: ${check.reason}` });
+        return;
+      }
+      zapierWebhookUrl = check.normalizedUrl;
+    } else if (zapierUrl === "") {
+      zapierWebhookUrl = "";
+    }
+    if (typeof paypalClientId === "string" || typeof paypalClientSecret === "string" || typeof paypalWebhookId === "string") {
       paypalGateway.updateCredentials({
         clientId: typeof paypalClientId === "string" && paypalClientId.trim() ? paypalClientId.trim() : void 0,
         clientSecret: typeof paypalClientSecret === "string" && paypalClientSecret.trim() ? paypalClientSecret.trim() : void 0,
+        webhookId: typeof paypalWebhookId === "string" && paypalWebhookId.trim() ? paypalWebhookId.trim() : void 0,
         environment: paypalEnvironment === "live" ? "live" : "sandbox"
       });
     }
@@ -5155,23 +6499,21 @@ function createAegisServer(options = {}) {
       groqApiKey: typeof groqApiKey === "string" && groqApiKey.trim() ? groqApiKey.trim() : void 0,
       simulateGeminiRateLimit: typeof simulateGeminiRateLimit === "boolean" ? simulateGeminiRateLimit : void 0
     });
-    if (typeof zapierUrl === "string") {
-      zapierWebhookUrl = zapierUrl.trim();
-    }
     if (typeof googleOAuthClientId === "string" && googleOAuthClientId.trim()) {
       googleClientId = googleOAuthClientId.trim();
     }
     if (typeof googleOAuthClientSecret === "string" && googleOAuthClientSecret.trim()) {
       googleClientSecret = googleOAuthClientSecret.trim();
     }
+    const ws = getWorkspace(req);
     const tokenTest = await paypalGateway.getAccessToken(true);
     res.json({
       updated: true,
-      paypal: paypalGateway.getStatus(),
+      paypal: paypalGateway.getStatus(ws.tenantId),
       paypalOAuthLiveVerified: tokenTest.live,
       gemini: geminiEngine.getStatus(),
       zapierConfigured: Boolean(zapierWebhookUrl),
-      googleOAuthConfigured: Boolean(googleClientId)
+      googleOAuthConfigured: Boolean(googleClientId && googleClientSecret)
     });
   });
   app2.post("/api/ai/failover-test", async (req, res) => {
@@ -5186,7 +6528,7 @@ function createAegisServer(options = {}) {
     const auditRow = appendAudit(req, {
       pillar: "FAILOVER",
       actor: "AI Failover Router (Gemini -> Groq)",
-      eventTitle: shouldSimulate ? `Gemini HTTP 429 Intercepted -> Automatic Failover to Groq LPU (${testScan.telemetry.modelUsed || "Groq"} in ${testScan.telemetry.latencyMs}ms)` : `Primary Google Gemini (${testScan.telemetry.modelUsed || "gemini-3-flash-preview"}) Route Restored (${testScan.telemetry.latencyMs}ms)`,
+      eventTitle: shouldSimulate ? `Gemini HTTP 429 Intercepted -> Automatic Failover to Groq (${testScan.telemetry.modelUsed || "Groq"} in ${testScan.telemetry.latencyMs}ms)` : `Primary Google Gemini (${testScan.telemetry.modelUsed || "gemini-3-flash-preview"}) Route Restored (${testScan.telemetry.latencyMs}ms)`,
       verdict: shouldSimulate ? "REROUTED" : "ALLOW",
       amountCents: 12e3,
       savedOrProtectedCents: 0,
@@ -5203,12 +6545,14 @@ function createAegisServer(options = {}) {
   });
   app2.get("/api/payrevive/presets", (_req, res) => {
     res.json({
+      modelCard: PAYREVIVE_MODEL_METADATA,
       presets: PAYREVIVE_SAMPLE_EVENTS,
       actionCatalog: RECOVERY_ACTION_CATALOG
     });
   });
   app2.post("/api/payrevive/recover", async (req, res) => {
     try {
+      const ws = getWorkspace(req);
       const body = req.body || {};
       const preset = PAYREVIVE_SAMPLE_EVENTS.find((p) => p.presetId === body.presetId);
       const baseEvent = preset ? preset.event : PAYREVIVE_SAMPLE_EVENTS[0].event;
@@ -5256,8 +6600,8 @@ function createAegisServer(options = {}) {
         ),
         hasOpenPayPalDispute: body.hasOpenPayPalDispute !== void 0 ? Boolean(body.hasOpenPayPalDispute) : baseEvent.hasOpenPayPalDispute
       };
-      const decision = payreviveBandit.evaluateAndDecide(event);
-      const ws = getWorkspace(req);
+      const tenantBandit = getTenantBandit(ws);
+      const decision = tenantBandit.evaluateAndDecide(event);
       store.recordPayReviveDecision(ws, decision);
       let paypalOrder = null;
       let paypalInvoice = null;
@@ -5265,26 +6609,23 @@ function createAegisServer(options = {}) {
         if (decision.selectedArmDetails.paypalMechanism === "PAYPAL_ORDERS_V2_RETRY") {
           const intent = decision.selectedAction === "IMMEDIATE_JITTER_RETRY" ? "CAPTURE" : "AUTHORIZE";
           paypalOrder = await paypalGateway.createOrder({
+            ownerTenantId: ws.tenantId,
             intent,
             amountCents: event.amountCents,
             currency: "USD",
-            merchantName: `PayRevive Smart Recovery (${event.merchantOrderRef})`,
-            description: `${decision.selectedArmDetails.actionLabel} [Root Cause: ${decision.diagnosis.predictedRootCause}]`,
+            merchantName: `Recovery (${event.merchantOrderRef})`,
+            description: `${decision.selectedArmDetails.actionLabel} [${event.merchantOrderRef}]`,
             customHash: decision.auditHash,
             idempotencyKey: decision.decisionId,
             pillar: "PAYREVIVE",
             autoExecuteInSandbox: true
           });
-          payreviveBandit.updateOutcome(
-            decision.diagnosis.predictedRootCause,
-            decision.selectedAction,
-            true
-          );
         } else if (decision.selectedArmDetails.paypalMechanism === "PAYPAL_INVOICING_V2_LINK") {
           const recoveryInvoiceCents = decision.selectedAction === "SPLIT_TWO_PART_INVOICE" ? Math.ceil(event.amountCents / 2) : event.amountCents;
           paypalInvoice = await paypalGateway.createLiveInvoice({
-            title: `PayRevive Recovery: ${decision.selectedArmDetails.actionLabel}`,
-            note: `Order ${event.merchantOrderRef} (${decision.diagnosis.predictedRootCause}). ${decision.deterministicRationale}`,
+            ownerTenantId: ws.tenantId,
+            title: `Payment Recovery: ${decision.selectedArmDetails.actionLabel}`,
+            note: `Order ${event.merchantOrderRef}. ${decision.plainEnglishRecommendation}`,
             recipientEmail: event.customerEmail,
             amountCents: recoveryInvoiceCents,
             currency: "USD",
@@ -5292,18 +6633,13 @@ function createAegisServer(options = {}) {
             contractOrPlanHash: decision.auditHash,
             sendImmediately: true
           });
-          payreviveBandit.updateOutcome(
-            decision.diagnosis.predictedRootCause,
-            decision.selectedAction,
-            true
-          );
         }
       }
       const auditVerdict = decision.verdict === "EXECUTE_RECOVERY" ? "SETTLED" : decision.verdict === "BLOCKED_BY_COMPLIANCE" ? "BLOCK" : "HOLD";
       const auditRow = appendAudit(req, {
         pillar: "PAYREVIVE",
-        actor: "PayRevive XGBoost + Bandit + Compliance",
-        eventTitle: decision.verdict === "EXECUTE_RECOVERY" ? `PayRevive Executed ${decision.selectedAction} on $${(event.amountCents / 100).toFixed(2)} (${event.declineCode}) -> Net EV +$${(decision.selectedArmDetails.expectedNetGainCents / 100).toFixed(2)}` : decision.verdict === "BLOCKED_BY_COMPLIANCE" ? `PayRevive Compliance Gate Blocked Recovery on ${event.merchantOrderRef} (${event.declineCode})` : `PayRevive Abstained on $${(event.amountCents / 100).toFixed(2)} (Expected Value Below Cost)`,
+        actor: "Failed Payment Recovery Engine",
+        eventTitle: decision.verdict === "EXECUTE_RECOVERY" ? `Recovery Initiated (${decision.selectedArmDetails.actionLabel}) on $${(event.amountCents / 100).toFixed(2)} -> Expected Net +$${(decision.selectedArmDetails.expectedNetGainCents / 100).toFixed(2)}` : decision.verdict === "BLOCKED_BY_COMPLIANCE" ? `Compliance Blocked Recovery on ${event.merchantOrderRef} (${event.declineCode})` : `Skipped Unprofitable Retry on $${(event.amountCents / 100).toFixed(2)}`,
         verdict: auditVerdict,
         amountCents: event.amountCents,
         savedOrProtectedCents: decision.verdict === "EXECUTE_RECOVERY" ? Math.max(0, decision.selectedArmDetails.expectedNetGainCents) : decision.selectedArmDetails.actionCostCents,
@@ -5320,6 +6656,26 @@ function createAegisServer(options = {}) {
     } catch (err) {
       res.status(400).json({ error: redactSecrets(err.message) });
     }
+  });
+  app2.post("/api/payrevive/confirm-settlement", (req, res) => {
+    const ws = getWorkspace(req);
+    const { decisionId, settled } = req.body || {};
+    const target = ws.payreviveDecisions.find((d) => d.decisionId === String(decisionId || ""));
+    if (!target) {
+      res.status(404).json({ error: "Recovery decision not found in workspace." });
+      return;
+    }
+    const tenantBandit = getTenantBandit(ws);
+    tenantBandit.updateOutcomeForEvent(target.event, target.selectedAction, Boolean(settled));
+    target.settlementConfirmed = Boolean(settled);
+    ws.payreviveBanditState = tenantBandit.exportState();
+    store.scheduleFlush();
+    res.json({
+      updated: true,
+      decisionId: target.decisionId,
+      selectedAction: target.selectedAction,
+      settled: Boolean(settled)
+    });
   });
   app2.post("/api/payrevive/benchmark", (req, res) => {
     const batches = Math.min(1e3, Math.max(50, Math.round(Number(req.body?.batches) || 500)));
@@ -5338,7 +6694,7 @@ function createAegisServer(options = {}) {
       savedOrProtectedCents: Math.max(0, report.additionalNetRecoveredCents),
       paypalRef: `BENCH-${report.batchesSimulated}B`,
       sha256Hash: report.benchmarkProofHash,
-      deterministicRule: `TreeSHAP Additivity ${report.shapAdditivityChecksPassed}/${report.totalFailedPaymentsEvaluated} Verified | 0 Compliance Refusals Taken`
+      deterministicRule: `Held-Out ROC-AUC ${report.modelMetadata.heldOutRocAuc} | TreeSHAP Additivity ${report.shapAdditivityChecksPassed}/${report.totalFailedPaymentsEvaluated} | 0 Compliance Refusals`
     });
     res.json({ report, auditRow });
   });
@@ -5373,8 +6729,8 @@ function createAegisServer(options = {}) {
       }
       appendAudit(req, {
         pillar: "LUPAPERMIT",
-        actor: "Cashflow Guard",
-        eventTitle: `Affordability Check: "${result.itemTitle}" ($${(spend / 100).toFixed(2)}) -> ${result.affordabilityTier}`,
+        actor: "Budget Guard",
+        eventTitle: `Budget Check: "${result.itemTitle}" ($${(spend / 100).toFixed(2)}) -> ${result.verdict}`,
         verdict: result.verdict,
         amountCents: spend,
         savedOrProtectedCents: result.verdict === "ALLOW" ? 0 : spend,
@@ -5467,14 +6823,14 @@ function createAegisServer(options = {}) {
           store.scheduleFlush();
           appendAudit(req, {
             pillar: "LUPAPERMIT",
-            actor: "Natural-Language Policy Compiler",
-            eventTitle: `Applied Number-Grounded Rule to ${target.permitId} (Cap $${(target.maxSingleTransactionCents / 100).toFixed(2)}, Auto $${(target.autoAllowMaxCents / 100).toFixed(2)})`,
+            actor: "Spending Rule Assistant",
+            eventTitle: `Updated Spending Rule (${target.permitId}: Cap $${(target.maxSingleTransactionCents / 100).toFixed(2)}, Auto $${(target.autoAllowMaxCents / 100).toFixed(2)})`,
             verdict: "ALLOW",
             amountCents: target.maxSingleTransactionCents,
             savedOrProtectedCents: 0,
             paypalRef: target.permitId,
             sha256Hash: sha256Hex({ cleanSentence, target }),
-            deterministicRule: `Number-Grounding Guard Verified (0 invented thresholds): "${cleanSentence}"`
+            deterministicRule: `Grounded Rule Applied: "${cleanSentence}"`
           });
         }
       }
@@ -5499,7 +6855,7 @@ function createAegisServer(options = {}) {
     } = req.body || {};
     const target = ws.agentPermits.find((p) => p.permitId === permitId) || ws.agentPermits[0];
     if (!target) {
-      res.status(404).json({ error: "Permit not found" });
+      res.status(404).json({ error: "Spending rule not found" });
       return;
     }
     if (typeof maxSingleTransactionCents === "number" && maxSingleTransactionCents >= 100) {
@@ -5525,21 +6881,23 @@ function createAegisServer(options = {}) {
   });
   app2.post("/api/lupa/mint-vault-permit", async (req, res) => {
     try {
+      const ws = getWorkspace(req);
       const { agentName, maxSingleCents } = req.body || {};
       const tokenRecord = await paypalGateway.createVaultSetupToken({
-        agentName: String(agentName || "Claude Code MCP Workspace Agent"),
+        ownerTenantId: ws.tenantId,
+        agentName: String(agentName || "Team Procurement Assistant"),
         maxSingleCents: Math.max(500, Math.round(Number(maxSingleCents) || 8e3))
       });
       const auditRow = appendAudit(req, {
         pillar: "LUPAPERMIT",
-        actor: "PayPal Vault v3 Setup Service",
-        eventTitle: `Minted PayPal Vault v3 Setup Token ${tokenRecord.setupTokenId} for ${tokenRecord.agentName}`,
+        actor: "PayPal Vault Service",
+        eventTitle: `Created PayPal Spending Authorization ${tokenRecord.setupTokenId} for ${tokenRecord.agentName}`,
         verdict: "ALLOW",
         amountCents: tokenRecord.maxSingleCents,
         savedOrProtectedCents: 0,
         paypalRef: tokenRecord.setupTokenId,
         sha256Hash: sha256Hex(tokenRecord),
-        deterministicRule: `PayPal Vault v3 Delegated Payment Token (${tokenRecord.mode})`
+        deterministicRule: `PayPal Vault v3 Delegated Setup Token (${tokenRecord.mode})`
       });
       res.json({ vaultToken: tokenRecord, auditRow });
     } catch (err) {
@@ -5548,16 +6906,18 @@ function createAegisServer(options = {}) {
   });
   app2.post("/api/lupa/create-sandbox-subscription", async (req, res) => {
     try {
+      const ws = getWorkspace(req);
       const { planName, monthlyPriceCents } = req.body || {};
       const sub = await paypalGateway.createLiveSubscription({
-        planName: String(planName || "AegisPay Monitored Cloud Compute Seat"),
+        ownerTenantId: ws.tenantId,
+        planName: String(planName || "Monitored Cloud Seat"),
         monthlyPriceCents: Math.max(500, Math.round(Number(monthlyPriceCents) || 2900)),
         pillar: "LUPAPERMIT"
       });
       const auditRow = appendAudit(req, {
         pillar: "LUPAPERMIT",
-        actor: "PayPal Subscriptions v1 Service",
-        eventTitle: `Created Live PayPal Subscription ${sub.subscriptionId} ($${(sub.monthlyPriceCents / 100).toFixed(2)}/mo)`,
+        actor: "PayPal Subscriptions Service",
+        eventTitle: `Created PayPal Subscription ${sub.subscriptionId} ($${(sub.monthlyPriceCents / 100).toFixed(2)}/mo)`,
         verdict: "SETTLED",
         amountCents: sub.monthlyPriceCents,
         savedOrProtectedCents: 0,
@@ -5583,8 +6943,8 @@ function createAegisServer(options = {}) {
       perm.monthlyCapCents = Math.ceil(perm.averageChargeCents * 1.1 / 100) * 100;
       appendAudit(req, {
         pillar: "LUPAPERMIT",
-        actor: "Buyer Permission API",
-        eventTitle: `Tightened Autopay Ceiling for ${perm.merchantName} ($${(oldCap / 100).toFixed(2)} -> $${(perm.monthlyCapCents / 100).toFixed(2)}/mo)`,
+        actor: "Subscription Guard",
+        eventTitle: `Lowered Monthly Limit for ${perm.merchantName} ($${(oldCap / 100).toFixed(2)} -> $${(perm.monthlyCapCents / 100).toFixed(2)}/mo)`,
         verdict: "SETTLED",
         amountCents: perm.monthlyCapCents,
         savedOrProtectedCents: (oldCap - perm.monthlyCapCents) * 12,
@@ -5604,14 +6964,14 @@ function createAegisServer(options = {}) {
       }
       appendAudit(req, {
         pillar: "LUPAPERMIT",
-        actor: "Buyer Permission API",
-        eventTitle: `Revoked Zombie PayPal Billing Agreement ${perm.agreementId} (${perm.merchantName})`,
+        actor: "Subscription Guard",
+        eventTitle: `Canceled Unused Autopay ${perm.agreementId} (${perm.merchantName})`,
         verdict: "BLOCK",
         amountCents: perm.averageChargeCents,
         savedOrProtectedCents: recoverable,
         paypalRef: perm.agreementId,
         sha256Hash: sha256Hex({ agreementId, status: "REVOKED" }),
-        deterministicRule: "Revoked dormant/unused recurring pull permission; freed monthly cashflow"
+        deterministicRule: "Revoked dormant recurring pull permission; freed monthly cashflow"
       });
     }
     store.scheduleFlush();
@@ -5649,14 +7009,15 @@ function createAegisServer(options = {}) {
         merchantId: String(merchantId || "merch_nordic_hardware"),
         merchantName: String(merchantName || "NordicLight Studio Hardware"),
         category: String(category || "HARDWARE"),
-        itemDescription: String(itemDescription || "Autonomous Agent Purchase"),
+        itemDescription: String(itemDescription || "Automated Team Purchase"),
         aiConfidenceScore: numericConfidence,
         aiSuggestedVerdict: validAiVerdict,
-        aiReasoning: `Agent evaluated merchant & item specs with ${(numericConfidence * 100).toFixed(0)}% confidence.`
+        aiReasoning: `Evaluated merchant & item details (${(numericConfidence * 100).toFixed(0)}% match).`
       });
       let paypalOrder = null;
       if (evaluation.finalVerdict === "ALLOW" || evaluation.finalVerdict === "HOLD") {
         paypalOrder = await paypalGateway.createOrder({
+          ownerTenantId: ws.tenantId,
           intent: evaluation.paypalIntent === "CAPTURE" ? "CAPTURE" : "AUTHORIZE",
           amountCents: numericAmount,
           currency: "USD",
@@ -5675,11 +7036,11 @@ function createAegisServer(options = {}) {
       const auditRow = appendAudit(req, {
         pillar: "LUPAPERMIT",
         actor: permit.agentName,
-        eventTitle: `Agent Request: ${itemDescription} ($${(numericAmount / 100).toFixed(2)}) -> ${evaluation.finalVerdict}`,
+        eventTitle: `Purchase Request: ${itemDescription} ($${(numericAmount / 100).toFixed(2)}) -> ${evaluation.finalVerdict}`,
         verdict: evaluation.finalVerdict,
         amountCents: numericAmount,
         savedOrProtectedCents: evaluation.finalVerdict === "ALLOW" ? 0 : numericAmount,
-        paypalRef: paypalOrder ? paypalOrder.orderId : "BLOCKED_BY_PERMIT_KERNEL",
+        paypalRef: paypalOrder ? paypalOrder.orderId : "BLOCKED_BY_LIMIT",
         sha256Hash: evaluation.auditHash,
         deterministicRule: evaluation.reasons.join(" | ")
       });
@@ -5695,24 +7056,26 @@ function createAegisServer(options = {}) {
   });
   app2.post("/api/lupa/resolve-hold", async (req, res) => {
     try {
+      const ws = getWorkspace(req);
       const { orderId, action, operatorNote, fallbackAmountCents, fallbackMerchantName } = req.body || {};
       const resolvedOrder = await paypalGateway.resolveHeldAuthorization({
+        ownerTenantId: ws.tenantId,
         orderId: String(orderId),
         action: action === "VOID" ? "VOID" : "CAPTURE",
-        operatorNote: String(operatorNote || "Reviewed by human account owner"),
+        operatorNote: String(operatorNote || "Reviewed by account owner"),
         fallbackAmountCents: typeof fallbackAmountCents === "number" ? fallbackAmountCents : void 0,
         fallbackMerchantName: typeof fallbackMerchantName === "string" ? fallbackMerchantName : void 0
       });
       const auditRow = appendAudit(req, {
         pillar: "LUPAPERMIT",
-        actor: "Human Account Owner",
-        eventTitle: `Human Operator ${action === "VOID" ? "Voided & Rejected" : "Approved & Captured"} Held Order ${resolvedOrder.orderId}`,
+        actor: "Account Owner",
+        eventTitle: `${action === "VOID" ? "Declined & Voided" : "Approved & Released"} Held Order ${resolvedOrder.orderId}`,
         verdict: action === "VOID" ? "BLOCK" : "SETTLED",
         amountCents: resolvedOrder.amountCents,
         savedOrProtectedCents: action === "VOID" ? resolvedOrder.amountCents : 0,
         paypalRef: resolvedOrder.captureId || resolvedOrder.authorizationId || resolvedOrder.orderId,
         sha256Hash: sha256Hex({ orderId: resolvedOrder.orderId, status: resolvedOrder.status }),
-        deterministicRule: `Human-in-the-loop resolution on PayPal AUTHORIZE hold (${resolvedOrder.status})`
+        deterministicRule: `Owner decision on held PayPal authorization (${resolvedOrder.status})`
       });
       res.json({ order: resolvedOrder, auditRow });
     } catch (err) {
@@ -5725,6 +7088,8 @@ function createAegisServer(options = {}) {
   });
   app2.post("/api/scamshield/review", async (req, res) => {
     try {
+      const ws = getWorkspace(req);
+      const scamVault = getTenantScamVault(ws.tenantId);
       const {
         rawText,
         claimedAmountCents,
@@ -5754,7 +7119,8 @@ function createAegisServer(options = {}) {
       let liveInvoiceLookup = null;
       if (extracted.detectedPayPalInvoiceId) {
         liveInvoiceLookup = await paypalGateway.lookupLiveInvoice(
-          extracted.detectedPayPalInvoiceId
+          extracted.detectedPayPalInvoiceId,
+          ws.tenantId
         );
       }
       const aiResult = await geminiEngine.analyzePaymentScamSemantics({
@@ -5783,11 +7149,11 @@ function createAegisServer(options = {}) {
         verdict: finalVerdict,
         riskScore: combinedRiskScore
       });
-      lastIssuedScamToken = signedToken;
+      lastIssuedScamTokenByTenant.set(ws.tenantId, signedToken);
       const auditRow = appendAudit(req, {
         pillar: "SCAMSHIELD",
-        actor: "Pre-Payment Firewall",
-        eventTitle: `Pre-Payment Review for ${payee} ($${(amount / 100).toFixed(2)}) -> ${finalVerdict} (Risk ${combinedRiskScore}/100)`,
+        actor: "Invoice & Link Safety Scanner",
+        eventTitle: `Scanned Payment Request to ${payee} ($${(amount / 100).toFixed(2)}) -> ${finalVerdict}`,
         verdict: finalVerdict,
         amountCents: amount,
         savedOrProtectedCents: finalVerdict === "BLOCK" ? amount : 0,
@@ -5813,20 +7179,22 @@ function createAegisServer(options = {}) {
   });
   app2.post("/api/scamshield/create-paypal-order", async (req, res) => {
     try {
+      const ws = getWorkspace(req);
       const { signedToken } = req.body || {};
-      const token = signedToken || lastIssuedScamToken;
+      const token = signedToken || lastIssuedScamTokenByTenant.get(ws.tenantId);
       if (!token || token.payload.verdict === "BLOCK") {
         res.status(403).json({
-          error: "Payment blocked by Pre-Payment Firewall; cannot create PayPal order."
+          error: "This payment was flagged as unsafe and cannot proceed to PayPal checkout."
         });
         return;
       }
       const order = await paypalGateway.createOrder({
+        ownerTenantId: ws.tenantId,
         intent: "CAPTURE",
         amountCents: token.payload.amountCents,
         currency: token.payload.currency,
         merchantName: token.payload.payeeIdentifier,
-        description: `Firewall-Cleared Payment (${token.payload.tokenId})`,
+        description: `Verified Payment (${token.payload.tokenId})`,
         customHash: token.signature,
         idempotencyKey: `btn-${token.payload.tokenId}-${Date.now().toString().slice(-4)}`,
         pillar: "SCAMSHIELD",
@@ -5839,8 +7207,10 @@ function createAegisServer(options = {}) {
   });
   app2.post("/api/scamshield/capture-paypal-order", async (req, res) => {
     try {
+      const ws = getWorkspace(req);
+      const scamVault = getTenantScamVault(ws.tenantId);
       const { orderId, signedToken } = req.body || {};
-      const token = signedToken || lastIssuedScamToken;
+      const token = signedToken || lastIssuedScamTokenByTenant.get(ws.tenantId);
       if (token) {
         const check = scamVault.verifyAndConsumeForCapture({
           signedToken: token,
@@ -5854,17 +7224,21 @@ function createAegisServer(options = {}) {
           return;
         }
       }
-      const captureRes = await paypalGateway.captureLiveOrder(String(orderId), "SCAMSHIELD");
+      const captureRes = await paypalGateway.captureLiveOrder(
+        String(orderId),
+        "SCAMSHIELD",
+        ws.tenantId
+      );
       const auditRow = appendAudit(req, {
         pillar: "SCAMSHIELD",
-        actor: "PayPal JS SDK Smart Checkout",
+        actor: "PayPal Checkout",
         eventTitle: `Buyer-Approved PayPal Order ${captureRes.orderId} Captured (${captureRes.captureId})`,
         verdict: "SETTLED",
         amountCents: token?.payload.amountCents || 4500,
         savedOrProtectedCents: 0,
         paypalRef: captureRes.captureId,
         sha256Hash: sha256Hex(captureRes),
-        deterministicRule: "Single-Use HMAC Token Verified + Buyer PayPal Wallet Capture Completed"
+        deterministicRule: "Verified Single-Use Approval Token + Buyer PayPal Checkout Completed"
       });
       res.json({ ...captureRes, auditRow });
     } catch (err) {
@@ -5873,8 +7247,10 @@ function createAegisServer(options = {}) {
   });
   app2.post("/api/scamshield/capture", async (req, res) => {
     try {
+      const ws = getWorkspace(req);
+      const scamVault = getTenantScamVault(ws.tenantId);
       const { signedToken, tamperScenario } = req.body || {};
-      const baseToken = signedToken || lastIssuedScamToken;
+      const baseToken = signedToken || lastIssuedScamTokenByTenant.get(ws.tenantId) || null;
       let tokenToVerify = baseToken ? JSON.parse(JSON.stringify(baseToken)) : null;
       let captureAmountCents = tokenToVerify?.payload.amountCents ?? 4500;
       const currency = tokenToVerify?.payload.currency ?? "USD";
@@ -5892,7 +7268,7 @@ function createAegisServer(options = {}) {
       } else if (tamperScenario === "PAYEE_SWAP" && tokenToVerify) {
         payeeIdentifier = "attacker-offshore-wallet@evil.example";
       }
-      const preOrderId = `ORD-SCAMSHIELD-${Date.now()}`;
+      const preOrderId = `ORD-SAFE-${Date.now()}`;
       const verification = scamVault.verifyAndConsumeForCapture({
         signedToken: tokenToVerify,
         orderId: preOrderId,
@@ -5904,8 +7280,8 @@ function createAegisServer(options = {}) {
       if (!verification.allowed) {
         const auditRow2 = appendAudit(req, {
           pillar: "SCAMSHIELD",
-          actor: "Capture Gate",
-          eventTitle: `Blocked Capture [${verification.errorCode}]: ${verification.reason}`,
+          actor: "Checkout Lock",
+          eventTitle: `Blocked Modified Checkout [${verification.errorCode}]: ${verification.reason}`,
           verdict: "BLOCK",
           amountCents: captureAmountCents,
           savedOrProtectedCents: captureAmountCents,
@@ -5925,6 +7301,7 @@ function createAegisServer(options = {}) {
         return;
       }
       const paypalOrder = await paypalGateway.createOrder({
+        ownerTenantId: ws.tenantId,
         intent: "CAPTURE",
         amountCents: captureAmountCents,
         currency,
@@ -5937,8 +7314,8 @@ function createAegisServer(options = {}) {
       });
       const auditRow = appendAudit(req, {
         pillar: "SCAMSHIELD",
-        actor: "Capture Gate",
-        eventTitle: `Verified Single-Use Token & Created PayPal Order ${paypalOrder.orderId} ($${(captureAmountCents / 100).toFixed(2)})`,
+        actor: "Checkout Lock",
+        eventTitle: `Created Verified PayPal Order ${paypalOrder.orderId} ($${(captureAmountCents / 100).toFixed(2)})`,
         verdict: "SETTLED",
         amountCents: captureAmountCents,
         savedOrProtectedCents: 0,
@@ -5969,8 +7346,8 @@ function createAegisServer(options = {}) {
       } = req.body || {};
       const buyerMandate = {
         mandateId: "BM-LIVE-01",
-        buyerName: String(rawBuyer?.buyerName || "Acme AI Labs (Buyer)"),
-        itemTitle: String(rawBuyer?.itemTitle || "Enterprise SOC2 & Smart Contract Security Audit"),
+        buyerName: String(rawBuyer?.buyerName || "Acme Studio (Buyer)"),
+        itemTitle: String(rawBuyer?.itemTitle || "Security & Infrastructure Audit"),
         targetPriceCents: Math.round(Number(rawBuyer?.targetPriceCents) || 62e3),
         maxPriceCents: Math.round(Number(rawBuyer?.maxPriceCents) || 82e3),
         maxDeliveryDays: Math.round(Number(rawBuyer?.maxDeliveryDays) || 7),
@@ -5979,7 +7356,7 @@ function createAegisServer(options = {}) {
       };
       const sellerMandate = {
         mandateId: "SM-LIVE-01",
-        sellerName: String(rawSeller?.sellerName || "Sentinel CyberSec Partners (Seller)"),
+        sellerName: String(rawSeller?.sellerName || "Sentinel Partners (Vendor)"),
         listPriceCents: Math.round(Number(rawSeller?.listPriceCents) || 98e3),
         minPriceCents: Math.round(Number(rawSeller?.minPriceCents) || 64e3),
         fastestDeliveryDays: Math.round(Number(rawSeller?.fastestDeliveryDays) || 4),
@@ -5990,18 +7367,18 @@ function createAegisServer(options = {}) {
       if (buyerMandate.maxPriceCents < sellerMandate.minPriceCents) {
         const auditRow2 = appendAudit(req, {
           pillar: "DEALFORGE",
-          actor: "Mandate Kernel",
-          eventTitle: `No Deal Zone: Buyer Ceiling ($${(buyerMandate.maxPriceCents / 100).toFixed(2)}) < Seller Floor ($${(sellerMandate.minPriceCents / 100).toFixed(2)})`,
+          actor: "Deal Terms Guard",
+          eventTitle: `No Price Overlap: Buyer Max ($${(buyerMandate.maxPriceCents / 100).toFixed(2)}) < Vendor Min ($${(sellerMandate.minPriceCents / 100).toFixed(2)})`,
           verdict: "BLOCK",
           amountCents: sellerMandate.minPriceCents,
           savedOrProtectedCents: sellerMandate.listPriceCents,
-          paypalRef: "NO_ZOPA_ABORT",
+          paypalRef: "NO_OVERLAP_ABORT",
           sha256Hash: sha256Hex({ buyerMandate, sellerMandate }),
-          deterministicRule: "Zone of Possible Agreement (ZOPA) is empty; halted before any PayPal commitment."
+          deterministicRule: "Price ranges do not overlap; halted before creating any PayPal order or invoice."
         });
         res.json({
           dealReached: false,
-          reason: `No Zone of Possible Agreement (ZOPA): Buyer ceiling ($${(buyerMandate.maxPriceCents / 100).toFixed(2)}) is below Seller floor ($${(sellerMandate.minPriceCents / 100).toFixed(2)}).`,
+          reason: `No agreement possible: Your maximum budget ($${(buyerMandate.maxPriceCents / 100).toFixed(2)}) is below the vendor's minimum floor ($${(sellerMandate.minPriceCents / 100).toFixed(2)}).`,
           rounds,
           zopaAnalysis: {
             exists: false,
@@ -6103,7 +7480,7 @@ function createAegisServer(options = {}) {
         revisions: agreedRevisions,
         upfrontDepositPct: agreedDepositPct
       };
-      const r3Msg = isHumanTakeover ? `Human Operator Counter-Offer: Binding offer at $${(agreedPriceCents / 100).toFixed(2)} (${agreedDeliveryDays}d SLA, ${agreedRevisions} revisions, ${agreedDepositPct}% PayPal deposit).` : geminiEngine.generateNegotiationRoundMessage({
+      const r3Msg = isHumanTakeover ? `Manual Counter-Offer: $${(agreedPriceCents / 100).toFixed(2)} (${agreedDeliveryDays}d delivery, ${agreedRevisions} revisions, ${agreedDepositPct}% PayPal deposit).` : geminiEngine.generateNegotiationRoundMessage({
         round: 3,
         proposer: "BUYER_AGENT",
         terms: r3Terms,
@@ -6139,7 +7516,7 @@ function createAegisServer(options = {}) {
         proposedTerms: r3Validated.validatedTerms,
         sanitizedMessage: r4Msg,
         kernelValidated: true,
-        kernelAdjustments: ["Both Buyer and Seller private mandate constraints verified satisfied."],
+        kernelAdjustments: ["Both buyer and vendor limits verified satisfied."],
         promptInjectionBlocked: false
       });
       const contract = createSignedDealContract({
@@ -6151,11 +7528,12 @@ function createAegisServer(options = {}) {
       if (ws.signedContracts.length > 100) ws.signedContracts.length = 100;
       store.scheduleFlush();
       const paypalOrder = await paypalGateway.createOrder({
+        ownerTenantId: ws.tenantId,
         intent: "CAPTURE",
         amountCents: contract.upfrontDepositCents,
         currency: "USD",
         merchantName: sellerMandate.sellerName,
-        description: `Contract ${contract.contractId} (${contract.agreedTerms.upfrontDepositPct}% Deposit for ${buyerMandate.itemTitle})`,
+        description: `Agreement ${contract.contractId} (${contract.agreedTerms.upfrontDepositPct}% Deposit for ${buyerMandate.itemTitle})`,
         customHash: contract.contractSha256,
         idempotencyKey: contract.contractId,
         pillar: "DEALFORGE",
@@ -6164,8 +7542,9 @@ function createAegisServer(options = {}) {
       let paypalInvoice = null;
       if (issueLiveInvoice) {
         paypalInvoice = await paypalGateway.createLiveInvoice({
+          ownerTenantId: ws.tenantId,
           title: `${buyerMandate.itemTitle} (${contract.agreedTerms.upfrontDepositPct}% Deposit)`,
-          note: `Deal ${contract.contractId} settled at $${(contract.agreedTerms.priceCents / 100).toFixed(2)} (${contract.agreedTerms.deliveryDays}d delivery, ${contract.agreedTerms.revisions} revisions).`,
+          note: `Agreement ${contract.contractId} settled at $${(contract.agreedTerms.priceCents / 100).toFixed(2)} (${contract.agreedTerms.deliveryDays}d delivery, ${contract.agreedTerms.revisions} revisions).`,
           recipientEmail: String(buyerEmail || "buyer-treasury@personal.example.com"),
           amountCents: contract.upfrontDepositCents,
           pillar: "DEALFORGE",
@@ -6184,14 +7563,14 @@ function createAegisServer(options = {}) {
       );
       const auditRow = appendAudit(req, {
         pillar: "DEALFORGE",
-        actor: isHumanTakeover ? "Human Takeover + Mandate Kernel" : "Settlement Executor",
-        eventTitle: `Signed Contract ${contract.contractId} ($${(contract.agreedTerms.priceCents / 100).toFixed(2)} agreed, saved $${(contract.buyerSavedCents / 100).toFixed(2)}) & Settled Deposit ($${(contract.upfrontDepositCents / 100).toFixed(2)})`,
+        actor: isHumanTakeover ? "Manual Counter-Offer" : "Automated Deal Desk",
+        eventTitle: `Agreement ${contract.contractId} ($${(contract.agreedTerms.priceCents / 100).toFixed(2)}, saved $${(contract.buyerSavedCents / 100).toFixed(2)}) & Deposit Created ($${(contract.upfrontDepositCents / 100).toFixed(2)})`,
         verdict: "SETTLED",
         amountCents: contract.upfrontDepositCents,
         savedOrProtectedCents: contract.buyerSavedCents,
         paypalRef: paypalInvoice ? paypalInvoice.invoiceId : paypalOrder.orderId,
         sha256Hash: contract.contractSha256,
-        deterministicRule: `SHA-256 Contract Verified (${verifyContractIntegrity(contract) ? "VALID" : "INVALID"}); Prompt Injection ${simulatePromptInjection ? "STRIPPED IN ROUND 2" : "CLEAN"}`
+        deterministicRule: `Contract Integrity ${verifyContractIntegrity(contract) ? "VALID" : "INVALID"}`
       });
       res.json({
         dealReached: true,
@@ -6218,6 +7597,10 @@ function createAegisServer(options = {}) {
     }
   });
   app2.post("/api/cliprefund/update-policy", (req, res) => {
+    const ws = getWorkspace(req);
+    if (!ws.merchantPolicy) {
+      ws.merchantPolicy = JSON.parse(JSON.stringify(DEFAULT_MERCHANT_REFUND_POLICY));
+    }
     const {
       tierPercentages,
       tierRefundPercentages,
@@ -6235,7 +7618,7 @@ function createAegisServer(options = {}) {
         "TOTAL_LOSS"
       ]) {
         if (typeof incomingTiers[key] === "number") {
-          activeMerchantPolicy.tierRefundPercentages[key] = Math.max(
+          ws.merchantPolicy.tierRefundPercentages[key] = Math.max(
             0,
             Math.min(100, Math.round(incomingTiers[key]))
           );
@@ -6244,16 +7627,23 @@ function createAegisServer(options = {}) {
     }
     const incomingConf = typeof minAuthenticityConfidence === "number" ? minAuthenticityConfidence : minPhotoAuthenticityConfidence;
     if (typeof incomingConf === "number" && incomingConf >= 0.5 && incomingConf <= 0.99) {
-      activeMerchantPolicy.minAuthenticityConfidence = incomingConf;
+      ws.merchantPolicy.minAuthenticityConfidence = incomingConf;
     }
     const incomingShip = typeof returnShippingCostCents === "number" ? returnShippingCostCents : estimatedReturnShippingLabelCents;
     if (typeof incomingShip === "number") {
-      activeMerchantPolicy.returnShippingCostCents = Math.max(0, Math.round(incomingShip));
+      ws.merchantPolicy.returnShippingCostCents = Math.max(0, Math.round(incomingShip));
     }
-    res.json({ merchantPolicy: activeMerchantPolicy });
+    store.scheduleFlush();
+    res.json({ merchantPolicy: ws.merchantPolicy });
   });
   app2.post("/api/cliprefund/evaluate-and-refund", async (req, res) => {
     try {
+      const ws = getWorkspace(req);
+      if (!ws.merchantPolicy) {
+        ws.merchantPolicy = JSON.parse(JSON.stringify(DEFAULT_MERCHANT_REFUND_POLICY));
+      }
+      if (!ws.claimedVisionImageHashes) ws.claimedVisionImageHashes = [];
+      if (!ws.refundedCentsByCapture) ws.refundedCentsByCapture = {};
       const {
         presetId,
         orderId,
@@ -6266,12 +7656,14 @@ function createAegisServer(options = {}) {
         merchantPolicyOverride
       } = req.body || {};
       const targetOrderId = String(orderId || "PAYPAL-SBX-8F92A1C4E7B01");
-      const targetCaptureId = `CAP-${targetOrderId.replace("PAYPAL-SBX-", "")}`;
+      const existingOrder = paypalGateway.getOrder(targetOrderId, ws.tenantId);
+      const targetCaptureId = existingOrder?.captureId || `SIMCAP-${targetOrderId.replace("PAYPAL-SBX-", "")}`;
       const orderCents = Math.max(500, Math.round(Number(originalOrderCents) || 2800));
+      const claimedSet = new Set(ws.claimedVisionImageHashes);
       const imageSeed = simulateReplayAttack ? "REPLAY_IMAGE_STATIC_DIGEST" : imageBase64 ? `${imageBase64.slice(0, 512)}_${Date.now()}` : `${presetId || "chipped_ceramic_mug"}_${Date.now()}`;
       const imageSha256 = sha256Hex(imageSeed);
       if (simulateReplayAttack) {
-        claimedVisionImageHashes.add(imageSha256);
+        claimedSet.add(imageSha256);
       }
       const visionResult = await geminiEngine.extractVisionDefectTelemetry({
         presetId: presetId ? String(presetId) : void 0,
@@ -6282,28 +7674,33 @@ function createAegisServer(options = {}) {
       });
       const overrideTiers = merchantPolicyOverride?.tierRefundPercentages || merchantPolicyOverride?.tierPercentages || {};
       const policyToUse = merchantPolicyOverride && typeof merchantPolicyOverride === "object" ? {
-        ...activeMerchantPolicy,
+        ...ws.merchantPolicy,
         tierRefundPercentages: {
-          ...activeMerchantPolicy.tierRefundPercentages,
+          ...ws.merchantPolicy.tierRefundPercentages,
           ...overrideTiers
         }
-      } : activeMerchantPolicy;
-      const prevRefunded = refundedCentsByCapture.get(targetCaptureId) || 0;
+      } : ws.merchantPolicy;
+      const prevRefunded = ws.refundedCentsByCapture[targetCaptureId] || 0;
       const calculation = calculateDeterministicVisionRefund({
         orderId: targetOrderId,
         captureId: targetCaptureId,
         originalOrderCents: orderCents,
         imageSha256,
-        previouslyClaimedImageHashes: claimedVisionImageHashes,
+        previouslyClaimedImageHashes: claimedSet,
         previouslyRefundedCentsOnCapture: prevRefunded,
         telemetry: visionResult.telemetry,
         policy: policyToUse
       });
       let paypalRefund = null;
       if (calculation.approved && calculation.refundCents > 0) {
-        claimedVisionImageHashes.add(imageSha256);
-        refundedCentsByCapture.set(targetCaptureId, prevRefunded + calculation.refundCents);
+        ws.claimedVisionImageHashes.push(imageSha256);
+        if (ws.claimedVisionImageHashes.length > 500) {
+          ws.claimedVisionImageHashes = ws.claimedVisionImageHashes.slice(-500);
+        }
+        ws.refundedCentsByCapture[targetCaptureId] = prevRefunded + calculation.refundCents;
+        store.scheduleFlush();
         paypalRefund = await paypalGateway.issuePartialRefund({
+          ownerTenantId: ws.tenantId,
           orderId: targetOrderId,
           captureId: targetCaptureId,
           refundCents: calculation.refundCents,
@@ -6319,12 +7716,12 @@ function createAegisServer(options = {}) {
       };
       const auditRow = appendAudit(req, {
         pillar: "CLIPREFUND",
-        actor: "Vision Telemetry + Merchant Matrix",
-        eventTitle: calculation.approved ? `Instant Keep-The-Item Refund: $${(calculation.refundCents / 100).toFixed(2)} (${calculation.appliedPercentage}%) on ${visionResult.telemetry.detectedItemCategory}` : `Blocked Vision Refund Claim: ${calculation.explanation}`,
+        actor: "Keep-the-Item Partial Refund",
+        eventTitle: calculation.approved ? `Approved Partial Refund: $${(calculation.refundCents / 100).toFixed(2)} (${calculation.appliedPercentage}%) on ${visionResult.telemetry.detectedItemCategory}` : `Declined Refund Request: ${calculation.explanation}`,
         verdict: calculation.approved ? "REFUNDED" : "BLOCK",
         amountCents: calculation.refundCents,
         savedOrProtectedCents: calculation.approved ? calculation.merchantNetSavedCents : orderCents,
-        paypalRef: paypalRefund ? paypalRefund.refundId : "CLAIM_REJECTED",
+        paypalRef: paypalRefund ? paypalRefund.refundId : "CLAIM_DECLINED",
         sha256Hash: calculation.calculationHash,
         deterministicRule: calculation.explanation
       });
@@ -6344,6 +7741,8 @@ function createAegisServer(options = {}) {
   });
   app2.post("/api/churnrescue/intercept", async (req, res) => {
     try {
+      const ws = getWorkspace(req);
+      const atomicLedger = getTenantAtomicLedger(ws.tenantId);
       const {
         accountId,
         customerName,
@@ -6359,7 +7758,7 @@ function createAegisServer(options = {}) {
       const ctx = {
         accountId: String(accountId || "ACC-SAAS-9042"),
         customerName: String(customerName || "Jordan Vance"),
-        planName: String(planName || "Aegis Cloud Pro Plan"),
+        planName: String(planName || "Cloud Pro Plan"),
         currentPlanPriceCents: Math.max(1e3, Math.round(Number(currentPlanPriceCents) || 9900)),
         featureUtilizationPct: Math.max(
           0,
@@ -6376,32 +7775,37 @@ function createAegisServer(options = {}) {
       let zapierDispatched = false;
       if (decision.circuitBreakerTripped) {
         const zapPayload = {
-          alert: "AEGISPAY_RETENTION_CIRCUIT_BREAKER_TRIPPED",
+          alert: "AEGISPAY_RETENTION_LEGAL_ESCALATION",
           accountId: ctx.accountId,
           customerName: ctx.customerName,
           matchedKeyword: decision.matchedCircuitBreakerKeyword,
           customerMessage: ctx.customerMessage,
           timestampIso: (/* @__PURE__ */ new Date()).toISOString()
         };
-        let status = "RECORDED_LOCAL_ZAPIER_BRIDGE";
+        let status = "RECORDED_SUPPORT_ESCALATION";
         if (zapierWebhookUrl && !process.env.VITEST) {
-          try {
-            const zRes = await fetch(zapierWebhookUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(zapPayload)
-            });
-            if (zRes.ok) status = "DISPATCHED_LIVE_ZAPIER";
-          } catch {
-            status = "ZAPIER_QUEUE_RECORDED";
+          const check = validateSafeExternalUrl(zapierWebhookUrl, { requireHttps: true });
+          if (check.valid && check.normalizedUrl) {
+            try {
+              const zRes = await fetch(check.normalizedUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(zapPayload)
+              });
+              if (zRes.ok) status = "DISPATCHED_LIVE_ZAPIER";
+            } catch {
+              status = "ZAPIER_QUEUE_RECORDED";
+            }
           }
         }
-        zapierDispatchLog.unshift({
+        const tenantZapLog = zapierDispatchLogByTenant.get(ws.tenantId) || [];
+        tenantZapLog.unshift({
           timestampIso: zapPayload.timestampIso,
-          eventType: "CIRCUIT_BREAKER_HUMAN_ESCALATION",
+          eventType: "HUMAN_SUPPORT_ESCALATION",
           payload: zapPayload,
           status
         });
+        zapierDispatchLogByTenant.set(ws.tenantId, tenantZapLog.slice(0, 50));
         zapierDispatched = true;
       }
       const lockKey = simulateDuplicateClick ? `STATIC_DUPLICATE_KEY_${ctx.accountId}_${decision.concessionStepIndex}` : `${decision.idempotencyLockKey}_${Date.now()}`;
@@ -6417,17 +7821,18 @@ function createAegisServer(options = {}) {
         const orderId = `PAYPAL-SBX-RET-${decision.idempotencyLockKey.slice(0, 8).toUpperCase()}`;
         return {
           orderId,
-          status: decision.circuitBreakerTripped ? "FROZEN_BY_CIRCUIT_BREAKER" : "COMPLETED",
+          status: decision.circuitBreakerTripped ? "PAUSED_FOR_SUPPORT" : "COMPLETED",
           data: { finalOfferPriceCents: decision.finalOfferPriceCents }
         };
       });
       if (!atomicOutcome.duplicateBlocked && !decision.circuitBreakerTripped) {
         paypalOrder = await paypalGateway.createOrder({
+          ownerTenantId: ws.tenantId,
           intent: "CAPTURE",
           amountCents: decision.finalOfferPriceCents,
           currency: "USD",
           merchantName: ctx.planName,
-          description: `Retention Billing (${decision.approvedDiscountPct}% Concession Applied)`,
+          description: `Retention Offer (${decision.approvedDiscountPct}% Off Applied)`,
           customHash: decision.idempotencyLockKey,
           idempotencyKey: lockKey,
           pillar: "CHURNRESCUE",
@@ -6437,15 +7842,16 @@ function createAegisServer(options = {}) {
       let paypalSubscription = null;
       if (createDiscountedSubscription && !atomicOutcome.duplicateBlocked && !decision.circuitBreakerTripped) {
         paypalSubscription = await paypalGateway.createLiveSubscription({
-          planName: `${ctx.planName} (${decision.approvedDiscountPct}% Retention Relief)`,
+          ownerTenantId: ws.tenantId,
+          planName: `${ctx.planName} (${decision.approvedDiscountPct}% Loyalty Rate)`,
           monthlyPriceCents: decision.finalOfferPriceCents,
           pillar: "CHURNRESCUE"
         });
       }
       const auditRow = appendAudit(req, {
         pillar: "CHURNRESCUE",
-        actor: decision.circuitBreakerTripped ? "Circuit Breaker Kernel" : "Retention Copilot Engine",
-        eventTitle: decision.circuitBreakerTripped ? `CIRCUIT BREAKER TRIPPED ("${decision.matchedCircuitBreakerKeyword}") -> Killed AI Session & Escalated` : atomicOutcome.duplicateBlocked ? `Atomic Row Lock Blocked Duplicate PayPal Capture (${atomicOutcome.orderId})` : `Retention Decision: ${decision.approvedDiscountPct}% Concession ($${(decision.finalOfferPriceCents / 100).toFixed(2)}/mo)`,
+        actor: decision.circuitBreakerTripped ? "Support Escalation Guard" : "Subscriber Retention Desk",
+        eventTitle: decision.circuitBreakerTripped ? `Paused Automated Offer ("${decision.matchedCircuitBreakerKeyword}") -> Routed to Human Support` : atomicOutcome.duplicateBlocked ? `Prevented Duplicate Charge (${atomicOutcome.orderId})` : `Retention Offer Applied: ${decision.approvedDiscountPct}% Off ($${(decision.finalOfferPriceCents / 100).toFixed(2)}/mo)`,
         verdict: decision.circuitBreakerTripped ? "CIRCUIT_BREAKER" : atomicOutcome.duplicateBlocked ? "BLOCK" : "SETTLED",
         amountCents: decision.finalOfferPriceCents,
         savedOrProtectedCents: decision.circuitBreakerTripped ? ctx.currentPlanPriceCents : decision.finalOfferPriceCents * 12,
@@ -6473,9 +7879,9 @@ function createAegisServer(options = {}) {
       const ws = getWorkspace(req);
       const { projectTitle, projectBrief, clientEmail, totalBudgetCents, collaborators } = req.body || {};
       const budgetCents = Math.max(1e3, Math.round(Number(totalBudgetCents) || 245e3));
-      const cleanTitle = String(projectTitle || "Custom AI & PayPal Commerce Integration");
+      const cleanTitle = String(projectTitle || "Client Web & Payment Build");
       const cleanBrief = String(
-        projectBrief || "Design, implement, test, and deploy a full-stack PayPal commerce integration with automated verification."
+        projectBrief || "Design, implement, test, and launch a client web application with PayPal checkout."
       );
       const cleanClientEmail = String(clientEmail || "client-treasury@personal.example.com");
       const aiScope = await geminiEngine.architectSmartMilestones({
@@ -6483,8 +7889,8 @@ function createAegisServer(options = {}) {
         totalBudgetCents: budgetCents
       });
       const parsedCollabs = Array.isArray(collaborators) ? collaborators.map((c) => ({
-        collaboratorName: String(c.collaboratorName || "Contributor"),
-        paypalEmail: String(c.paypalEmail || "contributor@personal.example.com"),
+        collaboratorName: String(c.collaboratorName || "Team Member"),
+        paypalEmail: String(c.paypalEmail || "member@personal.example.com"),
         role: String(c.role || "Specialist"),
         sharePct: Math.max(1, Number(c.sharePct) || 50)
       })) : [];
@@ -6500,14 +7906,14 @@ function createAegisServer(options = {}) {
       store.scheduleFlush();
       const auditRow = appendAudit(req, {
         pillar: "PAYSTREAM",
-        actor: "PayStream Scope & Split Kernel",
-        eventTitle: `Created Penny-Exact Smart-Milestone Plan ${plan.planId} ($${(plan.totalBudgetCents / 100).toFixed(2)} across ${plan.milestones.length} milestones)`,
+        actor: "Milestone Planner",
+        eventTitle: `Created Milestone Schedule ${plan.planId} ($${(plan.totalBudgetCents / 100).toFixed(2)} across ${plan.milestones.length} phases)`,
         verdict: "ALLOW",
         amountCents: plan.totalBudgetCents,
         savedOrProtectedCents: plan.totalBudgetCents,
         paypalRef: plan.planId,
         sha256Hash: plan.planSha256,
-        deterministicRule: `Largest-Remainder Allocation Verified: sum(milestones) == $${(plan.totalBudgetCents / 100).toFixed(2)} (0-cent drift)`
+        deterministicRule: `Exact cent split verified: sum(milestones) == $${(plan.totalBudgetCents / 100).toFixed(2)}`
       });
       res.json({
         plan,
@@ -6542,8 +7948,9 @@ function createAegisServer(options = {}) {
         return;
       }
       const invoice = await paypalGateway.createLiveInvoice({
+        ownerTenantId: ws.tenantId,
         title: `${plan.projectTitle} - ${milestone.title}`,
-        note: `Acceptance Criteria: ${milestone.acceptanceCriteria.join("; ")}. Collaborator Split Locked (${milestone.collaboratorSplits.map((c) => `${c.collaboratorName}: $${(c.payoutCents / 100).toFixed(2)}`).join(", ")}).`,
+        note: `Deliverables: ${milestone.acceptanceCriteria.join("; ")}. Team Split (${milestone.collaboratorSplits.map((c) => `${c.collaboratorName}: $${(c.payoutCents / 100).toFixed(2)}`).join(", ")}).`,
         recipientEmail: plan.clientEmail,
         amountCents: milestone.amountCents,
         currency: plan.currency,
@@ -6557,14 +7964,14 @@ function createAegisServer(options = {}) {
       store.scheduleFlush();
       const auditRow = appendAudit(req, {
         pillar: "PAYSTREAM",
-        actor: "PayPal Invoicing v2 Executor",
-        eventTitle: `Issued Live PayPal Invoice ${invoice.invoiceId} for ${milestone.title} ($${(milestone.amountCents / 100).toFixed(2)})`,
+        actor: "PayPal Invoicing",
+        eventTitle: `Sent PayPal Invoice ${invoice.invoiceId} for ${milestone.title} ($${(milestone.amountCents / 100).toFixed(2)})`,
         verdict: "SETTLED",
         amountCents: milestone.amountCents,
         savedOrProtectedCents: 0,
         paypalRef: invoice.invoiceId,
         sha256Hash: sha256Hex({ invoiceId: invoice.invoiceId, planSha256: plan.planSha256 }),
-        deterministicRule: `PayPal Invoicing v2 (${invoice.mode}) bound to Plan Hash ${plan.planSha256.slice(0, 16)}`
+        deterministicRule: `PayPal Invoicing v2 (${invoice.mode})`
       });
       res.json({
         plan,
@@ -6580,6 +7987,15 @@ function createAegisServer(options = {}) {
     try {
       const ws = getWorkspace(req);
       const { planId, milestoneId, evidenceText, evidenceUrl, imageBase64, planSnapshot } = req.body || {};
+      let safeEvidenceUrl;
+      if (typeof evidenceUrl === "string" && evidenceUrl.trim()) {
+        const urlCheck = validateSafeExternalUrl(evidenceUrl, { requireHttps: false });
+        if (!urlCheck.valid || !urlCheck.normalizedUrl) {
+          res.status(400).json({ error: `Invalid evidenceUrl: ${urlCheck.reason}` });
+          return;
+        }
+        safeEvidenceUrl = urlCheck.normalizedUrl;
+      }
       let plan = ws.milestonePlans.find((p) => p.planId === String(planId || ""));
       if (!plan && planSnapshot && typeof planSnapshot === "object" && planSnapshot.planId) {
         plan = planSnapshot;
@@ -6600,13 +8016,13 @@ function createAegisServer(options = {}) {
       const aiAudit = await geminiEngine.evaluateDeliverableProof({
         milestone,
         evidenceText: String(evidenceText || ""),
-        evidenceUrl: typeof evidenceUrl === "string" ? evidenceUrl : void 0,
+        evidenceUrl: safeEvidenceUrl,
         imageBase64: typeof imageBase64 === "string" ? imageBase64 : void 0
       });
       const verification = verifyDeliverableProofDeterministically({
         milestone,
         evidenceText: String(evidenceText || ""),
-        evidenceUrl: typeof evidenceUrl === "string" ? evidenceUrl : void 0,
+        evidenceUrl: safeEvidenceUrl,
         aiQualityScore: aiAudit.aiQualityScore,
         aiSuggestedVerdict: aiAudit.aiSuggestedVerdict,
         neuralInjectionScore: aiAudit.promptGuard.probability
@@ -6618,8 +8034,8 @@ function createAegisServer(options = {}) {
       }
       const auditRow = appendAudit(req, {
         pillar: "PAYSTREAM",
-        actor: "Proof-of-Delivery Auditor",
-        eventTitle: `${verification.approved ? "Verified" : "Held/Blocked"} Deliverable Proof for ${milestone.title} (${verification.finalScore}/100)`,
+        actor: "Deliverable Review",
+        eventTitle: `${verification.approved ? "Approved" : "Held"} Deliverable for ${milestone.title} (${verification.finalScore}/100)`,
         verdict: verification.approved ? "SETTLED" : verification.verdict,
         amountCents: milestone.amountCents,
         savedOrProtectedCents: verification.approved ? 0 : milestone.amountCents,
@@ -6721,7 +8137,7 @@ if (!process.env.VERCEL && process.argv[1] && path2.resolve(process.argv[1]) ===
   const app2 = createAegisServer();
   app2.listen(port, () => {
     console.log(
-      `[AEGISPAY OS v3.0] Zero-Trust Kernel, PayRevive & PayPal Server listening on http://localhost:${port}`
+      `[AEGISPAY v3.1.0] Hardened Multi-Tenant Payment & Recovery Server listening on http://localhost:${port}`
     );
   });
 }

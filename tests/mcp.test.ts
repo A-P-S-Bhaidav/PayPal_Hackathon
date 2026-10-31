@@ -60,7 +60,7 @@ describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)
     });
   }
 
-  it('responds to JSON-RPC 2.0 initialize handshake with v3.0.0 server capabilities', async () => {
+  it('responds to JSON-RPC 2.0 initialize handshake with v3.1.0 server capabilities', async () => {
     const res = await callMcpRpc({
       jsonrpc: '2.0',
       id: 1,
@@ -68,7 +68,7 @@ describe('AegisPay MCP Server (Model Context Protocol JSON-RPC 2.0 Verification)
       params: {},
     });
     expect(res.result.serverInfo.name).toBe('aegispay-paypal-mcp-server');
-    expect(res.result.serverInfo.version).toBe('3.0.0');
+    expect(res.result.serverInfo.version).toBe('3.1.0');
     expect(res.result.protocolVersion).toBe('2024-11-05');
   });
 
