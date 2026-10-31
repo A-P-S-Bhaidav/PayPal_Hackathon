@@ -157,12 +157,73 @@ export const PaySafelyView: React.FC<PaySafelyViewProps> = ({ state, onRefresh }
     }
   };
 
+  const [agentSimNote, setAgentSimNote] = useState('');
+
   const handleResolveHold = async (orderId: string, action: 'CAPTURE' | 'VOID') => {
     await apiFetch('/api/lupa/resolve-hold', {
       method: 'POST',
       body: JSON.stringify({ orderId, action }),
     });
+    setAgentSimNote(
+      action === 'CAPTURE'
+        ? `Approved & captured held PayPal order ${orderId}.`
+        : `Declined & voided held PayPal authorization ${orderId}.`
+    );
     await onRefresh();
+  };
+
+  const handleSimulateAgentPurchase = async (mode: 'AUTO' | 'HOLD') => {
+    const permitId = state.lupa.agentPermits[0]?.permitId || 'perm_default';
+    setAgentSimNote('Testing spending rule...');
+    try {
+      const res = await apiFetch('/api/lupa/agent-pay', {
+        method: 'POST',
+        body: JSON.stringify(
+          mode === 'AUTO'
+            ? {
+                permitId,
+                amountCents: 3200,
+                merchantName: 'CloudFigma Pro Tools',
+                category: 'SAAS_TOOLS',
+                itemDescription: 'Monthly Team Seat ($32.00)',
+                aiConfidenceScore: 0.95,
+              }
+            : {
+                permitId,
+                amountCents: 4500,
+                merchantName: 'NordicLight Studio Hardware',
+                category: 'HARDWARE',
+                itemDescription: 'USB-C Key Light ($45.00 - Uncertain Match)',
+                aiConfidenceScore: 0.72,
+              }
+        ),
+      });
+      setAgentSimNote(
+        `Decision: ${res.evaluation.finalVerdict} (${res.paypalOrder?.orderId || 'No order'}).`
+      );
+      await onRefresh();
+    } catch (err) {
+      setAgentSimNote((err as Error).message);
+    }
+  };
+
+  const handleCreateVaultSetupToken = async () => {
+    setAgentSimNote('Minting PayPal Vault v3 Setup Token...');
+    try {
+      const res = await apiFetch('/api/lupa/vault/setup-token', {
+        method: 'POST',
+        body: JSON.stringify({
+          agentName: 'Workspace Auto-Pay Rule',
+          maxSingleCents: state.lupa.agentPermits[0]?.maxSingleTransactionCents || 5000,
+        }),
+      });
+      setAgentSimNote(
+        `Linked PayPal Vault v3 Setup Token: ${res.vaultToken?.setupTokenId || 'Created'}`
+      );
+      await onRefresh();
+    } catch (err) {
+      setAgentSimNote((err as Error).message);
+    }
   };
 
   const heldOrders = state.orders.filter((o) => o.status === 'AUTHORIZED');
@@ -502,11 +563,19 @@ export const PaySafelyView: React.FC<PaySafelyViewProps> = ({ state, onRefresh }
           )}
 
           <div className="border-t border-[#1E293B] pt-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-[#CCFF00]" />
-              <span className="font-display font-bold text-sm text-white">
-                Set Plain-English Spending Limits
-              </span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-[#CCFF00]" />
+                <span className="font-display font-bold text-sm text-white">
+                  Set Plain-English Spending Limits
+                </span>
+              </div>
+              {state.lupa.agentPermits[0] && (
+                <span className="text-[11px] font-mono text-slate-400">
+                  Auto: {fmtUsd(state.lupa.agentPermits[0].autoAllowMaxCents)} • Cap:{' '}
+                  {fmtUsd(state.lupa.agentPermits[0].maxSingleTransactionCents)}
+                </span>
+              )}
             </div>
             <form onSubmit={handleSaveRule} className="space-y-2.5">
               <input
@@ -515,11 +584,35 @@ export const PaySafelyView: React.FC<PaySafelyViewProps> = ({ state, onRefresh }
                 onChange={(e) => setRuleSentence(e.target.value)}
                 className="input-brutal"
               />
-              <button type="submit" className="btn-ghost-brutal px-4 py-2 text-xs">
-                Save Spending Limit
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button type="submit" className="btn-cobalt px-3.5 py-2 text-xs">
+                  Save Spending Limit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSimulateAgentPurchase('AUTO')}
+                  className="btn-ghost-brutal px-3 py-2 text-xs"
+                >
+                  Test $32 Auto-Pay
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSimulateAgentPurchase('HOLD')}
+                  className="btn-ghost-brutal px-3 py-2 text-xs"
+                >
+                  Test $45 Hold for Review
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateVaultSetupToken}
+                  className="btn-ghost-brutal px-3 py-2 text-xs"
+                >
+                  Link PayPal Vault
+                </button>
+              </div>
             </form>
             {ruleStatus && <div className="text-xs text-[#CCFF00] font-mono">{ruleStatus}</div>}
+            {agentSimNote && <div className="text-xs text-slate-300 font-mono">{agentSimNote}</div>}
           </div>
 
           {heldOrders.length > 0 && (

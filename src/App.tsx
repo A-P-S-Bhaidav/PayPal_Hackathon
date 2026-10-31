@@ -165,7 +165,7 @@ export function App() {
       } else if (stepId === 'recover-sales') {
         await apiFetch('/api/payrevive/recover', {
           method: 'POST',
-          body: JSON.stringify({ presetId: 'payday_liquidity_gap', executeLivePayPal: true }),
+          body: JSON.stringify({ presetId: 'PAYDAY_LIQUIDITY', executeLivePayPal: true }),
         });
       } else if (stepId === 'get-paid') {
         await apiFetch('/api/paystream/create-plan', {

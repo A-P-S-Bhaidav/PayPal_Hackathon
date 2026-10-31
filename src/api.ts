@@ -48,12 +48,16 @@ export interface WorkspaceState {
     security: {
       rateLimits: Record<string, { tierName: string; windowMs: number; maxRequests: number }>;
       storage: {
-        engine: string;
-        encryptionAndHashing: string;
+        mode: string;
+        vaultLocation: string;
+        passwordKdf: string;
+        sessionTransport: string;
         tenantIsolation: string;
-        registeredUsersCount: number;
-        isolatedWorkspacesCount: number;
         activeTenantId: string | null;
+        registeredUsersCount: number;
+        hotTenantsInLru: number;
+        maxHotTenantsCap: number;
+        maxAuditRowsPerTenant: number;
       };
     };
   };
@@ -207,12 +211,87 @@ export interface WorkspaceState {
     };
     presets: Array<{
       presetId: string;
-      label: string;
-      summary: string;
-      event: Record<string, any>;
+      title: string;
+      subtitle: string;
+      event: {
+        eventId: string;
+        customerEmail: string;
+        merchantOrderRef: string;
+        amountCents: number;
+        currency: string;
+        declineCode: string;
+        daysUntilPayday: number;
+        priorRetryCount30d: number;
+        historicalCaptureRate: number;
+        hasPayPalBackupFunding: boolean;
+        issuerLatencyMs: number;
+        accountTenureDays: number;
+        customerOptedOutComms: boolean;
+        localCustomerHour: number;
+        hasOpenPayPalDispute: boolean;
+      };
     }>;
-    actionCatalog: Array<Record<string, any>>;
-    decisions: Array<Record<string, any>>;
+    actionCatalog: Array<Record<string, unknown>>;
+    decisions: Array<{
+      decisionId: string;
+      timestampIso: string;
+      event: {
+        eventId: string;
+        customerEmail: string;
+        merchantOrderRef: string;
+        amountCents: number;
+        declineCode: string;
+      };
+      diagnosis: {
+        baseLogOdds: number;
+        rawMarginLogOdds: number;
+        recoverabilityProbability: number;
+        additivityDelta: number;
+        additivityVerified: boolean;
+        predictedRootCause: string;
+        rootCauseSummary: string;
+        shapContributions: Array<{
+          featureKey: string;
+          featureLabel: string;
+          featureValueDisplay: string;
+          shapLogOdds: number;
+          direction: string;
+        }>;
+      };
+      selectedAction: string;
+      selectedArmDetails: {
+        actionId: string;
+        actionLabel: string;
+        customerActionTitle: string;
+        paypalMechanism: string;
+        actionCostCents: number;
+        estimatedSuccessProbability: number;
+        uncertaintyRadius: number;
+        expectedGrossRecoveryCents: number;
+        expectedNetGainCents: number;
+        ucbScoreCents: number;
+      };
+      allArms: Array<{
+        actionId: string;
+        actionLabel: string;
+        actionCostCents: number;
+        estimatedSuccessProbability: number;
+        uncertaintyRadius: number;
+        expectedNetGainCents: number;
+        ucbScoreCents: number;
+        compliance: {
+          allowed: boolean;
+          ruleId: string;
+          reason: string;
+        };
+      }>;
+      verdict: 'EXECUTE_RECOVERY' | 'ABSTAIN_NOT_WORTH_COST' | 'BLOCKED_BY_COMPLIANCE';
+      plainEnglishCause: string;
+      plainEnglishRecommendation: string;
+      deterministicRationale: string;
+      settlementConfirmed: boolean;
+      auditHash: string;
+    }>;
     lastBenchmark: Record<string, any> | null;
   };
   orders: Array<{

@@ -41,7 +41,7 @@ const DEFECT_PRESETS = [
 export const MerchantRecoveryView: React.FC<MerchantRecoveryViewProps> = ({ state, onRefresh }) => {
   // 1. Failed Payment Recovery state
   const presets = state.payrevive.presets || [];
-  const [selectedPresetId, setSelectedPresetId] = useState(presets[0]?.presetId || 'payday_liquidity_gap');
+  const [selectedPresetId, setSelectedPresetId] = useState(presets[0]?.presetId || 'PAYDAY_LIQUIDITY');
   const [recovering, setRecovering] = useState(false);
   const [recoveryResult, setRecoveryResult] = useState<any>(null);
   const [settlementNote, setSettlementNote] = useState('');
@@ -197,12 +197,12 @@ export const MerchantRecoveryView: React.FC<MerchantRecoveryViewProps> = ({ stat
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs sm:text-sm font-semibold">{p.label}</span>
+                      <span className="text-xs sm:text-sm font-semibold">{p.title}</span>
                       <span className="text-xs font-mono text-[#CCFF00]">
                         {fmtUsd(p.event.amountCents)}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-1">{p.summary}</p>
+                    <p className="text-[11px] text-slate-400 mt-1">{p.subtitle}</p>
                   </button>
                 );
               })}

@@ -34,7 +34,7 @@ export const DiagnosticsLab: React.FC<DiagnosticsLabProps> = ({
   const [benchRunning, setBenchRunning] = useState(false);
   const [benchReport, setBenchReport] = useState<any>(state.payrevive.lastBenchmark);
   const [inspectPresetId, setInspectPresetId] = useState(
-    state.payrevive.presets[0]?.presetId || 'payday_liquidity_gap'
+    state.payrevive.presets[0]?.presetId || 'PAYDAY_LIQUIDITY'
   );
   const [inspectedDecision, setInspectedDecision] = useState<any>(
     state.payrevive.decisions[0] || null
@@ -357,7 +357,7 @@ export const DiagnosticsLab: React.FC<DiagnosticsLabProps> = ({
                   >
                     {state.payrevive.presets.map((p) => (
                       <option key={p.presetId} value={p.presetId}>
-                        {p.label}
+                        {p.title}
                       </option>
                     ))}
                   </select>
@@ -377,48 +377,79 @@ export const DiagnosticsLab: React.FC<DiagnosticsLabProps> = ({
                   attributions and LinUCB contextual upper-confidence bounds.
                 </p>
               ) : (
-                <div className="space-y-3 text-xs">
+                <div className="space-y-4 text-xs">
                   <div className="flex items-center justify-between font-mono text-[11px] text-slate-300">
                     <span>
                       Calibrated P(Recoverable):{' '}
                       <strong className="text-[#CCFF00]">
-                        {(inspectedDecision.diagnosis.baseRecoveryProbability * 100).toFixed(1)}%
+                        {((inspectedDecision.diagnosis?.recoverabilityProbability ?? 0) * 100).toFixed(1)}%
                       </strong>
                     </span>
                     <span>
                       SHAP Sum Check:{' '}
-                      {inspectedDecision.diagnosis.shapAdditivityVerified ? 'EXACT' : 'DRIFT'}
+                      {inspectedDecision.diagnosis?.additivityVerified ? 'EXACT' : 'DRIFT'}
                     </span>
                   </div>
 
                   <div className="space-y-1.5">
-                    {inspectedDecision.diagnosis.shapAttributions.slice(0, 5).map((attr: any) => {
-                      const widthPct = Math.min(100, Math.round(Math.abs(attr.shapLogOddsDelta) * 55));
-                      return (
-                        <div key={attr.feature} className="space-y-0.5">
-                          <div className="flex justify-between font-mono text-[11px]">
-                            <span className="text-slate-300">{attr.label}</span>
-                            <span
-                              className={
-                                attr.shapLogOddsDelta >= 0 ? 'text-[#CCFF00]' : 'text-red-400'
-                              }
-                            >
-                              {attr.shapLogOddsDelta >= 0 ? '+' : ''}
-                              {attr.shapLogOddsDelta.toFixed(3)}
+                    {(inspectedDecision.diagnosis?.shapContributions || [])
+                      .slice(0, 6)
+                      .map((attr: any) => {
+                        const widthPct = Math.min(100, Math.round(Math.abs(attr.shapLogOdds) * 55));
+                        return (
+                          <div key={attr.featureKey} className="space-y-0.5">
+                            <div className="flex justify-between font-mono text-[11px] gap-2">
+                              <span className="text-slate-300 truncate">
+                                {attr.featureLabel} ({attr.featureValueDisplay})
+                              </span>
+                              <span
+                                className={`shrink-0 ${
+                                  attr.shapLogOdds >= 0 ? 'text-[#CCFF00]' : 'text-red-400'
+                                }`}
+                              >
+                                {attr.shapLogOdds >= 0 ? '+' : ''}
+                                {Number(attr.shapLogOdds).toFixed(3)}
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-[#080B13] border border-[#1B2234]">
+                              <div
+                                className={`h-full animate-shap-bar ${
+                                  attr.shapLogOdds >= 0 ? 'bg-[#CCFF00]' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${Math.max(4, widthPct)}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  {Array.isArray(inspectedDecision.allArms) && (
+                    <div className="pt-2 border-t border-[#1E293B] space-y-1.5">
+                      <div className="text-[11px] font-mono uppercase text-slate-400">
+                        Disjoint LinUCB Contextual Arms (Verdict: {inspectedDecision.verdict})
+                      </div>
+                      <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                        {inspectedDecision.allArms.map((arm: any) => (
+                          <div
+                            key={arm.actionId}
+                            className={`px-2.5 py-1.5 border flex items-center justify-between gap-2 font-mono text-[11px] ${
+                              arm.actionId === inspectedDecision.selectedAction
+                                ? 'bg-[#0047FF]/20 border-[#CCFF00] text-white'
+                                : 'bg-[#080B13] border-[#1B2234] text-slate-400'
+                            }`}
+                          >
+                            <span className="truncate">{arm.actionLabel}</span>
+                            <span className="shrink-0">
+                              {arm.compliance?.allowed
+                                ? `UCB $${(arm.ucbScoreCents / 100).toFixed(2)}`
+                                : 'COMPLIANCE BLOCKED'}
                             </span>
                           </div>
-                          <div className="h-1.5 bg-[#080B13] border border-[#1B2234]">
-                            <div
-                              className={`h-full animate-shap-bar ${
-                                attr.shapLogOddsDelta >= 0 ? 'bg-[#CCFF00]' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${Math.max(4, widthPct)}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
